@@ -224,6 +224,8 @@ void seq_copyTrack(uint8_t srcNr, uint8_t dstNr, uint8_t pattern);
 //------------------------------------------------------------------------------
 void seq_copyPattern(uint8_t src, uint8_t dst);
 //------------------------------------------------------------------------------
+void seq_copyTrackPattern(uint8_t srcNr, uint8_t dstPat, uint8_t srcPat);
+//------------------------------------------------------------------------------
 //selects the automation track (0:1) that is recorded to
 void seq_setActiveAutomationTrack(uint8_t trackNr);
 //------------------------------------------------------------------------------
