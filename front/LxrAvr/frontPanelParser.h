@@ -138,6 +138,8 @@ extern uint8_t frontPanel_sysexMode;
 #define SEQ_TRIGGER_OUT2_PPQ  0x38
 #define SEQ_TRIGGER_GATE_MODE 0x39
 
+#define SEQ_COPY_TRACK_PATTERN 0x3a
+
 //SysEx
 #define SYSEX_REQUEST_STEP_DATA			0x01
 #define SYSEX_SEND_STEP_DATA			0x02
