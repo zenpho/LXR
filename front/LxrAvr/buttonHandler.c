@@ -212,89 +212,99 @@ uint8_t buttonHandler_getShift() {
 	return 1;
 }
 //--------------------------------------------------------
-static void buttonHandler_handleModeButtons(uint8_t mode) {
-	if (buttonHandler_getShift()) {
+static void buttonHandler_handleModeButtons(uint8_t mode) 
+   {
+	if (buttonHandler_getShift()) 
+      {
 		//set the new mode
 		buttonHandler_stateMemory.selectButtonMode = (uint8_t) ((mode + 4) & 0x07);
-	} else {
+	   } 
+   else 
+      {
 		//set the new mode
 		buttonHandler_stateMemory.selectButtonMode = (uint8_t) (mode & 0x07);
-	}
+	   }
 
 	led_clearAllBlinkLeds();
 
 	//update the status LED
 	led_setMode2(buttonHandler_stateMemory.selectButtonMode);
 
-	switch (buttonHandler_stateMemory.selectButtonMode) {
-	case SELECT_MODE_PERF: {
-		led_clearSequencerLeds();
-		led_clearSelectLeds();
-		led_initPerformanceLeds();
+	switch (buttonHandler_stateMemory.selectButtonMode) 
+      {
+	   case SELECT_MODE_PERF: 
+         {
+		   led_clearSequencerLeds();
+		   led_clearSelectLeds();
+		   led_initPerformanceLeds();
 
-		//set menu to perf page
-		lastActiveSubPage = menu_getSubPage();
-		menu_switchPage(PERFORMANCE_PAGE);
-		menu_switchSubPage(0);
-		menu_repaintAll();
+		   //set menu to perf page
+		   lastActiveSubPage = menu_getSubPage();
+		   menu_switchPage(PERFORMANCE_PAGE);
+		   menu_switchSubPage(0);
+		   menu_repaintAll();
 
-	}
+	      }
 		break;
 
-	case SELECT_MODE_STEP:
-		//menu_switchPage(menu_getActiveVoice());
+	   case SELECT_MODE_STEP:
+		   //menu_switchPage(menu_getActiveVoice());
 		led_setActiveSelectButton(menu_getSubPage());
 		buttonHandler_enterSeqModeStepMode();
 		break;
-	case SELECT_MODE_VOICE:
+	   case SELECT_MODE_VOICE:
 		//set menu to voice page mode
 		menu_switchPage(menu_getActiveVoice());
 		led_setActiveSelectButton(menu_getSubPage());
 		menu_resetActiveParameter();
 		break;
 
-	case SELECT_MODE_LOAD_SAVE:
+	   case SELECT_MODE_LOAD_SAVE:
 		menu_switchPage(LOAD_PAGE);
 		break;
 
-	case SELECT_MODE_MENU:
+	   case SELECT_MODE_MENU:
 		menu_switchPage(MENU_MIDI_PAGE);
 		break;
 
-	case SELECT_MODE_SOM_GEN:
+	   case SELECT_MODE_SOM_GEN:
 #if USE_DRUM_MAP_GENERATOR
 		menu_switchPage(SOM_PAGE);
 #endif
 		break;
 
-	case SELECT_MODE_PAT_GEN:
+	   case SELECT_MODE_PAT_GEN:
 		frontPanel_sendData(SEQ_CC, SEQ_REQUEST_EUKLID_PARAMS,
 				menu_getActiveVoice());
 		menu_switchPage(EUKLID_PAGE);
 
 		break;
 
-	default:
+	   default:
 		break;
-	}
-}
+	   }
+   }
 //--------------------------------------------------------
-void buttonHandler_muteVoice(uint8_t voice, uint8_t isMuted) {
+void buttonHandler_muteVoice(uint8_t voice, uint8_t isMuted) 
+   {
 	DISABLE_CONV_WARNING
-	if (isMuted) {
+	if (isMuted) 
+      {
 		buttonHandler_mutedVoices |= (1 << voice);
 
-	} else {
+	   } 
+   else 
+      {
 		buttonHandler_mutedVoices &= ~(1 << voice);
-
-	}
+	   }
 	END_DISABLE_CONV_WARNING
 
 	//muted tracks are lit
-	if (menu_muteModeActive) {
+	if (menu_muteModeActive) 
+      {
 		led_setActiveVoiceLeds((uint8_t) (~buttonHandler_mutedVoices));
-	}
-}
+	   }
+   }
 ;
 //--------------------------------------------------------
 void buttonHandler_showMuteLEDs() {
@@ -668,10 +678,37 @@ static void buttonHandler_seqButtonReleased(uint8_t seqButtonPressed)
 //--------------------------------------------------------
 // one of the 8 part buttons is pressed
 static void buttonHandler_partButtonPressed(uint8_t partNr)
-{
-	if (copyClear_Mode >= MODE_COPY_PATTERN) {
+   {
+   if (copyClear_Mode == MODE_COPY_TRACK) 
+      {
+      // user has previously selected a track and now selects
+      // a pattern - escape from pattern copy and instead
+      // do track pattern copy
+      if (copyClear_srcSet()) 
+         { // if we have already selected a source, do the copy operation
+			//select dest
+			copyClear_setDst((int8_t)partNr, MODE_COPY_TRACK_PATTERN);
+			copyClear_copyTrackPattern();
+			led_clearAllBlinkLeds();
+
+			//query current sequencer step states and light up the corresponding leds
+			uint8_t trackNr = menu_getActiveVoice(); //max 6 => 0x6 = 0b110
+			uint8_t patternNr = menu_getViewedPattern(); //max 7 => 0x07 = 0b111
+			uint8_t value = (uint8_t) ((trackNr << 4) | (patternNr & 0x7));
+			frontPanel_sendData(LED_CC, LED_QUERY_SEQ_TRACK, value);
+		   } 
+      else 
+         {
+			//no source selected, so select src (this shouldn't happen)
+			copyClear_setSrc((int8_t)partNr, MODE_COPY_PATTERN);
+			led_setBlinkLed((uint8_t)(LED_PART_SELECT1 + partNr), 1);
+		   }
+      }
+	else if (copyClear_Mode >= MODE_COPY_PATTERN) 
+      {
 		//copy mode
-		if (copyClear_srcSet()) { // if we have already selected a source, do the copy operation
+		if (copyClear_srcSet()) 
+         { // if we have already selected a source, do the copy operation
 			//select dest
 			copyClear_setDst((int8_t)partNr, MODE_COPY_PATTERN);
 			copyClear_copyPattern();
@@ -682,26 +719,33 @@ static void buttonHandler_partButtonPressed(uint8_t partNr)
 			uint8_t patternNr = menu_getViewedPattern(); //max 7 => 0x07 = 0b111
 			uint8_t value = (uint8_t) ((trackNr << 4) | (patternNr & 0x7));
 			frontPanel_sendData(LED_CC, LED_QUERY_SEQ_TRACK, value);
-		} else {
+		   } 
+      else 
+         {
 			//no source selected, so select src
 			copyClear_setSrc((int8_t)partNr, MODE_COPY_PATTERN);
 			led_setBlinkLed((uint8_t)(LED_PART_SELECT1 + partNr), 1);
-		}
-	} else { // none or clear
+		   }
+	} 
+   else 
+      { // none or clear
 		// the code that handles most of this case is in the button release
 		// if shift is held and a part button is held down, we will enter automation record mode
 		// for that sub-step on the currently selected step.
 		// if shift is not held, we just do normal handling
-		if ( buttonHandler_stateMemory.selectButtonMode == SELECT_MODE_VOICE && buttonHandler_getShift()) {
+		if ( buttonHandler_stateMemory.selectButtonMode == SELECT_MODE_VOICE && buttonHandler_getShift()) 
+         {
 			//TODO hier muss selektiert werden!
 			buttonHandler_setTimeraction((uint8_t)(buttonHandler_selectedStep * 8 + partNr));
-		} else {
+		   } 
+      else 
+         {
 			buttonHandler_handleSelectButton(partNr);
-		}
+		   }
 
-	}
+	   }
 
-}
+   }
 
 //--------------------------------------------------------
 // one of the 8 part buttons is released

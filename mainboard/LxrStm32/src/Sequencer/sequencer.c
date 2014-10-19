@@ -258,7 +258,7 @@ uint8_t seq_getTrackRotation(uint8_t trackNr)
 static void seq_calcDeltaT(uint16_t bpm)
 {
 	//--- calc deltaT ----
-	// fÔøΩr 4/4tel takt -> 1 beat = 4 main steps = 4*8 = 32 sub steps
+	// f�r 4/4tel takt -> 1 beat = 4 main steps = 4*8 = 32 sub steps
 	// 120 bpm 4/4tel = 120 * 1 beat / 60sec = 120 * 32 in 60 sec;
    seq_deltaT 	= (1000*60)/bpm; 	//bei 12 = 500ms = time for one beat
    seq_deltaT /= 96.f; //we run the internal clock at 96ppq -> seq clock 32 ppq == prescaler 3, midi clock 24 ppq == prescale 4
