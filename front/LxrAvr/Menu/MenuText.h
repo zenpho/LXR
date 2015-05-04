@@ -10,6 +10,7 @@
 #define MENUTEXT_H_
 
 //-----------------------------------------------------------------
+// -bc- these get bitshifted by 4 - not sure if more than 15 will cause problems
 #define MENU_FILTER			1
 #define MENU_WAVEFORM		2
 #define MENU_AUDIO_OUT		3
@@ -24,6 +25,8 @@
 #define MENU_MIDI_ROUTING	12
 #define MENU_MIDI_FILTERING 13
 #define MENU_PPQ		 	14
+#define MENU_TRACK_SCALE 15
+
 
 //-----------------------------------------------------------------
 // Shared texts. Reduce mem usage by pooling common text
@@ -36,6 +39,8 @@ const char menuText_fm[] PROGMEM = 	"fm ";
 const char menuText_dash[] PROGMEM ="---";
 const char menuText_blank[] PROGMEM="   ";
 const char menuText_any[] PROGMEM = "any";
+const char menuText_step[] PROGMEM = "stp";
+const char menuText_bar[] PROGMEM = "bar";
 //-----------------------------------------------------------------
 const char ppqNames[][4] PROGMEM  =
 {
@@ -121,7 +126,7 @@ const char retriggerNames[][4] PROGMEM  =
 //-----------------------------------------------------------------
 const char lfoWaveNames[][4] PROGMEM  = 
 {
-	{8},		//number of entries
+	{18},		//number of entries
 	{"sin"},
 	{"tri"},
 	{"sup"},
@@ -130,6 +135,16 @@ const char lfoWaveNames[][4] PROGMEM  =
 	{"rnd"},
 	{"xup"},
 	{"xdn"},
+   {"xtr"},
+   {"si1"},
+	{"tr1"},
+	{"su1"},
+	{"sd1"},
+	{"sq1"},
+	{"rn1"},
+	{"xu1"},
+	{"xd1"},
+   {"xt1"},
 };
 //-----------------------------------------------------------------
 const char rollRateNames[][4] PROGMEM  = 
@@ -237,6 +252,19 @@ const char midiFilterNames[][16] PROGMEM =
 	{"all"},
 };
 //-----------------------------------------------------------------
+const char trackScaleNames[][4] PROGMEM =
+{
+	{8},	// number of entries
+	{"off"},
+	{" x2"},
+	{" x4"},
+	{" x8"},
+	{"x16"},
+	{"x32"},
+	{"x64"},
+	{"128"},
+};
+//-----------------------------------------------------------------
 // these must correspond with shortNamesEnum
 const char shortNames[][4] PROGMEM  = 
 {
@@ -285,6 +313,7 @@ const char shortNames[][4] PROGMEM  =
 	{"prb"},
 	{"stp"},
 	{"len"},
+   {"sca"},
 	{"rot"},
 	{"bpm"},
 	{"ch"},
@@ -311,6 +340,9 @@ const char shortNames[][4] PROGMEM  =
 	{"co1"},  // trigger clock out1 ppq
 	{"co2"},  // trigger clock out2 ppq
 	{"pcr"}, // pattern change resets bar counter
+   	{"pci"}, // pattern change time is bar or step
+   	{"stg"}, // shift is toggle instead of momentary
+      {"b2p"}, // bank changes change perfs
 };
 //-----------------------------------------------------------------
 // These correspond with the catNamesEnum in menu.h
@@ -387,6 +419,7 @@ const char longNames[][16] PROGMEM =
 	{"Prbablty"},
 	{"Number"},
 	{"Length"},
+   {"Scale"},
 	{"Steps"},
 	{"Rotation"},
 	{"Tempo"},
@@ -421,6 +454,9 @@ const char longNames[][16] PROGMEM =
 	{"Out2 PPQ"},
 	{"Gate Mode"},
 	{"PCReset" }, // reset bar counter on manual pattern change
+   {"PCInstnt" }, // pattern change occurs on bar or step
+   {"ShiftTog" }, // shift is toggle instead of momentary
+   {"BnkToPrf" }, // Bank changes change perfs
 };
 
 
