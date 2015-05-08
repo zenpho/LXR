@@ -53,6 +53,7 @@ const char ppqNames[][4] PROGMEM  =
 
 };
 //-----------------------------------------------------------------
+// -bc- I don't think this menu gets used any more... possible to retcon for something else?
 const char midiModes[][4] PROGMEM  =
 {
 	{2},		//number of entries
