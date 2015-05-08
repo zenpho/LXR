@@ -21,7 +21,7 @@
 #define MENU_NEXT_PATTERN	8
 #define MENU_SEQ_QUANT		9
 #define MENU_TRANS			10
-#define MENU_MIDI			11
+#define MENU_MIDI			11 // -bc- this is possibly unused?
 #define MENU_MIDI_ROUTING	12
 #define MENU_MIDI_FILTERING 13
 #define MENU_PPQ		 	14
