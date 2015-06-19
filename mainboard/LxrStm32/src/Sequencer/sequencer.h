@@ -78,54 +78,52 @@ enum Seq_QuantisationEnum
 
 typedef struct StepStruct
 {
-   uint8_t 	volume;		// 0-127 volume -> 0x7f => lower 7 bit, upper bit => active
-   uint8_t  	prob;		//step probability (--AS todo we have one free bit here)
-   uint8_t		note;		//midi note value 0-127 -> 0x7f, --AS todo upper bit is now free for other usages
+	uint8_t 	volume;		// 0-127 volume -> 0x7f => lower 7 bit, upper bit => active
+	uint8_t  	prob;		//step probability (--AS todo we have one free bit here)
+	uint8_t		note;		//midi note value 0-127 -> 0x7f, --AS todo upper bit is now free for other usages
 
 	//parameter automation
-   uint8_t 	param1Nr;
-   uint8_t 	param1Val;
+	uint8_t 	param1Nr;
+	uint8_t 	param1Val;
 
-   uint8_t 	param2Nr;
-   uint8_t 	param2Val;
+	uint8_t 	param2Nr;
+	uint8_t 	param2Val;
 
 }Step;
 
 typedef struct PatternSettingsStruct
 {
-   uint8_t 	changeBar;		// change on every Nth bar to the next pattern
-   uint8_t  	nextPattern;	// [0:9] (0-7) are the 8 patterns, (8) is random previous, (9) is random all
+	uint8_t 	changeBar;		// change on every Nth bar to the next pattern
+	uint8_t  	nextPattern;	// [0:9] (0-7) are the 8 patterns, (8) is random previous, (9) is random all
 }PatternSetting;
 
 // --AS **PATROT
 typedef union {
-   uint8_t value;
-   struct {
-      unsigned length:4;	// length (0 = default 16 steps)
-      unsigned scale:3;    // scale is 2^n
-      unsigned rotate:4;	// 0 means not rotated, 15 is max
-   };
+	uint8_t value;
+	struct {
+		unsigned length:4;	// length (0 = default 16 steps)
+		unsigned rotate:4;	// 0 means not rotated, 15 is max
+	};
 } LengthRotate;
 
 typedef struct PatternSetStruct
 {
-   Step seq_subStepPattern[NUM_PATTERN][NUM_TRACKS][NUM_STEPS];
-   uint16_t seq_mainSteps[NUM_PATTERN][NUM_TRACKS];
-   PatternSetting seq_patternSettings[NUM_PATTERN];
-   LengthRotate seq_patternLengthRotate[NUM_PATTERN][NUM_TRACKS];
+	Step seq_subStepPattern[NUM_PATTERN][NUM_TRACKS][NUM_STEPS];
+	uint16_t seq_mainSteps[NUM_PATTERN][NUM_TRACKS];
+	PatternSetting seq_patternSettings[NUM_PATTERN];
+	LengthRotate seq_patternLengthRotate[NUM_PATTERN][NUM_TRACKS];
 }PatternSet;
 
 typedef struct TempPatternStruct
 {
-   Step seq_subStepPattern[NUM_TRACKS][NUM_STEPS];
-   uint16_t seq_mainSteps[NUM_TRACKS];
-   PatternSetting seq_patternSettings;
-   LengthRotate seq_patternLengthRotate[NUM_TRACKS]; // only used for length
+	Step seq_subStepPattern[NUM_TRACKS][NUM_STEPS];
+	uint16_t seq_mainSteps[NUM_TRACKS];
+	PatternSetting seq_patternSettings;
+	LengthRotate seq_patternLengthRotate[NUM_TRACKS]; // only used for length
 }TempPattern;
 
 extern uint8_t seq_activePattern;
 extern uint8_t seq_newPatternAvailable;
-extern uint8_t seq_recordActive;				/**< set to 1 to activate the reording mode*/
 
 //extern PatternSet* seq_activePatternSetPtr;
 extern PatternSet seq_patternSet;
@@ -136,8 +134,6 @@ extern uint8_t seq_selectedStep;
 
 extern uint8_t seq_resetBarOnPatternChange;
 
-extern uint8_t switchOnNextStep;
-
 //------------------------------------------------------------------------------
 void seq_triggerVoice(uint8_t voiceNr, uint8_t vol, uint8_t note);
 //------------------------------------------------------------------------------
@@ -146,10 +142,6 @@ void seq_setShuffle(float shuffle);
 void seq_setTrackLength(uint8_t trackNr, uint8_t length);
 //------------------------------------------------------------------------------
 uint8_t seq_getTrackLength(uint8_t trackNr);
-  //------------------------------------------------------------------------------
-void seq_setTrackScale(uint8_t trackNr, uint8_t scale);
-//------------------------------------------------------------------------------
-uint8_t seq_getTrackScale(uint8_t trackNr);
 //------------------------------------------------------------------------------
 void seq_setTrackRotation(uint8_t trackNr, const uint8_t rot);
 //------------------------------------------------------------------------------
@@ -165,8 +157,6 @@ void seq_tick();
 void seq_armAutomationStep(uint8_t stepNr, uint8_t track,uint8_t isArmed);
 //------------------------------------------------------------------------------
 void seq_resetDeltaAndTick();
-//------------------------------------------------------------------------------
-void seq_realign();
 //------------------------------------------------------------------------------
 void seq_setDeltaT(float delta);
 //------------------------------------------------------------------------------
@@ -233,8 +223,6 @@ void seq_clearPattern(uint8_t pattern);
 void seq_copyTrack(uint8_t srcNr, uint8_t dstNr, uint8_t pattern);
 //------------------------------------------------------------------------------
 void seq_copyPattern(uint8_t src, uint8_t dst);
-//------------------------------------------------------------------------------
-void seq_copyTrackPattern(uint8_t srcNr, uint8_t dstPat, uint8_t srcPat);
 //------------------------------------------------------------------------------
 //selects the automation track (0:1) that is recorded to
 void seq_setActiveAutomationTrack(uint8_t trackNr);

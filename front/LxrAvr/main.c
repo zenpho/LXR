@@ -28,7 +28,7 @@
 //-----------------------------------------------
 //defines
 //-----------------------------------------------
-#define FIRMWARE_VERSION "0.34-bc-"
+#define FIRMWARE_VERSION "0.36"
 #define CORTEX_RESET_PIN	PB0
 //-----------------------------------------------
 //code
@@ -75,8 +75,7 @@ int main(void)
 	lcd_string_F(PSTR("Sonic Potions"));
 	//goto 2nd line
 	lcd_setcursor(0,2);
-   //lcd_string_F(PSTR("LXR Drums V"));
-	lcd_string_F(PSTR("LXR V"));
+	lcd_string_F(PSTR("LXR Drums V"));
 	lcd_string(FIRMWARE_VERSION);
 #endif
 
@@ -160,7 +159,7 @@ sei();
 	//request number of samples
 	frontPanel_sendData(SAMPLE_CC,SAMPLE_COUNT,0x00);
 
-   void led_clearSequencerLeds();
+
 
 	//main loop
 	for(;;) // this usually results in less instructions than while(1)
@@ -185,10 +184,6 @@ sei();
 		uart_checkAndParse();
 		uart_checkAndParse();
 		
-      midiMsg_checkLongOps(); // resolve any long MIDI ops that need to happen
-                              // for now, these include automated bank and pattern
-                              // change, and midi morph
-      
 		//check the poti values
 		adc_checkPots();
 

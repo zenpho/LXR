@@ -31,11 +31,10 @@ extern uint8_t menu_activeVoice;
 extern uint8_t menu_playedPattern;
 extern uint8_t menu_shownPattern;
 extern uint8_t menu_muteModeActive;
-extern uint8_t editModeActive;
-extern uint8_t morphValue;
-#define NUM_PRESET_LOCATIONS 11 
-//kit, drum1, drum2, drum3, snare, cym, hh, morph sound, pattern, performance, all
+
+#define NUM_PRESET_LOCATIONS 5 //kit, pattern, morph sound, performance, all
 extern uint8_t menu_currentPresetNr[NUM_PRESET_LOCATIONS];
+
 void menu_setShownPattern(uint8_t patternNr);
 uint8_t menu_getViewedPattern();
 
@@ -53,7 +52,7 @@ enum PageNames
 	LOAD_PAGE,
 	SAVE_PAGE,
 	/*
-	LFO1_PAGE, //TODO load und savepage verschwenken speicher... nicht gefüllt. ans ende und aus dem array nehmen?
+	LFO1_PAGE, //TODO load und savepage verschwenken speicher... nicht gef�llt. ans ende und aus dem array nehmen?
 	LFO2_PAGE,
 	LFO3_PAGE,
 	LFO4_PAGE,
@@ -147,7 +146,6 @@ enum NamesEnum
 	TEXT_PROBABILITY,
 	TEXT_ACTIVE_STEP,
 	TEXT_PAT_LENGTH,
-   TEXT_PAT_SCALE,
 	TEXT_NUM_STEPS,
 	TEXT_ROTATION,
 	
@@ -193,9 +191,6 @@ enum NamesEnum
 	TEXT_TRIGGER_GATE_MODE,
 	TEXT_BAR_RESET_MODE,
 	TEXT_MIDI_CHAN_GLOBAL,
-	TEXT_SEQ_PC_TIME,
-	TEXT_BUT_SHIFT_MODE,
-   TEXT_LOAD_PERF_ON_BANK,
 	NUM_NAMES
 };
 //-----------------------------------------------------------------
@@ -256,7 +251,6 @@ enum shortNamesEnum
 	SHORT_PROBABILITY,
 	SHORT_STEP,
 	SHORT_LENGTH,
-   SHORT_SCALE,
 	SHORT_ROTATION,
 	
 	SHORT_BPM,
@@ -285,10 +279,7 @@ enum shortNamesEnum
 	SHORT_TRIGGER_IN,
 	SHORT_TRIGGER_OUT1,
 	SHORT_TRIGGER_OUT2,
-	SHORT_BAR_RESET_MODE,
-   SHORT_SEQ_PC_TIME,
-   SHORT_BUT_SHIFT_MODE,
-   SHORT_LOAD_PERF_ON_BANK,
+	SHORT_BAR_RESET_MODE
 
 
 	
@@ -366,7 +357,6 @@ enum longNamesEnum
 	LONG_PROBABILITY,
 	LONG_NUMBER,
 	LONG_LENGTH,
-   LONG_SCALE,
 	LONG_STEPS,
 	LONG_ROTATION,
 	LONG_TEMPO,
@@ -401,9 +391,6 @@ enum longNamesEnum
 	LONG_TRIGGER_OUT2,
 	LONG_TRIGGER_GATE_MODE,
 	LONG_BAR_RESET_MODE,
-   LONG_SEQ_PC_TIME,
-   LONG_BUT_SHIFT_MODE,
-   LONG_LOAD_PERF_ON_BANK,
 	
 };
 
@@ -411,16 +398,8 @@ enum longNamesEnum
 enum loadSaveEnum
 {
 	SAVE_TYPE_KIT = 0,
-   
-   SAVE_TYPE_DRUM1,
-   SAVE_TYPE_DRUM2,
-   SAVE_TYPE_DRUM3,
-   SAVE_TYPE_SNARE,
-   SAVE_TYPE_CYM,
-   SAVE_TYPE_HIHAT,
-   
-   SAVE_TYPE_MORPH,
 	SAVE_TYPE_PATTERN,
+	SAVE_TYPE_MORPH,
 	SAVE_TYPE_PERFORMANCE,	// kit data, pattern data and BPM
 	SAVE_TYPE_ALL,			// all global settings, kit data and pattern data
 	SAVE_TYPE_GLO,
@@ -503,7 +482,7 @@ enum Datatypes
 	DTYPE_0b1,
 	DTYPE_NOTE_NAME, // --AS eg C#0, D 1 for note name
 	DTYPE_0B15,		//0-15
-	DTYPE_0B16,    //0-16 for MIDI channel off /*15*/
+	/*15*/
 	/*16*/
 	// --AS warning, we can only have 16 on this list the way things are laid out
 };
@@ -511,7 +490,6 @@ enum Datatypes
 //-----------------------------------------------------------------
 extern const enum Datatypes PROGMEM parameter_dtypes[NUM_PARAMS];
 extern uint8_t parameter_values[NUM_PARAMS];
-extern uint8_t parameter_values_temp[END_OF_SOUND_PARAMETERS];
 extern uint8_t parameters2[END_OF_SOUND_PARAMETERS];
 
 extern const Page PROGMEM menuPages[NUM_PAGES][NUM_SUB_PAGES];

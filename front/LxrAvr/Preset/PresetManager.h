@@ -12,7 +12,6 @@
 #include <avr/io.h>
 
 extern char preset_currentName[8];
-extern char preset_currentSaveMenuName[8];
 
 void preset_init();
 
@@ -22,7 +21,7 @@ if isMorph==1 the sound will be loaded into the morph buffer
 */
 void preset_saveDrumset(uint8_t presetNr, uint8_t isMorph);
 uint8_t preset_loadDrumset(uint8_t presetNr, uint8_t isMorph);
-uint8_t preset_loadVoice(uint8_t presetNr, uint8_t voiceArray, uint8_t isMorph);
+
 
 void preset_saveGlobals();
 void preset_loadGlobals();
@@ -30,7 +29,7 @@ void preset_loadGlobals();
 void preset_saveAll(uint8_t presetNr, uint8_t isAll);
 void preset_loadAll(uint8_t presetNr, uint8_t isAll);
 
-char* preset_loadName(uint8_t presetNr, uint8_t what, uint8_t loadSave);
+char* preset_loadName(uint8_t presetNr, uint8_t what);
 
 /** save a pattern set to the sd card */
 void preset_savePattern(uint8_t presetNr);
