@@ -18,6 +18,8 @@ extern volatile uint8_t frontParser_newSeqDataAvailable;
 //a step instance to buffer the data received from the sequencer
 extern volatile StepData frontParser_stepData;
 extern uint8_t frontPanel_sysexMode;
+extern uint8_t frontPanel_longOp;
+extern uint8_t frontPanel_longData;
 
 
 
@@ -32,7 +34,11 @@ extern uint8_t frontPanel_sysexMode;
 #define SYSEX_END			0xF7
 
 //control messages from cortex for leds
-//status
+//status, param changes
+#define MORPH_CC        0xac
+#define BANK_CHANGE_CC  0xad
+#define PARAM_CC        0xae
+#define PARAM_CC2       0xaf
 #define LED_CC				0xb1
 #define SEQ_CC				0xb2
 #define CODEC_CC			0xb3
@@ -115,6 +121,7 @@ extern uint8_t frontPanel_sysexMode;
 #define SEQ_SELECT_ACTIVE_STEP 0x24 //used for automation params to select the step for which the destination should be set
 #define SEQ_SHUFFLE			0x25
 #define SEQ_TRACK_LENGTH	0x26
+#define SEQ_TRACK_SCALE    0x3c
 #define SEQ_CLEAR_PATTERN	0x27
 #define SEQ_CLEAR_AUTOM		0x28 //voice nr (0xf0) + autom track nr (0x0f)
 
@@ -138,6 +145,10 @@ extern uint8_t frontPanel_sysexMode;
 #define SEQ_TRIGGER_OUT2_PPQ  0x38
 #define SEQ_TRIGGER_GATE_MODE 0x39
 
+#define SEQ_COPY_TRACK_PATTERN 0x3a
+#define SEQ_PC_TIME 0x3b
+
+
 //SysEx
 #define SYSEX_REQUEST_STEP_DATA			0x01
 #define SYSEX_SEND_STEP_DATA			0x02
@@ -145,6 +156,7 @@ extern uint8_t frontPanel_sysexMode;
 #define SYSEX_SEND_MAIN_STEP_DATA		0x04
 #define SYSEX_REQUEST_PATTERN_DATA		0x05
 #define SYSEX_SEND_PAT_LEN_DATA			0x06
+#define SYSEX_SEND_PAT_SCALE_DATA		0x07
 
 
 /** a struct defining a standard midi message*/
@@ -163,5 +175,7 @@ void frontPanel_sendData(uint8_t status, uint8_t data1, uint8_t data2);
 void frontPanel_sendByte(uint8_t data);
 
 extern volatile MidiMsg frontParser_midiMsg;
+
+extern void midiMsg_checkLongOps();
 
 #endif /* FRONTPANELPARSER_H_ */

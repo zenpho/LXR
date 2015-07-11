@@ -151,7 +151,7 @@ enum ParamEnums
 	PAR_VOICE_DECIMATION6,
 	PAR_VOICE_DECIMATION_ALL, 	
 	
-	PAR_FREQ_LFO1 ,
+	PAR_FREQ_LFO1,
 	PAR_FREQ_LFO2,
 	PAR_FREQ_LFO3,	
 	PAR_FREQ_LFO4,
@@ -165,7 +165,7 @@ enum ParamEnums
 	PAR_AMOUNT_LFO5,		
 	PAR_AMOUNT_LFO6,	
 	
-			PAR_BANK_CHANGE, //todo stupid offset -> param 0 /*127*/
+			PAR_RESERVED4, //todo stupid offset -> param 0 /*127*/
 	//######################################
 	//######## END OF MIDI DATASIZE ########
 	//######## PARAM NR 127 REACHED ########
@@ -296,6 +296,8 @@ enum ParamEnums
 	PAR_MIDI_NOTE5,
 	PAR_MIDI_NOTE6,
 	PAR_MIDI_NOTE7,
+   
+   PAR_KIT_VERSION,
 
 	//#########################################
 	//######## End of sound Parameters ########
@@ -331,7 +333,8 @@ enum ParamEnums
 	PAR_PATTERN_NEXT,
 	
 	PAR_TRACK_LENGTH,
-	
+	PAR_TRACK_SCALE,
+   
 	PAR_POS_X,
 	PAR_POS_Y,
 	PAR_FLUX,
@@ -342,9 +345,9 @@ enum ParamEnums
 	//#########################################
 	//######## Global Parameters ##############
 	//#########################################
-	PAR_BEGINNING_OF_GLOBALS, //a placeholder to mark the beginning of the global var space not present in morph and not needed in the seq
+	PAR_BEGINNING_OF_GLOBALS, /*250*/ //a placeholder to mark the beginning of the global var space not present in morph and not needed in the seq
 	//global params
-	PAR_BPM = PAR_BEGINNING_OF_GLOBALS,	/*250*/
+	PAR_BPM = PAR_BEGINNING_OF_GLOBALS,	
 	
 
 	
@@ -375,7 +378,10 @@ enum ParamEnums
 
 	PAR_BAR_RESET_MODE,					// bool --AS 0 or 1   /*270*/
 	PAR_MIDI_CHAN_GLOBAL,				// --AS global midi channel
-	NUM_PARAMS	
+   PAR_SEQ_PC_TIME,                 // bool, 0 for bar sequence change, 1 for step change
+	PAR_BUT_SHIFT_MODE,              // 0 normal shift operation, 1 shift button is a toggle
+   PAR_LOAD_PERF_ON_BANK,           // 0, incoming bank changes select kit, 1 bank changes select perf
+	NUM_PARAMS
 };
 
 

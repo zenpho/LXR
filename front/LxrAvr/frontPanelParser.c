@@ -31,6 +31,28 @@ volatile StepData frontParser_stepData;
 volatile uint8_t frontParser_sysexBuffer[7];
 
 uint8_t frontParser_nameIndex = 0;
+uint8_t frontPanel_longOp;
+// case definitions for long ops that get dealt with once per main() loop
+// bitwise definitions to decide what to do for multiple ops
+#define BANK_1 0x01
+#define BANK_2 0x02
+#define BANK_3 0x04
+#define BANK_4 0x08
+#define BANK_5 0x10
+#define BANK_6 0x20
+#define BANK_7 0x40
+#define BANK_GLOBAL 0x80
+// banks 1-6 plus global stack to allow for multiple voices stacked on the same
+// MIDI channel to respond to the same bank change command
+
+// above BANK_GLOBAL it doesn't matter - we reset the command anyway
+#define MORPH_OP 0x81
+// there is space in here to add more long operations - pattern change
+// must have the highest priority
+#define PATTERN_CHANGE_OP 0xAF
+#define NULL_OP 0x00
+uint8_t frontPanel_longData;
+
 
 
 //------------------------------------------------------------
@@ -96,22 +118,20 @@ void frontPanel_ccHandler()
 {
 	//get the real parameter number from the cc number
 	const uint8_t parNr =(uint8_t)( frontParser_midiMsg.data1 - 1);
-	DISABLE_SIGN_WARNING
-	if(parNr == 255/*PAR_BANK_CHANGE*/)
-	{
-		menu_currentPresetNr[0] = frontParser_midiMsg.data2;
-		preset_loadDrumset(frontParser_midiMsg.data2, 0);
-		menu_repaint();
-		return;
-	} else if(parNr == NRPN_DATA_ENTRY_COARSE) {
+	
+	if(parNr == NRPN_DATA_ENTRY_COARSE) {
 			frontParser_parseNrpn(frontParser_midiMsg.data2);
-	} else if(parNr == NRPN_FINE) {
-			frontParser_nrpnNr &= ~0x7f;
+		}
+	DISABLE_SIGN_WARNING
+	if(parNr == NRPN_FINE) {
+			frontParser_nrpnNr &= ~0x7f; //clear lower 7 bit
 			frontParser_nrpnNr |= frontParser_midiMsg.data2;
-	} else if(parNr == NRPN_COARSE) {
-			frontParser_nrpnNr &= 0x7f;
+		}
+		
+	if(parNr == NRPN_COARSE) {
+			frontParser_nrpnNr &= 0x7f; //clear upper 7 bit
 			frontParser_nrpnNr |= frontParser_midiMsg.data2<<7;
-	}
+		}
 	END_DISABLE_WARNING
 	
 	//set the parameter value
@@ -214,7 +234,7 @@ void frontPanel_parseData(uint8_t data)
 					frontParser_stepData.volume = next;
 					frontParser_stepData.prob = repeat;
 					
-					//signal that a ne data chunk is available
+					//signal that a new data chunk is available
 					frontParser_newSeqDataAvailable = 1;
 					//reset receive counter for next chunk
 					frontParser_rxCnt = 0;
@@ -223,22 +243,26 @@ void frontPanel_parseData(uint8_t data)
 			}
 			else if(frontPanel_sysexMode == SYSEX_REQUEST_MAIN_STEP_DATA)
 			{
-				if(frontParser_rxCnt<3)
+				if(frontParser_rxCnt<4)
 				{
 					//1st 2 nibbles + last 2 bit
-					frontParser_sysexBuffer[frontParser_rxCnt++] = data;
-				} else {
-					// length information
-					frontParser_sysexBuffer[frontParser_rxCnt++] = data;
+					frontParser_sysexBuffer[frontParser_rxCnt++] = data;             
+			   } else {
+               // scale information
+					frontParser_sysexBuffer[frontParser_rxCnt++] = data;               
 					
+               // package the main step data so we know what to do with
+               
 					uint16_t mainStepData = frontParser_sysexBuffer[0] |
 							(uint16_t)(frontParser_sysexBuffer[1]<<7) |
 							(uint16_t)(frontParser_sysexBuffer[2]<<14);
-					//we abuse the stepData struct to store the main step data and the length
+					//we abuse the stepData struct to store the main step data and the scale
 					frontParser_stepData.volume = (uint8_t)(mainStepData>>8);
 					frontParser_stepData.prob = (uint8_t)(mainStepData&0xff);
-					frontParser_stepData.note = frontParser_sysexBuffer[3];
-					
+					frontParser_stepData.note = frontParser_sysexBuffer[3]; // this is the length data from uart
+               frontParser_stepData.param1Nr = frontParser_sysexBuffer[4]; // this is the scale data from uart
+
+               
 					//signal that a new data chunk is available
 					frontParser_newSeqDataAvailable = 1;
 					//reset receive counter for next chunk
@@ -331,10 +355,20 @@ void frontPanel_parseData(uint8_t data)
 							parameter_values[PAR_TRACK_LENGTH] = frontParser_midiMsg.data2;
 							menu_repaint();
 							break;
+                  case SEQ_TRACK_SCALE:
+                     parameter_values[PAR_TRACK_SCALE] = frontParser_midiMsg.data2;
+                     menu_repaint();
+                     break;
+
 						// **PATROT - receive rotation value from back for active track
 						case SEQ_TRACK_ROTATION:
 							parameter_values[PAR_TRACK_ROTATION] = frontParser_midiMsg.data2;
-							menu_repaint(); // --AS TODO we might not need this
+							menu_repaint();
+                     if ((buttonHandler_getMode() == SELECT_MODE_PERF)&&shiftState)
+                     {  // rotation amount updated while viewing rotation - update the display
+                        led_clearAllBlinkLeds();
+                        led_setBlinkLed((uint8_t) (LED_STEP1 + parameter_values[PAR_TRACK_ROTATION]), 1);
+                     }
 							break;
 						
 						case SEQ_EUKLID_LENGTH:
@@ -445,6 +479,82 @@ void frontPanel_parseData(uint8_t data)
 							break;
 					}
 				}
+            
+            /* -bc- additions to front interpreter start here*/
+            //-------------------------------------------------
+            else if(frontParser_midiMsg.status == PARAM_CC)
+            {
+            parameter_values[frontParser_midiMsg.data1]=frontParser_midiMsg.data2;
+
+            menu_repaint();
+            
+            }
+            
+            else if(frontParser_midiMsg.status == PARAM_CC2)
+            {
+            parameter_values[frontParser_midiMsg.data1+128]=frontParser_midiMsg.data2;
+
+            menu_repaint();
+            
+            }
+            
+            else if(frontParser_midiMsg.status == BANK_CHANGE_CC)
+            {
+               if (frontParser_midiMsg.data1&&(frontPanel_longOp<PATTERN_CHANGE_OP) )
+               {
+                  // we have a valid message and we're not waiting for a pattern change to finish
+                  // global bank change operation
+                  if ( !(frontParser_midiMsg.data1^0x3F) ) 
+                  // global bank change request or, all voice channels set the same
+                  {
+                     // this is a time-consuming operation, cache it and deal
+                     // with only one per loop of main()
+                     /*
+                     preset_loadDrumset(frontParser_midiMsg.data2,0);
+                     menu_repaint();
+                     frontPanel_longOp=NULL_OP;
+                     */
+                     
+                     frontPanel_longOp=BANK_GLOBAL;
+                     frontPanel_longData=frontParser_midiMsg.data2;
+                     
+            
+                  }
+                  // individual voice bank-change
+                  
+                  else if (frontPanel_longOp!=BANK_GLOBAL)
+                  // don't override global bank changes
+                  {
+                     // stack the operations so multiple voice bank changes can take place
+                     
+                     frontPanel_longOp=frontParser_midiMsg.data1;
+                     frontPanel_longData=frontParser_midiMsg.data2;
+           
+                  }
+               }
+            
+            }
+            
+            // morph operation
+            else if(frontParser_midiMsg.status == MORPH_CC&&!frontPanel_longOp)
+            {  
+               // morph is a low-priority opertaion (because we might be getting a LOT
+               // from the Mod Wheel) - if we get a bank change or program change, 
+               // we ignore Morph while those happen
+               
+               // this is a time-consuming operation, cache it and deal
+               // with only one per loop of main()
+               frontPanel_longOp=MORPH_OP;
+               // bit shift from MIDI CC values
+               frontPanel_longData=(uint8_t)(frontParser_midiMsg.data2<<1);
+            }
+            
+            
+            //-------------------------------------------------
+            /* -bc- additions to front interpreter end here*/
+            
+            
+            
 				else if(frontParser_midiMsg.status == LED_CC)
 				{
 					switch(frontParser_midiMsg.data1)
@@ -525,6 +635,60 @@ void frontPanel_parseData(uint8_t data)
 			}				
 		}
 	}
+};
+
+void midiMsg_checkLongOps()
+{
+   if (frontPanel_longOp){
+   
+      if (frontPanel_longOp==BANK_GLOBAL)
+      {
+         if (parameter_values[PAR_LOAD_PERF_ON_BANK]){
+            preset_loadAll(frontPanel_longData,0);
+            menu_repaint();
+            frontPanel_longOp=NULL_OP;            
+         }
+         else {
+            preset_loadDrumset(frontPanel_longData,0);
+            menu_repaint();
+            frontPanel_longOp=NULL_OP;
+         }
+         
+         
+      }
+      else if (frontPanel_longOp==PATTERN_CHANGE_OP)
+      {
+         // nothing to see here yet
+         frontPanel_longOp=NULL_OP;
+      }
+         
+      else if (frontPanel_longOp<BANK_GLOBAL)
+      // we have (possibly multiple) voice bank changes
+      {
+         preset_loadVoice(frontPanel_longData,frontPanel_longOp,0);
+         menu_repaint();
+         frontPanel_longOp=NULL_OP; 
+      }
+      
+      
+      else if (frontPanel_longOp==MORPH_OP)
+      {
+         parameter_values[PAR_MORPH]=frontPanel_longData;
+         preset_morph(frontPanel_longData);
+         morphValue=frontPanel_longData;
+         menu_repaint();
+         frontPanel_longOp=NULL_OP;
+      }
+      
+      else
+      {
+      
+         frontPanel_longOp=NULL_OP;
+      }
+      
+      
+   }
+   
 };
 //------------------------------------------------------------
 void frontPanel_sendMidiMsg(MidiMsg msg)

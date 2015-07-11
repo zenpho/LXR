@@ -42,10 +42,10 @@
 #include "MidiMessages.h"
 #include "MidiVoiceControl.h"
 
-
 void midiParser_parseUartData(unsigned char data);
 void midiParser_ccHandler(MidiMsg msg, uint8_t updateOriginalValue);
 void midiParser_parseMidiMessage(MidiMsg msg);
+void midiParser_MIDIccHandler(MidiMsg msg, uint8_t updateOriginalValue);
 float midiParser_calcDetune(uint8_t value);
 // check mtc status, might stop the sequencer
 void midiParser_checkMtc();
