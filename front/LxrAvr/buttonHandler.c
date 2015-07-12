@@ -107,6 +107,8 @@ static void buttonHandler_copyStep(uint8_t seqButtonPressed)
       {
          copyClear_setSrc((int8_t)seqButtonPressed, MODE_COPY_STEP);
          led_setBlinkLed((uint8_t) (LED_STEP1 + seqButtonPressed), 1);
+         // let the sequencer know what step we're working on (needed for substep copy)
+         frontPanel_sendData(SEQ_CC, SEQ_SELECT_ACTIVE_STEP,(uint8_t)(seqButtonPressed));
          // light up substep leds
 
       }
