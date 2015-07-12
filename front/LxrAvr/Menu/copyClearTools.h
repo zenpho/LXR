@@ -47,6 +47,7 @@ void copyClear_setClearTarget(uint8_t mode);
 void copyClear_armClearMenu(uint8_t isShown);
 
 uint8_t copyClear_srcSet();
+int8_t copyClear_getSrc();
 void copyClear_setSrc(int8_t src, uint8_t type);
 void copyClear_setDst(int8_t dst, uint8_t type);
 

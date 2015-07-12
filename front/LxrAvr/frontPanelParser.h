@@ -149,8 +149,8 @@ extern uint8_t frontPanel_longData;
 
 #define SEQ_COPY_TRACK_PATTERN         0x3a
 #define SEQ_PC_TIME                    0x3b
-#define SEQ_COPY_STEP            0x3d // added message for copy step
-#define SEQ_COPY_SUB_STEP      0x3e // special shift-copy step function?
+#define SEQ_COPY_STEP_SET_SRC          0x3d // added message for copy step
+#define SEQ_COPY_STEP_SET_DST          0x3e // special shift-copy step function?
 
 //SysEx
 #define SYSEX_REQUEST_STEP_DATA			0x01

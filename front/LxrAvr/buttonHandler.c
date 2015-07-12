@@ -38,6 +38,8 @@ uint8_t buttonHandler_resetLock = 0;
 uint8_t shiftMode=0;
 uint8_t shiftState=0;
 
+uint8_t subStepCopy_mainStep=0;
+
 volatile struct {
    unsigned selectButtonMode :3; // 0-3 for unshifted, 4-7 for shifted
    unsigned seqRunning :1;
@@ -62,15 +64,22 @@ static void buttonHandler_updateSubSteps();
 //--------------------------------------------------------
 static void buttonHandler_copySubStep(uint8_t selectButtonPressed)
 {
-      if (copyClear_Mode == MODE_COPY_STEP&&copyClear_srcSet())
-      {// switch source to sub-step
+      if (copyClear_Mode == MODE_COPY_STEP)
+      {  // switch source to sub-step
          copyClear_Mode = MODE_COPY_SUB_STEP;
-         copyClear_setSrc((int8_t)selectButtonPressed, MODE_COPY_SUB_STEP);
+         // get main source step and add source substep position
+         int8_t subStepSource = (int8_t)(subStepCopy_mainStep*8+selectButtonPressed);
+         
+         copyClear_setSrc((int8_t)(subStepSource), MODE_COPY_SUB_STEP);
+         
          led_setBlinkLed((uint8_t) (LED_PART_SELECT1 + selectButtonPressed), 1);
       }
+      // this is the second time around copySubStep gets called - we have a
+      // valid main step, add to main step and transmit
       else if (copyClear_Mode == MODE_COPY_SUB_STEP&&copyClear_srcSet())
       {
-         copyClear_setDst((int8_t)selectButtonPressed, MODE_COPY_SUB_STEP);
+         int8_t dst = (int8_t)(subStepCopy_mainStep*8+selectButtonPressed);
+         copyClear_setDst(dst, MODE_COPY_SUB_STEP);
          copyClear_copySubStep();
          led_clearAllBlinkLeds();
          
@@ -79,6 +88,7 @@ static void buttonHandler_copySubStep(uint8_t selectButtonPressed)
          uint8_t patternNr = menu_getViewedPattern(); //max 7 => 0x07 = 0b111
          uint8_t value = (uint8_t) ((trackNr << 4) | (patternNr & 0x7));
          frontPanel_sendData(LED_CC, LED_QUERY_SEQ_TRACK, value);
+         copyClear_Mode = MODE_NONE;
          menu_repaintAll();
       }
 
@@ -92,7 +102,7 @@ static void buttonHandler_copyStep(uint8_t seqButtonPressed)
       { // if we have already selected a source, do the copy operation
        	//select dest
 
-         copyClear_setDst((int8_t)seqButtonPressed, MODE_COPY_STEP);
+         copyClear_setDst((int8_t)(seqButtonPressed*8), MODE_COPY_STEP);
          copyClear_copyStep();
          led_clearAllBlinkLeds();
       
@@ -101,11 +111,12 @@ static void buttonHandler_copyStep(uint8_t seqButtonPressed)
          uint8_t patternNr = menu_getViewedPattern(); //max 7 => 0x07 = 0b111
          uint8_t value = (uint8_t) ((trackNr << 4) | (patternNr & 0x7));
          frontPanel_sendData(LED_CC, LED_QUERY_SEQ_TRACK, value);
+         copyClear_Mode = MODE_NONE;
          menu_repaintAll();
       } 
       else 
       {
-         copyClear_setSrc((int8_t)seqButtonPressed, MODE_COPY_STEP);
+         copyClear_setSrc((int8_t)(seqButtonPressed*8), MODE_COPY_STEP);
          led_setBlinkLed((uint8_t) (LED_STEP1 + seqButtonPressed), 1);
          // let the sequencer know what step we're working on (needed for substep copy)
          frontPanel_sendData(SEQ_CC, SEQ_SELECT_ACTIVE_STEP,(uint8_t)(seqButtonPressed));
@@ -637,7 +648,13 @@ static void buttonHandler_seqButtonPressed(uint8_t seqButtonPressed)
    else { // shift is not down
       switch (buttonHandler_stateMemory.selectButtonMode) {
          case SELECT_MODE_VOICE:
-            if (copyClear_Mode > MODE_CLEAR){
+            if (copyClear_Mode == MODE_COPY_SUB_STEP){
+               subStepCopy_mainStep=seqButtonPressed;
+               led_setBlinkLed((uint8_t)(LED_STEP1+seqButtonPressed), 1);
+            }
+            else if (copyClear_Mode > MODE_CLEAR){
+               subStepCopy_mainStep=seqButtonPressed;
+               //led_setBlinkLed((uint8_t)(LED_STEP1+seqButtonPressed), 1);
                buttonHandler_copyStep(seqButtonPressed);
             }
             else{
@@ -648,7 +665,13 @@ static void buttonHandler_seqButtonPressed(uint8_t seqButtonPressed)
             }
             break;
          case SELECT_MODE_STEP:
-            if (copyClear_Mode > MODE_CLEAR){
+            if (copyClear_Mode == MODE_COPY_SUB_STEP){
+               subStepCopy_mainStep=seqButtonPressed;
+               led_setBlinkLed((uint8_t)(LED_STEP1+seqButtonPressed), 1);
+            }
+            else if (copyClear_Mode > MODE_CLEAR){
+               subStepCopy_mainStep=seqButtonPressed;
+               //led_setBlinkLed((uint8_t)(LED_STEP1+seqButtonPressed), 1);
                buttonHandler_copyStep(seqButtonPressed);
             }
             else{
@@ -760,7 +783,6 @@ static void buttonHandler_partButtonPressed(uint8_t partNr)
    {
       buttonHandler_copySubStep(partNr);
    } 
-
    else if (copyClear_Mode == MODE_COPY_TRACK) 
    {
       // user has previously selected a track and now selects
@@ -834,7 +856,7 @@ static void buttonHandler_partButtonPressed(uint8_t partNr)
 static void buttonHandler_partButtonReleased(uint8_t partNr)
 {
    if (copyClear_Mode >= MODE_COPY_PATTERN) {
-   
+   // don't do anything if copying steps or sub-steps
    } 
    else {
    	//if(buttonHandler_stateMemory.selectButtonMode == SELECT_MODE_VOICE) return;

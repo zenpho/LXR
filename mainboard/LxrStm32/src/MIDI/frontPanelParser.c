@@ -80,6 +80,8 @@ uint8_t frontParser_activeTrack=0;	/** the active track on the Frontpanel. track
 uint8_t frontParser_shownPattern = 0;
 uint8_t frontParser_activeStep=0;
 
+uint8_t frontParser_stepCopySource=0;
+
 //------------------------------------------------------
 /**send all active step numbers to frontpanel to light up corresponding LEDs*/
 void frontParser_updateTrackLeds(const uint8_t trackNr, uint8_t patternNr)
@@ -796,19 +798,15 @@ static void frontParser_handleSeqCC()
          }
          break;
          
-      case FRONT_SEQ_COPY_STEP:
+      case FRONT_SEQ_COPY_SRC:
          {
-            const uint8_t src = frontParser_midiMsg.data2>>4;
-            const uint8_t dst = frontParser_midiMsg.data2&0xf;
-            seq_copyStep(src,dst,frontParser_shownPattern);
+            frontParser_stepCopySource = frontParser_midiMsg.data2;
          }
          break;
       
-      case FRONT_SEQ_COPY_SUB_STEP:
+      case FRONT_SEQ_COPY_DST:
          {
-            const uint8_t src = frontParser_midiMsg.data2>>4;
-            const uint8_t dst = frontParser_midiMsg.data2&0xf;
-            seq_copySubStep(src,dst,frontParser_shownPattern);
+            seq_copySubStep(frontParser_stepCopySource,frontParser_midiMsg.data2,frontParser_activeTrack);
          }
          break;
    

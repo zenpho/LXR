@@ -1447,46 +1447,14 @@ void seq_copyTrackPattern(uint8_t srcNr, uint8_t dstPat, uint8_t srcPat)
    
 }
 //------------------------------------------------------------------------------
-void seq_copyStep(uint8_t src, uint8_t dst, uint8_t track)
-{
-
-   int j;
-   Step *psrc, *pdst;
-   
-      // copy the step data
-      for(j=0;j<8;j++)
-      {
-         pdst=&seq_patternSet.seq_subStepPattern[seq_activePattern][track][dst*8+j];
-         psrc=&seq_patternSet.seq_subStepPattern[seq_activePattern][track][src*8+j];
-         pdst->note			= psrc->note;
-         pdst->param1Nr 		= psrc->param1Nr;
-         pdst->param1Val 	= psrc->param1Val;
-         pdst->param2Nr		= psrc->param2Nr;
-         pdst->param2Val		= psrc->param2Val;
-         pdst->prob			= psrc->prob;
-         pdst->volume		= psrc->volume;
-      }
-      // set the destination main step on/off to be the same as source main step on/off
-      
-      if ( seq_patternSet.seq_mainSteps[seq_activePattern][track] & (1<<src) )
-      {
-         seq_patternSet.seq_mainSteps[seq_activePattern][track] |= (1<<dst);
-      }
-      else
-      {
-         seq_patternSet.seq_mainSteps[seq_activePattern][track] &= (~(1<<dst));
-      }
-
-}
-//------------------------------------------------------------------------------
 void seq_copySubStep(uint8_t src, uint8_t dst, uint8_t track)
 {
    Step *psrc, *pdst;
    
       // copy the step data
 
-         pdst=&seq_patternSet.seq_subStepPattern[seq_activePattern][track][seq_selectedStep*8+dst];
-         psrc=&seq_patternSet.seq_subStepPattern[seq_activePattern][track][seq_selectedStep*8+src];
+         pdst=&seq_patternSet.seq_subStepPattern[seq_activePattern][track][dst];
+         psrc=&seq_patternSet.seq_subStepPattern[seq_activePattern][track][src];
          pdst->note			= psrc->note;
          pdst->param1Nr 		= psrc->param1Nr;
          pdst->param1Val 	= psrc->param1Val;

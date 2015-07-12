@@ -72,6 +72,11 @@ void copyClear_setSrc(int8_t src, uint8_t type)
    copyClear_Mode = type;
 };
 //-----------------------------------------------------------------------------
+int8_t copyClear_getSrc()
+{
+   return buttonHandler_copySrc;
+};
+//-----------------------------------------------------------------------------
 void copyClear_setDst(int8_t dst, uint8_t type)
 {
    buttonHandler_copyDst = dst;
@@ -132,27 +137,29 @@ void copyClear_copyTrackPattern()
 //-----------------------------------------------------------------------------
 void copyClear_copyStep()
 {
-   if(copyClear_Mode != MODE_COPY_STEP)
-   {
-      return;
-   }
-   uint8_t value = (uint8_t)(((buttonHandler_copySrc&0xf)<<4) | (buttonHandler_copyDst&0xf));
+
+   uint8_t srcStep = (uint8_t)(buttonHandler_copySrc);
+   uint8_t dstStep = (uint8_t)(buttonHandler_copyDst);
+   uint8_t i;
+   
    led_clearSequencerLeds();
-   frontPanel_sendData(SEQ_CC,SEQ_COPY_STEP,value);
+   for (i=0;i<8;i++)
+   {
+      frontPanel_sendData(SEQ_CC,SEQ_COPY_STEP_SET_SRC,(uint8_t)(srcStep+i));
+      frontPanel_sendData(SEQ_CC,SEQ_COPY_STEP_SET_DST,(uint8_t)(dstStep+i));
+      
+   }
 	
    buttonHandler_copySrc = buttonHandler_copyDst = SRC_DST_NONE;
 };
 //-----------------------------------------------------------------------------
 void copyClear_copySubStep()
 {
-   if(copyClear_Mode != MODE_COPY_SUB_STEP)
-   {
-      return;
-   }
-   uint8_t value = (uint8_t)(((buttonHandler_copySrc&0xf)<<4) | (buttonHandler_copyDst&0xf));
+
    led_clearSequencerLeds();
-   frontPanel_sendData(SEQ_CC,SEQ_COPY_SUB_STEP,value);
-	
+   frontPanel_sendData(SEQ_CC,SEQ_COPY_STEP_SET_SRC,(uint8_t)buttonHandler_copySrc);
+   frontPanel_sendData(SEQ_CC,SEQ_COPY_STEP_SET_DST,(uint8_t)buttonHandler_copyDst);
+      	
    buttonHandler_copySrc = buttonHandler_copyDst = SRC_DST_NONE;
 };
 //-----------------------------------------------------------------------------
