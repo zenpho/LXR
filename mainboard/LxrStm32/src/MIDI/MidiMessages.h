@@ -558,7 +558,8 @@ enum
 #define FRONT_LED_QUERY_SEQ_TRACK		0x03	/**< the frontpanel wants to know whick seq. leds should be lit*/
 #define FRONT_LED_PULSE_BEAT			   0x04	/**< pulse the beat indicator LED*/
 #define FRONT_LED_SEQ_SUB_STEP			0x05
-
+#define FRONT_LED_QUERY_SUBSTEPS			0x3f // data2 - receives main substep (0-15), sends back byte for active substeps
+#define FRONT_LED_QUERY_SUBSTEPS_INC_LAST			0x40 // data2 - receives main substep (0-15), sends back byte for active substeps
 //--AS appears unused
 //#define VOICE_MIDI_CHAN					0x02
 

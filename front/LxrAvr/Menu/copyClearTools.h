@@ -33,6 +33,9 @@ enum
 };
 extern uint8_t copyClear_Mode;
 
+// get substep leds for step copy
+void copyClear_setSubStepLeds(uint8_t mainStep);
+
 void copyClear_executeClear();
 void copyClear_clearCurrentTrack();
 void copyClear_clearCurrentPattern();

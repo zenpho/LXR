@@ -634,6 +634,20 @@ static void frontParser_handleMidiMessage()
                
                }
                break;
+            case FRONT_LED_QUERY_SUBSTEPS:
+               {
+
+                  uint8_t litSubSteps = seq_getActiveSubSteps(frontParser_midiMsg.data2);
+                  uart_sendFrontpanelByte(FRONT_STEP_LED_STATUS_BYTE);
+                  if (0x80&litSubSteps){
+                     uart_sendFrontpanelByte(FRONT_LED_QUERY_SUBSTEPS_INC_LAST);
+                  }
+                  else{
+                     uart_sendFrontpanelByte(FRONT_LED_QUERY_SUBSTEPS);
+                  }
+                  uart_sendFrontpanelByte(0x7f&litSubSteps);
+               }
+               break;
          
             default:
                break;

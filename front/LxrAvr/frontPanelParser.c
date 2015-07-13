@@ -557,9 +557,20 @@ void frontPanel_parseData(uint8_t data)
             
 				else if(frontParser_midiMsg.status == LED_CC)
 				{
+               
 					switch(frontParser_midiMsg.data1)
 					{
-						
+						case LED_QUERY_SUBSTEPS:
+                  {
+                     led_setSubStepLeds(frontParser_midiMsg.data2);
+                  }
+                  break;
+                  case LED_QUERY_SUBSTEPS_INC_LAST:
+                  {
+                     led_setSubStepLeds(0x80|frontParser_midiMsg.data2);
+                  }
+                  break;
+                  
 						case LED_CURRENT_STEP_NR: {
 							
 							if(frontParser_midiMsg.data2 >=128) return;
@@ -623,6 +634,7 @@ void frontPanel_parseData(uint8_t data)
 						}		
 						
 						break;
+                  
 					}						
 				}								
 				else if(frontParser_midiMsg.status == NOTE_ON)

@@ -16,8 +16,8 @@
 #define LED_PULSE_TIME_MS 50		/**<time a pulsed LED stays on in [ms]*/
 #define LED_PULSE_TIME ((uint16_t)(LED_PULSE_TIME_MS/16.384f))
 
-#define NUM_OF_BLINKABLE_LEDS 4
-#define LED_BLINK_TIME_MS 250
+#define NUM_OF_BLINKABLE_LEDS 6
+#define LED_BLINK_TIME_MS 200
 #define LED_BLINK_TIME ((uint16_t)(LED_BLINK_TIME_MS/16.384f))
 
 volatile uint8_t led_currentStepLed = 0;
@@ -54,6 +54,7 @@ void led_clearSelectLeds()
 	dout_outputData[arrayPos] = 0;
 	led_originalLedState[arrayPos] = 0; 
 }
+
 //--------------------------------------------
 void led_initPerformanceLeds()
 {
@@ -83,6 +84,19 @@ void led_setActivePage(uint8_t pageNr)
 	//since this is not a temp. change, store in led_originalLedState as well
 	led_originalLedState[arrayPos] = (uint8_t)(1<<bitPos);
 };
+//---------------------------------------------
+void led_setSubStepLeds(uint8_t ledArray)
+{
+   /*
+	butNr = (uint8_t)(butNr + LED_PART_SELECT1);
+	const uint8_t arrayPos = butNr/8;
+	const uint8_t bitPos = butNr&0x7;
+	*/
+	//set the whole byte to clear the other leds
+	dout_outputData[2] = ledArray;
+	//since this is not a temp. change, store in led_originalLedState as well
+	led_originalLedState[2] = ledArray;
+}
 //---------------------------------------------
 void led_setActiveSelectButton(uint8_t butNr)
 {
@@ -342,6 +356,14 @@ void led_setBlinkLed(const uint8_t ledNr, const uint8_t onOff)
 	if(onOff)
 	{
 		//--- turn on blinking ---
+      //first see if led is already blinking
+      for(int i=0;i<NUM_OF_BLINKABLE_LEDS;i++)
+		{
+			if((led_blinkingLeds & (1<<i))&&led_blinkLedNumber[i]==ledNr)
+			{
+            return; // led is already blinking - don't need to add
+         }
+      }
 		//search for a free blink slot
 		for(int i=0;i<NUM_OF_BLINKABLE_LEDS;i++)
 		{

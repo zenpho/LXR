@@ -230,7 +230,26 @@ uint8_t seq_getTrackLength(uint8_t trackNr)
       return 16;
    return r;
 }
+//------------------------------------------------------------------------------
+uint8_t seq_getActiveSubSteps(uint8_t mainStep)
+{
 
+   uint8_t subStepArray = 0x00;
+   uint8_t i;
+   uint8_t stepVol;
+   uint8_t firstSubStep = mainStep<<3; // multiply main step by 8 to get substep position
+   for (i=0;i<8;i++)
+   {
+      stepVol = seq_patternSet.seq_subStepPattern[frontParser_shownPattern][frontParser_activeTrack][firstSubStep + i].volume;
+      // msb of volume is step active
+      if (0x80&stepVol)
+      {
+         subStepArray |= (0x01<<i);
+      }
+   }
+   
+   return subStepArray;
+}
 //------------------------------------------------------------------------------
 uint8_t seq_getTrackScale(uint8_t trackNr)
 {

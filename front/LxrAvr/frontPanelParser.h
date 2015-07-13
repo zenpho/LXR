@@ -76,6 +76,9 @@ extern uint8_t frontPanel_longData;
 #define LED_QUERY_SEQ_TRACK 0x03
 #define LED_PULSE_BEAT		0x04	/**< pulse the beat indicator LED*/
 #define LED_SEQ_SUB_STEP	0x05
+#define LED_QUERY_SUBSTEPS 0x3f // light substep led's for current active main step
+#define LED_QUERY_SUBSTEPS_INC_LAST			0x40
+
 //#define LED_TRIGGER_VOICE	0x05	/**< send by the sequencer whenever a voice is triggered*/
 
 
