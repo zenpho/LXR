@@ -85,10 +85,12 @@ static void buttonHandler_copySubStep(uint8_t selectButtonPressed)
          led_clearAllBlinkLeds();
          
          //query current sequencer step states and light up the corresponding leds
+         /*
          uint8_t trackNr = menu_getActiveVoice(); //max 6 => 0x6 = 0b110
          uint8_t patternNr = menu_getViewedPattern(); //max 7 => 0x07 = 0b111
          uint8_t value = (uint8_t) ((trackNr << 4) | (patternNr & 0x7));
          frontPanel_sendData(LED_CC, LED_QUERY_SEQ_TRACK, value);
+         */
          menu_repaintAll();
       }
 
@@ -107,10 +109,10 @@ static void buttonHandler_copyStep(uint8_t seqButtonPressed)
          led_clearAllBlinkLeds();
       
          //query current sequencer step states and light up the corresponding leds
-         uint8_t trackNr = menu_getActiveVoice(); //max 6 => 0x6 = 0b110
+         /*uint8_t trackNr = menu_getActiveVoice(); //max 6 => 0x6 = 0b110
          uint8_t patternNr = menu_getViewedPattern(); //max 7 => 0x07 = 0b111
          uint8_t value = (uint8_t) ((trackNr << 4) | (patternNr & 0x7));
-         frontPanel_sendData(LED_CC, LED_QUERY_SEQ_TRACK, value);
+         frontPanel_sendData(LED_CC, LED_QUERY_SEQ_TRACK, value);*/
          menu_repaintAll();
       } 
       else 
@@ -249,8 +251,10 @@ void buttonHandler_tick() {
 
 //--------------------------------------------------------
 static void buttonHandler_updateSubSteps() {
-	led_clearSelectLeds();
-	//query current sequencer step states and light up the corresponding leds
+	//led_clearSelectLeds();
+
+   copyClear_setSubStepLeds(buttonHandler_selectedStep);
+   //query current sequencer step states and light up the corresponding leds
 	uint8_t trackNr = menu_getActiveVoice(); //max 6 => 0x6 = 0b110
 	uint8_t patternNr = menu_getViewedPattern(); //max 7 => 0x07 = 0b111
 	uint8_t value = (uint8_t) ((trackNr << 4) | (patternNr & 0x7));
@@ -632,6 +636,7 @@ static void buttonHandler_seqButtonPressed(uint8_t seqButtonPressed)
       switch(buttonHandler_stateMemory.selectButtonMode) {
          case SELECT_MODE_VOICE: //sequencer mode -> buttons select active step because shift is down
             buttonHandler_selectActiveStep(ledNr, seqButtonPressed);
+            //copyClear_setSubStepLeds(seqButtonPressed); // patch to get all substep leds
             break;
          case SELECT_MODE_STEP: // step edit mode -> adds/removes step because shift is down
             buttonHandler_setRemoveStep(ledNr, seqButtonPressed);
