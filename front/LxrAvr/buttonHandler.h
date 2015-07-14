@@ -122,4 +122,8 @@ void buttonHandler_showMuteLEDs();
 //--------------------------------------------------------
 void buttonHandler_setRunStopState(uint8_t running);
 //--------------------------------------------------------
+void buttonHandler_leaveSeqMode();
+//--------------------------------------------------------
+void buttonHandler_enterSeqMode();
+//--------------------------------------------------------
 #endif /* BUTTONHANDLER_H_ */

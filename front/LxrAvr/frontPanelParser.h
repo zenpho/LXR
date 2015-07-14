@@ -76,8 +76,15 @@ extern uint8_t frontPanel_longData;
 #define LED_QUERY_SEQ_TRACK 0x03
 #define LED_PULSE_BEAT		0x04	/**< pulse the beat indicator LED*/
 #define LED_SEQ_SUB_STEP	0x05
-#define LED_QUERY_SUBSTEPS 0x3f // light substep led's for current active main step
-#define LED_QUERY_SUBSTEPS_INC_LAST			0x40
+#define LED_ALL_SUBSTEP        0x3f
+
+#define LED_SEQ_MAIN_ONE      0x40  // bc - send as 4-led sets to prevent message choke
+#define LED_SEQ_MAIN_TWO      0x41
+#define LED_SEQ_MAIN_THREE    0x42
+#define LED_SEQ_MAIN_FOUR     0x43
+
+#define LED_SEQ_SUB_STEP_LOWER 0x44
+#define LED_SEQ_SUB_STEP_UPPER 0x45
 
 //#define LED_TRIGGER_VOICE	0x05	/**< send by the sequencer whenever a voice is triggered*/
 
@@ -179,6 +186,8 @@ void frontPanel_parseData(uint8_t data);
 void frontPanel_sendMidiMsg(MidiMsg msg);
 void frontPanel_sendData(uint8_t status, uint8_t data1, uint8_t data2);
 void frontPanel_sendByte(uint8_t data);
+void frontPanel_updatePatternLeds();
+void frontPanel_updateSubstepLeds();
 
 extern volatile MidiMsg frontParser_midiMsg;
 

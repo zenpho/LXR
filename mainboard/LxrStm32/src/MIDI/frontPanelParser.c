@@ -90,30 +90,63 @@ void frontParser_updateTrackLeds(const uint8_t trackNr, uint8_t patternNr)
    {
    
       frontParser_activeFrontTrack = trackNr;
-   
-      int i=0;
-   
-      for(;i<16;i++)
+      
+      uint8_t ledByte = 0x00;
+      uint8_t i;
+      uint8_t k;
+      
+      for(k=0;k<4;k++)
       {
-         if(seq_isMainStepActive(trackNr,i,patternNr))
+         for(i=0;i<4;i++)
          {
-            uart_sendFrontpanelByte(FRONT_STEP_LED_STATUS_BYTE);
-            uart_sendFrontpanelByte(FRONT_LED_SEQ_BUTTON);
-            uart_sendFrontpanelByte(i*8);
+            if(seq_isMainStepActive(trackNr,(uint8_t)( (k<<2) + i),patternNr))
+            {
+               ledByte |= (0x01<<i);
+            }
          }
+         
+         uart_sendFrontpanelByte(FRONT_STEP_LED_STATUS_BYTE);
+         uart_sendFrontpanelByte((uint8_t)(FRONT_LED_SEQ_MAIN_ONE+k));
+         uart_sendFrontpanelByte(ledByte);
+         
+         ledByte = 0x00;
       }
-   
-      uint8_t start = (frontParser_activeStep/8)*8;
-      for(i=start;i<(start+8);i++) //only send visible substeps
-      {
-         if(seq_isStepActive(trackNr,i,patternNr))
-         {
-            uart_sendFrontpanelByte(FRONT_STEP_LED_STATUS_BYTE);
-            uart_sendFrontpanelByte(FRONT_LED_SEQ_SUB_STEP);
-            uart_sendFrontpanelByte(i);
-         }
-      }
+
+      
+      frontParser_updateSubStepLeds(trackNr, patternNr);
    }
+}
+
+void frontParser_updateSubStepLeds(const uint8_t trackNr, uint8_t patternNr)
+{
+      uint8_t start = frontParser_activeStep&0x78; // truncate to main step
+      uint8_t ledByte = 0x00;
+      uint8_t i;
+      
+      for(i=0;i<4;i++)
+      {
+         if(seq_isStepActive(trackNr,(start+i),patternNr))
+         {
+            ledByte |= (0x01<<i);
+         }
+      }
+      
+      uart_sendFrontpanelByte(FRONT_STEP_LED_STATUS_BYTE);
+      uart_sendFrontpanelByte(FRONT_LED_SEQ_SUB_STEP_LOWER);
+      uart_sendFrontpanelByte(ledByte);
+      
+      ledByte = 0x00;
+      
+      for(i=0;i<4;i++)
+      {
+         if(seq_isStepActive(trackNr,(start+4+i),patternNr))
+         {
+            ledByte |= (0x01<<i);
+         }
+      }
+      uart_sendFrontpanelByte(FRONT_STEP_LED_STATUS_BYTE);
+      uart_sendFrontpanelByte(FRONT_LED_SEQ_SUB_STEP_UPPER);
+      uart_sendFrontpanelByte(ledByte);
 }
 
 //------------------------------------------------------
@@ -634,18 +667,12 @@ static void frontParser_handleMidiMessage()
                
                }
                break;
-            case FRONT_LED_QUERY_SUBSTEPS:
+            case FRONT_LED_ALL_SUBSTEP:
                {
+                  uint8_t trackNr = frontParser_midiMsg.data2 >> 4;
+                  uint8_t patternNr = frontParser_midiMsg.data2 & 0x7;
 
-                  uint8_t litSubSteps = seq_getActiveSubSteps(frontParser_midiMsg.data2);
-                  uart_sendFrontpanelByte(FRONT_STEP_LED_STATUS_BYTE);
-                  if (0x80&litSubSteps){
-                     uart_sendFrontpanelByte(FRONT_LED_QUERY_SUBSTEPS_INC_LAST);
-                  }
-                  else{
-                     uart_sendFrontpanelByte(FRONT_LED_QUERY_SUBSTEPS);
-                  }
-                  uart_sendFrontpanelByte(0x7f&litSubSteps);
+                  frontParser_updateSubStepLeds(trackNr, patternNr);               
                }
                break;
          

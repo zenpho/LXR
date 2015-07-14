@@ -58,6 +58,23 @@ uint8_t frontPanel_longData;
 //------------------------------------------------------------
 #define NRPN_MUTE_1 1000
 #define NRPN_MUTE_7 1006
+//------------------------------------------------------------
+void frontPanel_updatePatternLeds()
+{
+   uint8_t trackNr = menu_getActiveVoice(); //max 6 => 0x6 = 0b110
+   uint8_t patternNr = menu_getViewedPattern(); //max 7 => 0x07 = 0b111
+   uint8_t value = (uint8_t) ((trackNr << 4) | (patternNr & 0x7));
+   frontPanel_sendData(LED_CC, LED_QUERY_SEQ_TRACK, value);
+}
+//------------------------------------------------------------
+void frontPanel_updateSubstepLeds()
+{
+   uint8_t trackNr = menu_getActiveVoice(); //max 6 => 0x6 = 0b110
+   uint8_t patternNr = menu_getViewedPattern(); //max 7 => 0x07 = 0b111
+   uint8_t value = (uint8_t) ((trackNr << 4) | (patternNr & 0x7));
+   frontPanel_sendData(LED_CC, LED_ALL_SUBSTEP, value);
+}
+//------------------------------------------------------------
 void frontParser_parseNrpn(uint8_t value)
 {
 	uint16_t paramNr=frontParser_nrpnNr+128;
@@ -361,6 +378,7 @@ void frontPanel_parseData(uint8_t data)
                      break;
 
 						// **PATROT - receive rotation value from back for active track
+                 
 						case SEQ_TRACK_ROTATION:
 							parameter_values[PAR_TRACK_ROTATION] = frontParser_midiMsg.data2;
 							menu_repaint();
@@ -368,6 +386,9 @@ void frontPanel_parseData(uint8_t data)
                      {  // rotation amount updated while viewing rotation - update the display
                         led_clearAllBlinkLeds();
                         led_setBlinkLed((uint8_t) (LED_STEP1 + parameter_values[PAR_TRACK_ROTATION]), 1);
+                        led_setBlinkLed((uint8_t) (LED_VOICE1 + menu_getActiveVoice()), 1);
+                        led_setBlinkLed((uint8_t) (LED_PART_SELECT1 + menu_getViewedPattern()) ,1);
+                        
                      }
 							break;
 						
@@ -427,10 +448,7 @@ void frontPanel_parseData(uint8_t data)
 								menu_setShownPattern(frontParser_midiMsg.data2);
 								led_clearSequencerLeds();
 								//query current sequencer step states and light up the corresponding leds 
-								uint8_t trackNr = menu_getActiveVoice(); //max 6 => 0x6 = 0b110
-								uint8_t patternNr = menu_getViewedPattern(); //max 7 => 0x07 = 0b111
-								uint8_t value = (uint8_t)((trackNr<<4) | (patternNr&0x7));
-								frontPanel_sendData(LED_CC,LED_QUERY_SEQ_TRACK,value);
+								frontPanel_updatePatternLeds();
 								frontPanel_sendData(SEQ_CC,SEQ_REQUEST_PATTERN_PARAMS,frontParser_midiMsg.data2);
 							} else {
 								//store the pending pattern update for shift button release handler
@@ -557,20 +575,9 @@ void frontPanel_parseData(uint8_t data)
             
 				else if(frontParser_midiMsg.status == LED_CC)
 				{
-               
+               uint8_t offset=0;
 					switch(frontParser_midiMsg.data1)
 					{
-						case LED_QUERY_SUBSTEPS:
-                  {
-                     led_setSubStepLeds(frontParser_midiMsg.data2);
-                  }
-                  break;
-                  case LED_QUERY_SUBSTEPS_INC_LAST:
-                  {
-                     led_setSubStepLeds(0x80|frontParser_midiMsg.data2);
-                  }
-                  break;
-                  
 						case LED_CURRENT_STEP_NR: {
 							
 							if(frontParser_midiMsg.data2 >=128) return;
@@ -602,9 +609,7 @@ void frontPanel_parseData(uint8_t data)
 							led_setValue(0,LED_START_STOP);
 						}							
 						break;
-						
-	
-						case LED_SEQ_SUB_STEP:
+                  case LED_SEQ_SUB_STEP:
 						if(buttonHandler_getShift() || buttonHandler_getMode() == SELECT_MODE_STEP)
 							{
 								//parse sub steps
@@ -622,6 +627,52 @@ void frontPanel_parseData(uint8_t data)
 								
 							}
 						break;
+                  
+						case LED_SEQ_MAIN_FOUR:
+                     offset=(uint8_t)(offset+4);
+                  case LED_SEQ_MAIN_THREE:
+                     offset=(uint8_t)(offset+4);
+                  case LED_SEQ_MAIN_TWO:
+                     offset=(uint8_t)(offset+4);
+                  case LED_SEQ_MAIN_ONE:
+                  {
+								//parse sub steps
+                        uint8_t i;
+                        uint8_t ledArray=(frontParser_midiMsg.data2 & 0x0f);
+                        for (i=0;i<4;i++)
+                        {
+                           led_setValue( (uint8_t)(ledArray&(0x01<<i)),(uint8_t)(LED_STEP1+i+offset));
+                        }
+                  }
+                     
+                  
+                  break;                  
+						case LED_SEQ_SUB_STEP_LOWER:
+                  if ( (menu_activePage<=VOICE7_PAGE&&shiftState) || menu_activePage==SEQ_PAGE)
+                  {
+								//parse sub steps
+                        uint8_t i;
+                        uint8_t ledArray=(frontParser_midiMsg.data2 & 0x0f);
+                        for (i=0;i<4;i++)
+                        {
+                           led_setValue( (uint8_t)(ledArray&(0x01<<i)),(uint8_t)(LED_PART_SELECT1+i));
+                        }
+                  }
+						break;
+                  
+                  case LED_SEQ_SUB_STEP_UPPER:
+                  if ( (menu_activePage<=VOICE7_PAGE&&shiftState) || menu_activePage==SEQ_PAGE)
+                  {
+								//parse sub steps
+                        uint8_t i;
+                        uint8_t ledArray=(frontParser_midiMsg.data2 & 0x0f);
+                        for (i=0;i<4;i++)
+                        {
+                           led_setValue( (uint8_t)(ledArray&(0x01<<i)),(uint8_t)(LED_PART_SELECT1+4+i));
+                        }
+                  }
+						break;
+                  
 						case LED_SEQ_BUTTON:
 						{
 							if(menu_activePage != PERFORMANCE_PAGE) //do not show active steps on perf. page

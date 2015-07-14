@@ -557,9 +557,16 @@ enum
 #define FRONT_LED_SEQ_BUTTON			   0x02	/**< turn on a step seq. led*/
 #define FRONT_LED_QUERY_SEQ_TRACK		0x03	/**< the frontpanel wants to know whick seq. leds should be lit*/
 #define FRONT_LED_PULSE_BEAT			   0x04	/**< pulse the beat indicator LED*/
-#define FRONT_LED_SEQ_SUB_STEP			0x05
-#define FRONT_LED_QUERY_SUBSTEPS			0x3f // data2 - receives main substep (0-15), sends back byte for active substeps
-#define FRONT_LED_QUERY_SUBSTEPS_INC_LAST			0x40 // data2 - receives main substep (0-15), sends back byte for active substeps
+#define FRONT_LED_SEQ_SUB_STEP	      0x05
+#define FRONT_LED_ALL_SUBSTEP          0x3f  // send back all the substeps
+
+#define FRONT_LED_SEQ_MAIN_ONE         0x40  // bc - send as 4-led sets to prevent message choke
+#define FRONT_LED_SEQ_MAIN_TWO         0x41
+#define FRONT_LED_SEQ_MAIN_THREE       0x42
+#define FRONT_LED_SEQ_MAIN_FOUR        0x43
+
+#define FRONT_LED_SEQ_SUB_STEP_LOWER	0x44  // sending single substeps was slow - send as two messages of 4 leds each
+#define FRONT_LED_SEQ_SUB_STEP_UPPER	0x45  // nb - can't fit all 8 b/c midi data2 is only 7 bits
 //--AS appears unused
 //#define VOICE_MIDI_CHAN					0x02
 

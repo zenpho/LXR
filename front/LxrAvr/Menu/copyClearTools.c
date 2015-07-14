@@ -6,6 +6,7 @@
  */ 
 #include "copyClearTools.h"
 #include "../frontPanelParser.h"
+#include "../buttonHandler.h"
 #include <avr/io.h>
 #include "../Hardware/lcd.h"
 #include "../ledHandler.h"
@@ -17,11 +18,6 @@ int8_t buttonHandler_copySrc = SRC_DST_NONE;
 int8_t buttonHandler_copyDst = SRC_DST_NONE;
 static uint8_t copyClear_clearTarget = CLEAR_TRACK;
 
-//--------------------------------------------
-void copyClear_setSubStepLeds(uint8_t mainStep)
-{
-   frontPanel_sendData(LED_CC,LED_QUERY_SUBSTEPS,mainStep);
-}
 //-----------------------------------------------------------------------------
 void copyClear_clearTrackAutom(uint8_t automTrack)
 {
@@ -155,6 +151,7 @@ void copyClear_copyStep()
       frontPanel_sendData(SEQ_CC,SEQ_COPY_STEP_SET_DST,(uint8_t)(dstStep+i));
       
    }
+   led_clearAllBlinkLeds();
 	copyClear_Mode = MODE_NONE;
    buttonHandler_copySrc = buttonHandler_copyDst = SRC_DST_NONE;
    led_clearSelectLeds();
@@ -166,6 +163,7 @@ void copyClear_copySubStep()
    //led_clearSequencerLeds();
    frontPanel_sendData(SEQ_CC,SEQ_COPY_STEP_SET_SRC,(uint8_t)buttonHandler_copySrc);
    frontPanel_sendData(SEQ_CC,SEQ_COPY_STEP_SET_DST,(uint8_t)buttonHandler_copyDst);
+   led_clearAllBlinkLeds();
    copyClear_Mode = MODE_NONE;
    buttonHandler_copySrc = buttonHandler_copyDst = SRC_DST_NONE;
    led_clearSelectLeds();

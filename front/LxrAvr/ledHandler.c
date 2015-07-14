@@ -84,19 +84,7 @@ void led_setActivePage(uint8_t pageNr)
 	//since this is not a temp. change, store in led_originalLedState as well
 	led_originalLedState[arrayPos] = (uint8_t)(1<<bitPos);
 };
-//---------------------------------------------
-void led_setSubStepLeds(uint8_t ledArray)
-{
-   /*
-	butNr = (uint8_t)(butNr + LED_PART_SELECT1);
-	const uint8_t arrayPos = butNr/8;
-	const uint8_t bitPos = butNr&0x7;
-	*/
-	//set the whole byte to clear the other leds
-	dout_outputData[2] = ledArray;
-	//since this is not a temp. change, store in led_originalLedState as well
-	led_originalLedState[2] = ledArray;
-}
+
 //---------------------------------------------
 void led_setActiveSelectButton(uint8_t butNr)
 {

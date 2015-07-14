@@ -51,7 +51,6 @@ void led_clearSequencerLeds9_16();
 /** clear seq leds 1-8*/
 void led_clearSequencerLeds1_8();
 
-void led_setSubStepLeds(uint8_t ledArray);
 void led_clearSelectLeds();
 void led_clearVoiceLeds();
 
