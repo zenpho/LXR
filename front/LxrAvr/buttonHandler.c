@@ -693,15 +693,16 @@ static void buttonHandler_seqButtonReleased(uint8_t seqButtonPressed)
          if (copyClear_Mode == MODE_COPY_SUB_STEP){
             buttonHandler_selectActiveStep(ledNr, seqButtonPressed);
             subStepCopy_mainStep=seqButtonPressed;
-            frontPanel_updatePatternLeds();
+            led_clearSelectBlinkLeds();
             led_setBlinkLed((uint8_t)(LED_STEP1+seqButtonPressed), 1);
+            frontPanel_updatePatternLeds();
          }
          else if (copyClear_Mode > MODE_CLEAR){
             buttonHandler_selectActiveStep(ledNr, seqButtonPressed);
             subStepCopy_mainStep=seqButtonPressed;
-            frontPanel_updatePatternLeds();
             led_setBlinkLed((uint8_t)(LED_STEP1+seqButtonPressed), 1);
             buttonHandler_copyStep(seqButtonPressed);
+            frontPanel_updatePatternLeds();
          }
          //do nothing if timer action occurred - its already handled in the timer
          else if (buttonHandler_TimerActionOccured())
@@ -713,15 +714,16 @@ static void buttonHandler_seqButtonReleased(uint8_t seqButtonPressed)
          if (copyClear_Mode == MODE_COPY_SUB_STEP){
             buttonHandler_selectActiveStep(ledNr, seqButtonPressed);
             subStepCopy_mainStep=seqButtonPressed;
-            frontPanel_updatePatternLeds();
+            led_clearSelectBlinkLeds();
             led_setBlinkLed((uint8_t)(LED_STEP1+seqButtonPressed), 1);
+            frontPanel_updatePatternLeds();
          }
          else if (copyClear_Mode > MODE_CLEAR){
             buttonHandler_selectActiveStep(ledNr, seqButtonPressed);
             subStepCopy_mainStep=seqButtonPressed;
-            frontPanel_updatePatternLeds();
             led_setBlinkLed((uint8_t)(LED_STEP1+seqButtonPressed), 1);
             buttonHandler_copyStep(seqButtonPressed);
+            frontPanel_updatePatternLeds();
          }
       //do nothing if timer action occured
          else if (buttonHandler_TimerActionOccured())
@@ -1190,7 +1192,6 @@ void buttonHandler_buttonReleased(uint8_t buttonNr) {
                   menu_repaintAll();
                else
                   buttonHandler_leaveSeqMode();
-               led_setValue(1, (uint8_t)(LED_PART_SELECT1 + menu_activePage));
                break;
             case SELECT_MODE_PERF:
                led_clearAllBlinkLeds();
@@ -1238,7 +1239,6 @@ void buttonHandler_buttonReleased(uint8_t buttonNr) {
                   menu_repaintAll();
                else
                   buttonHandler_leaveSeqMode();
-               led_setValue(1, (uint8_t)(LED_PART_SELECT1 + menu_activePage));
                break;
             case SELECT_MODE_PERF:
                led_clearAllBlinkLeds();

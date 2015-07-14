@@ -52,6 +52,7 @@ void led_clearSequencerLeds9_16();
 void led_clearSequencerLeds1_8();
 
 void led_clearSelectLeds();
+void led_clearSelectBlinkLeds();
 void led_clearVoiceLeds();
 
 void led_setMode2(uint8_t status);

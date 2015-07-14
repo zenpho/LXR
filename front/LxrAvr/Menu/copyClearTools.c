@@ -19,6 +19,11 @@ int8_t buttonHandler_copyDst = SRC_DST_NONE;
 static uint8_t copyClear_clearTarget = CLEAR_TRACK;
 
 //-----------------------------------------------------------------------------
+uint8_t copyClear_getCopyMode()
+{
+   return copyClear_Mode;
+}
+//-----------------------------------------------------------------------------
 void copyClear_clearTrackAutom(uint8_t automTrack)
 {
    uint8_t voice = menu_getActiveVoice();

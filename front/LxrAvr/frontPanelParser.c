@@ -6,6 +6,7 @@
  */ 
 #include "frontPanelParser.h"
 #include "Menu/menu.h"
+#include "Menu/copyClearTools.h"
 #include <stdio.h>
 
 #include "ledHandler.h"
@@ -648,7 +649,7 @@ void frontPanel_parseData(uint8_t data)
                   
                   break;                  
 						case LED_SEQ_SUB_STEP_LOWER:
-                  if ( (menu_activePage<=VOICE7_PAGE&&shiftState) || menu_activePage==SEQ_PAGE)
+                  if ( ( (menu_activePage<=VOICE7_PAGE)&&(shiftState||copyClear_getCopyMode()) ) || (menu_activePage==SEQ_PAGE) )
                   {
 								//parse sub steps
                         uint8_t i;
@@ -661,7 +662,7 @@ void frontPanel_parseData(uint8_t data)
 						break;
                   
                   case LED_SEQ_SUB_STEP_UPPER:
-                  if ( (menu_activePage<=VOICE7_PAGE&&shiftState) || menu_activePage==SEQ_PAGE)
+                  if ( ( (menu_activePage<=VOICE7_PAGE)&&(shiftState||copyClear_getCopyMode()) ) || (menu_activePage==SEQ_PAGE) )
                   {
 								//parse sub steps
                         uint8_t i;

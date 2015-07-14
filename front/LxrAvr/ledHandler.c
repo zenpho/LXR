@@ -54,6 +54,21 @@ void led_clearSelectLeds()
 	dout_outputData[arrayPos] = 0;
 	led_originalLedState[arrayPos] = 0; 
 }
+//--------------------------------------------
+void led_clearSelectBlinkLeds()
+{
+   uint8_t i;      
+   for(i=0;i<NUM_OF_BLINKABLE_LEDS;i++)
+	{
+		if( (led_blinkLedNumber[i] >= LED_PART_SELECT1)&&(led_blinkLedNumber[i] <= LED_PART_SELECT8) )
+		{
+			//we found a matching select led
+			//set slot to inactive
+			led_reset(led_blinkLedNumber[i]);
+	      led_blinkingLeds &= (uint8_t)~(1<<i);
+		}
+	}
+}
 
 //--------------------------------------------
 void led_initPerformanceLeds()

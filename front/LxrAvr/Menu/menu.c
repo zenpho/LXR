@@ -2820,6 +2820,7 @@ void menu_switchPage(uint8_t pageNr)
 		uint8_t patternNr = menu_shownPattern; //max 7 => 0x07 = 0b111
 		uint8_t value = (uint8_t)((trackNr<<4) | (patternNr&0x7));
 		frontPanel_sendData(LED_CC,LED_QUERY_SEQ_TRACK,value);
+      
 		}
 		break;
 	}		
