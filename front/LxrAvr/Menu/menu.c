@@ -994,7 +994,7 @@ void menu_repaintGeneric()
 		//get address from top1-4 from activeParameter (base adress top1 + offset)
 		uint8_t parName = pgm_read_byte(&ap->top1 + activeParameter);
 		uint16_t parNr = pgm_read_word(&ap->bot1 + activeParameter);
-      if (shiftState)
+      if (shiftState&&menu_activePage<=VOICE7_PAGE)
          curParmVal = parameters2[parNr];
       else    
 		   curParmVal = parameter_values[parNr];
@@ -2097,7 +2097,7 @@ void menu_parseEncoder(int8_t inc, uint8_t button)
 	} else if(inc==0)
 		return; // nothing has changed. do nothing
 
-	screensaver_touch();
+	
 
 	inc = (int8_t)(inc * -1);
 
@@ -2155,7 +2155,7 @@ static void menu_encoderChangeParameter(int8_t inc)
 	uint8_t *paramValue = &parameter_values[paramNr];
    uint8_t isMorphParam = (paramNr<END_OF_SOUND_PARAMETERS&&buttonHandler_getShift());
    
-   if (isMorphParam)
+   if (isMorphParam&&(menu_activePage<=VOICE7_PAGE))
    {
       paramValue = &parameters2[paramNr];
    }

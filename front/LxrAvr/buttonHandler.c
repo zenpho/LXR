@@ -49,7 +49,7 @@ volatile struct {
 } buttonHandler_stateMemory;
 
 static uint8_t buttonHandler_mutedVoices = 0;
-static uint8_t buttonHandler_mutesFromSolo = 0;
+// static uint8_t buttonHandler_mutesFromSolo = 0;
 static int8_t buttonHandler_armedAutomationStep = NO_STEP_SELECTED;
 
 void buttonHandler_copySubStep(uint8_t selectButtonPressed);
@@ -66,21 +66,26 @@ void buttonHandler_copySubStep(uint8_t selectButtonPressed)
 {
       //led_setSubStepLeds(0xff);
       if (copyClear_Mode == MODE_COPY_STEP)
-      {  // switch source to sub-step
+      {  // user pressed copy - then seq step, then select button:  
+         // switch source to sub-step
          copyClear_Mode = MODE_COPY_SUB_STEP;
          // get main source step and add source substep position
          int8_t subStepSource = (int8_t)(subStepCopy_mainStep*8+selectButtonPressed);
-         
+         // send source to copyClear agent
          copyClear_setSrc((int8_t)(subStepSource), MODE_COPY_SUB_STEP);
-         
+         // blink the selected substep
          led_setBlinkLed((uint8_t) (LED_PART_SELECT1 + selectButtonPressed), 1);
       }
       // this is the second time around copySubStep gets called - we have a
       // valid main step, add to main step and transmit
       else if (copyClear_Mode == MODE_COPY_SUB_STEP&&copyClear_srcSet())
       {
+         // if user selected a new main step, this will update the destination,
+         // otherwise same main step is used
          int8_t dst = (int8_t)(subStepCopy_mainStep*8+selectButtonPressed);
+         // set the destination
          copyClear_setDst(dst, MODE_COPY_SUB_STEP);
+         // execture copy
          copyClear_copySubStep();
       }
 
@@ -91,13 +96,15 @@ void buttonHandler_copyStep(uint8_t seqButtonPressed)
 {     
       if (copyClear_srcSet()) 
       { // if we have already selected a source, do the copy operation
-       	//select dest
-
+       	
+         // select dest
          copyClear_setDst((int8_t)(seqButtonPressed*8), MODE_COPY_STEP);
+         // execute - actually sends 8 'substep copy' operations to main
          copyClear_copyStep();
-      } 
-      else 
+      }
+      else
       {
+         // first seq button pressed - set the source 
          copyClear_setSrc((int8_t)(seqButtonPressed*8), MODE_COPY_STEP);
          frontPanel_updatePatternLeds();
          led_setBlinkLed((uint8_t) (LED_STEP1 + seqButtonPressed), 1);
