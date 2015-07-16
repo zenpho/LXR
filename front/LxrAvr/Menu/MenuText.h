@@ -345,6 +345,7 @@ const char shortNames[][4] PROGMEM  =
    	{"pci"}, // pattern change time is bar or step
    	{"stg"}, // shift is toggle instead of momentary
       {"b2p"}, // bank changes change perfs
+      {"kit"},
 };
 //-----------------------------------------------------------------
 // These correspond with the catNamesEnum in menu.h
@@ -459,6 +460,7 @@ const char longNames[][16] PROGMEM =
    {"PCInstnt" }, // pattern change occurs on bar or step
    {"ShiftTog" }, // shift is toggle instead of momentary
    {"BnkToPrf" }, // Bank changes change perfs
+   {"LoadKit#" }, // load voice from kit on automation
 };
 
 

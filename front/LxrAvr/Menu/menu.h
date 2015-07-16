@@ -196,6 +196,7 @@ enum NamesEnum
 	TEXT_SEQ_PC_TIME,
 	TEXT_BUT_SHIFT_MODE,
    TEXT_LOAD_PERF_ON_BANK,
+   TEXT_LOAD_FROM_KIT,
 	NUM_NAMES
 };
 //-----------------------------------------------------------------
@@ -289,7 +290,7 @@ enum shortNamesEnum
    SHORT_SEQ_PC_TIME,
    SHORT_BUT_SHIFT_MODE,
    SHORT_LOAD_PERF_ON_BANK,
-
+   SHORT_LOAD_FROM_KIT,
 
 	
 };
@@ -404,6 +405,7 @@ enum longNamesEnum
    LONG_SEQ_PC_TIME,
    LONG_BUT_SHIFT_MODE,
    LONG_LOAD_PERF_ON_BANK,
+   LONG_LOAD_FROM_KIT,
 	
 };
 

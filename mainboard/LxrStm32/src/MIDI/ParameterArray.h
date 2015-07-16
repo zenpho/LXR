@@ -361,6 +361,13 @@ enum ParamEnums
    PAR_TRACK_SCALE,
 
 
+   PAR_LOAD_DRUM1,               // bc: adding these for kit load on automation step
+   PAR_LOAD_DRUM2,
+   PAR_LOAD_DRUM3,
+   PAR_LOAD_SNARE,
+   PAR_LOAD_CYM,
+   PAR_LOAD_HIHAT,
+
 	//#########################################
 	//######## Global Parameters ##############
 	//#########################################

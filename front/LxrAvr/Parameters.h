@@ -340,12 +340,19 @@ enum ParamEnums
 	PAR_FLUX,
 	PAR_SOM_FREQ,
 	PAR_TRACK_ROTATION,				// --AS **PATROT
+   
+   PAR_LOAD_DRUM1,               // bc: adding these for kit load on automation step
+   PAR_LOAD_DRUM2,
+   PAR_LOAD_DRUM3,
+   PAR_LOAD_SNARE,
+   PAR_LOAD_CYM,
+   PAR_LOAD_HIHAT,
 
 	
 	//#########################################
 	//######## Global Parameters ##############
 	//#########################################
-	PAR_BEGINNING_OF_GLOBALS, /*250*/ //a placeholder to mark the beginning of the global var space not present in morph and not needed in the seq
+	PAR_BEGINNING_OF_GLOBALS, /*256*/ //a placeholder to mark the beginning of the global var space not present in morph and not needed in the seq
 	//global params
 	PAR_BPM = PAR_BEGINNING_OF_GLOBALS,	
 	
@@ -364,7 +371,7 @@ enum ParamEnums
 	
 	PAR_QUANTISATION,
 	
-	PAR_SCREENSAVER_ON_OFF,				// bool /*260*/
+	PAR_SCREENSAVER_ON_OFF,				// bool /*266*/
 	PAR_MIDI_MODE,						//--AS unused now
 	PAR_MIDI_CHAN_7,
 	PAR_MIDI_ROUTING,
@@ -376,7 +383,7 @@ enum ParamEnums
 	PAR_PRESCALER_CLOCK_OUT2,
 	PAR_TRIG_GATE_MODE,
 
-	PAR_BAR_RESET_MODE,					// bool --AS 0 or 1   /*270*/
+	PAR_BAR_RESET_MODE,					// bool --AS 0 or 1   /*276*/
 	PAR_MIDI_CHAN_GLOBAL,				// --AS global midi channel
    PAR_SEQ_PC_TIME,                 // bool, 0 for bar sequence change, 1 for step change
 	PAR_BUT_SHIFT_MODE,              // 0 normal shift operation, 1 shift button is a toggle

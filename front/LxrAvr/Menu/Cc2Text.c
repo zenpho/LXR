@@ -66,7 +66,7 @@ const ModTarg modTargets[] PROGMEM ={
 {TEXT_PAN,PAR_PAN1},
 {TEXT_SAMPLE_RATE,PAR_VOICE_DECIMATION1},
 {TEXT_DRIVE,PAR_DRIVE1},
-{TEXT_NOTE,PAR_MIDI_NOTE1},
+{TEXT_LOAD_FROM_KIT,PAR_LOAD_DRUM1},
 
 //////////////////////////////////////////////////
 //Voice 2 - drum 2
@@ -113,7 +113,7 @@ const ModTarg modTargets[] PROGMEM ={
 {TEXT_PAN,PAR_PAN2},
 {TEXT_SAMPLE_RATE,PAR_VOICE_DECIMATION2},
 {TEXT_DRIVE,PAR_DRIVE2},
-{TEXT_NOTE,PAR_MIDI_NOTE2},
+{TEXT_LOAD_FROM_KIT,PAR_LOAD_DRUM2},
 
 //////////////////////////////////////////////////
 //Voice 3 - drum 3
@@ -160,7 +160,7 @@ const ModTarg modTargets[] PROGMEM ={
 {TEXT_PAN,PAR_PAN3},								//100
 {TEXT_SAMPLE_RATE,PAR_VOICE_DECIMATION3},
 {TEXT_DRIVE,PAR_DRIVE3},
-{TEXT_NOTE,PAR_MIDI_NOTE3},
+{TEXT_LOAD_FROM_KIT,PAR_LOAD_DRUM3},
 
 //////////////////////////////////////////////////
 //Voice 4 - snare/clap
@@ -206,7 +206,7 @@ const ModTarg modTargets[] PROGMEM ={
 {TEXT_PAN,PAR_PAN4},
 {TEXT_SAMPLE_RATE,PAR_VOICE_DECIMATION4},
 {TEXT_DRIVE,PAR_SNARE_DISTORTION},
-{TEXT_NOTE,PAR_MIDI_NOTE4},
+{TEXT_LOAD_FROM_KIT,PAR_LOAD_SNARE},
 
 //////////////////////////////////////////////////
 //Voice 5 - cymbal
@@ -253,7 +253,7 @@ const ModTarg modTargets[] PROGMEM ={
 {TEXT_PAN,PAR_PAN5},
 {TEXT_SAMPLE_RATE,PAR_VOICE_DECIMATION5},
 {TEXT_DRIVE,PAR_CYMBAL_DISTORTION},
-{TEXT_NOTE,PAR_MIDI_NOTE5},							//170
+{TEXT_LOAD_FROM_KIT,PAR_LOAD_CYM},							//170
 
 //////////////////////////////////////////////////
 //Voice 6 - HH open and closed
@@ -300,7 +300,7 @@ const ModTarg modTargets[] PROGMEM ={
 {TEXT_PAN,PAR_PAN6},
 {TEXT_SAMPLE_RATE,PAR_VOICE_DECIMATION6},
 {TEXT_DRIVE,PAR_HAT_DISTORTION},
-{TEXT_NOTE,PAR_MIDI_NOTE6},							//204
+{TEXT_LOAD_FROM_KIT,PAR_LOAD_HIHAT},							//204
 
 };
 
