@@ -532,6 +532,7 @@ enum
 
 //control messages from cortex for leds
 //status
+#define FRONT_SEQ_VOICE_LOAD           0xab // automation load drum voice from kit
 #define FRONT_STEP_LED_STATUS_BYTE 		0xb1
 #define FRONT_SEQ_CC					      0xb2
 #define FRONT_CODEC_CONTROL				0xb3

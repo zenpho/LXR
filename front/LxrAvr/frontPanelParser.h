@@ -35,6 +35,8 @@ extern uint8_t frontPanel_longData;
 
 //control messages from cortex for leds
 //status, param changes
+
+#define VOICE_LOAD_KIT  0xab // message from seq automation node to change voice
 #define MORPH_CC        0xac
 #define BANK_CHANGE_CC  0xad
 #define PARAM_CC        0xae
@@ -70,7 +72,9 @@ extern uint8_t frontPanel_longData;
 #define PATTERN_LOAD			0x03
 
 
-//led_cc messages
+
+// end of 1st byte 'STATUS' byte messages
+//led_cc messages - if 1st byte is 'LED_CC'
 #define LED_CURRENT_STEP_NR 0x01
 #define LED_SEQ_BUTTON		0x02
 #define LED_QUERY_SEQ_TRACK 0x03

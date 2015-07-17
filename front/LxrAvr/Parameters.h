@@ -298,6 +298,13 @@ enum ParamEnums
 	PAR_MIDI_NOTE7,
    
    PAR_KIT_VERSION,
+   
+   PAR_LOAD_DRUM1,               // bc: adding these for kit load on automation step
+   PAR_LOAD_DRUM2,
+   PAR_LOAD_DRUM3,
+   PAR_LOAD_SNARE,
+   PAR_LOAD_CYM,
+   PAR_LOAD_HIHAT,
 
 	//#########################################
 	//######## End of sound Parameters ########
@@ -306,10 +313,10 @@ enum ParamEnums
 	//all parameters in this section are only there to be referenced from the menu
 	//they are not saved anywhere
 	END_OF_SOUND_PARAMETERS,
-	PAR_ROLL= END_OF_SOUND_PARAMETERS, //228
+	PAR_ROLL= END_OF_SOUND_PARAMETERS, //238
 	PAR_MORPH,
 
-	PAR_ACTIVE_STEP, 					/*230*/
+	PAR_ACTIVE_STEP, 					/*236*/
 	PAR_STEP_VOLUME,
 	PAR_STEP_PROB,
 	PAR_STEP_NOTE,
@@ -324,7 +331,7 @@ enum ParamEnums
 	PAR_P1_DEST,
 	PAR_P2_DEST,
 	
-	PAR_P1_VAL,							/*240*/
+	PAR_P1_VAL,							/*246*/
 	PAR_P2_VAL,
 	
 	PAR_SHUFFLE,
@@ -340,19 +347,12 @@ enum ParamEnums
 	PAR_FLUX,
 	PAR_SOM_FREQ,
 	PAR_TRACK_ROTATION,				// --AS **PATROT
-   
-   PAR_LOAD_DRUM1,               // bc: adding these for kit load on automation step
-   PAR_LOAD_DRUM2,
-   PAR_LOAD_DRUM3,
-   PAR_LOAD_SNARE,
-   PAR_LOAD_CYM,
-   PAR_LOAD_HIHAT,
 
 	
 	//#########################################
 	//######## Global Parameters ##############
 	//#########################################
-	PAR_BEGINNING_OF_GLOBALS, /*256*/ //a placeholder to mark the beginning of the global var space not present in morph and not needed in the seq
+	PAR_BEGINNING_OF_GLOBALS, /*257*/ //a placeholder to mark the beginning of the global var space not present in morph and not needed in the seq
 	//global params
 	PAR_BPM = PAR_BEGINNING_OF_GLOBALS,	
 	
@@ -371,7 +371,7 @@ enum ParamEnums
 	
 	PAR_QUANTISATION,
 	
-	PAR_SCREENSAVER_ON_OFF,				// bool /*266*/
+	PAR_SCREENSAVER_ON_OFF,				// bool /*267*/
 	PAR_MIDI_MODE,						//--AS unused now
 	PAR_MIDI_CHAN_7,
 	PAR_MIDI_ROUTING,
@@ -383,12 +383,13 @@ enum ParamEnums
 	PAR_PRESCALER_CLOCK_OUT2,
 	PAR_TRIG_GATE_MODE,
 
-	PAR_BAR_RESET_MODE,					// bool --AS 0 or 1   /*276*/
+	PAR_BAR_RESET_MODE,					// bool --AS 0 or 1   /*278*/
 	PAR_MIDI_CHAN_GLOBAL,				// --AS global midi channel
    PAR_SEQ_PC_TIME,                 // bool, 0 for bar sequence change, 1 for step change
 	PAR_BUT_SHIFT_MODE,              // 0 normal shift operation, 1 shift button is a toggle
    PAR_LOAD_PERF_ON_BANK,           // 0, incoming bank changes select kit, 1 bank changes select perf
-	NUM_PARAMS
+
+   NUM_PARAMS
 };
 
 

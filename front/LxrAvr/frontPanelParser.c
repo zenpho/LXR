@@ -354,7 +354,10 @@ void frontPanel_parseData(uint8_t data)
 					parameter_values[PAR_P2_VAL] = (uint8_t)((frontParser_midiMsg.data1<<7) | frontParser_midiMsg.data2);
 					menu_repaintAll();
 				}
-				
+				else if(frontParser_midiMsg.status == VOICE_LOAD_KIT)
+            {
+               preset_loadVoice(frontParser_midiMsg.data2, frontParser_midiMsg.data1+1, 0);
+            }
 				else if(frontParser_midiMsg.status == SEQ_CC)
 				{
 					switch(frontParser_midiMsg.data1)

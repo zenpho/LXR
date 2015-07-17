@@ -343,13 +343,33 @@ static void seq_sendMidi(MidiMsg msg)
 
 //------------------------------------------------------------------------------
 static void seq_parseAutomationNodes(uint8_t track, Step* stepData)
-{
-	//set new destination
-   autoNode_setDestination(&seq_automationNodes[track][0], stepData->param1Nr);
-   autoNode_setDestination(&seq_automationNodes[track][1], stepData->param2Nr);
-	//set new mod value
-   autoNode_updateValue(&seq_automationNodes[track][0], stepData->param1Val);
-   autoNode_updateValue(&seq_automationNodes[track][1], stepData->param2Val);
+{  
+   uint8_t param1 = stepData->param1Nr;
+   uint8_t param2 = stepData->param2Nr;
+   uint8_t val1 = stepData->param1Val;
+   uint8_t val2 = stepData->param2Val;
+   
+   if(param1>=PAR_LOAD_DRUM1&&param1<=PAR_LOAD_HIHAT)
+   {
+         uart_sendFrontpanelByte(FRONT_SEQ_VOICE_LOAD);
+         uart_sendFrontpanelByte(track);
+         uart_sendFrontpanelByte(val1);
+   }
+   if(param2>=PAR_LOAD_DRUM1&&param2<=PAR_LOAD_HIHAT)
+   {
+         uart_sendFrontpanelByte(FRONT_SEQ_VOICE_LOAD);
+         uart_sendFrontpanelByte(track);
+         uart_sendFrontpanelByte(val2);
+   }
+
+   {
+	   //set new destination
+      autoNode_setDestination(&seq_automationNodes[track][0], param1);
+      autoNode_setDestination(&seq_automationNodes[track][1], param2);
+	   //set new mod value
+      autoNode_updateValue(&seq_automationNodes[track][0], val1);
+      autoNode_updateValue(&seq_automationNodes[track][1], val2);
+   }
 }
 //------------------------------------------------------------------------------
 void seq_triggerVoice(uint8_t voiceNr, uint8_t vol, uint8_t note)

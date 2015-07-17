@@ -318,15 +318,23 @@ enum ParamEnums
 	PAR_AUDIO_OUT6,
 
 	//--AS
-	PAR_MIDI_NOTE1,
+   PAR_MIDI_NOTE1,
 	PAR_MIDI_NOTE2,
 	PAR_MIDI_NOTE3,
 	PAR_MIDI_NOTE4,
 	PAR_MIDI_NOTE5,
 	PAR_MIDI_NOTE6,
-	PAR_MIDI_NOTE7, //110 - beware going over 127, can't fit into midi data, will need another msg
+	PAR_MIDI_NOTE7,      //110 - beware going over 127, can't fit into midi data, will need another msg
    PAR_KIT_VERSION,
-	END_OF_SOUND_PARAMETERS,
+   
+   PAR_LOAD_DRUM1,               // bc: adding these for kit load on automation step
+   PAR_LOAD_DRUM2,
+   PAR_LOAD_DRUM3,
+   PAR_LOAD_SNARE,
+   PAR_LOAD_CYM,
+   PAR_LOAD_HIHAT,
+   
+   END_OF_SOUND_PARAMETERS,
 	//#########################################
 	//######## End of sound Parameters ########
 	//#########################################
@@ -386,6 +394,14 @@ enum ParamEnums
 	PAR_FOLLOW,
 
 	PAR_QUANTISATION,
+   
+   PAR_MIDI_NOTE1,
+	PAR_MIDI_NOTE2,
+	PAR_MIDI_NOTE3,
+	PAR_MIDI_NOTE4,
+	PAR_MIDI_NOTE5,
+	PAR_MIDI_NOTE6,
+	PAR_MIDI_NOTE7,
 
 	NUM_PARAMS
 */
