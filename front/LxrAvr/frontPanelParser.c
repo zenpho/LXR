@@ -356,7 +356,7 @@ void frontPanel_parseData(uint8_t data)
 				}
 				else if(frontParser_midiMsg.status == VOICE_LOAD_KIT)
             {
-               preset_loadVoice(frontParser_midiMsg.data2, frontParser_midiMsg.data1+1, 0);
+               preset_loadVoice(frontParser_midiMsg.data2, (uint8_t)(frontParser_midiMsg.data1+1), 0);
             }
 				else if(frontParser_midiMsg.status == SEQ_CC)
 				{
