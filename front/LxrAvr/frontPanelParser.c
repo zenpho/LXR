@@ -60,6 +60,32 @@ uint8_t frontPanel_longData;
 #define NRPN_MUTE_1 1000
 #define NRPN_MUTE_7 1006
 //------------------------------------------------------------
+void frontPanel_sendMacro(uint8_t whichMacro,uint8_t value)
+{
+// this function only sends top level macro values - 'amount' values are handled as normal cc's
+// 'destination' values are handled in the menu code for DTYPE_AUTOM_TARGET
+
+/* MACRO_CC message structure
+byte1 - status byte 0xaa as above
+byte2, data1 byte: xttaaa-b : tt= top level macro value sent (2 macros exist now, we can do 2 more if we want)
+                              aaa= macro destination value sent (4 destinations exist now, can do 8)
+                              b=macro mod target value top bit
+                              I have left a blank bit above this to make it easier to make more than 255 kit parameters
+                              if we ever want to take on that can of worms
+                              
+byte3, data2 byte: xbbbbbbb : b=macro mod target value lower 7 bits or top level value full
+*/
+   uint8_t data1;
+   if (whichMacro==1){
+      data1=0x20;
+      frontPanel_sendData(MACRO_CC, data1, value);
+   }
+   else if (whichMacro==2){
+      data1=0x40;
+      frontPanel_sendData(MACRO_CC, data1, value);
+   }
+}
+//------------------------------------------------------------
 void frontPanel_updatePatternLeds()
 {
    uint8_t trackNr = menu_getActiveVoice(); //max 6 => 0x6 = 0b110

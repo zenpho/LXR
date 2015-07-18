@@ -37,6 +37,18 @@ extern uint8_t frontPanel_longData;
 //status, param changes
 
 #define VOICE_LOAD_KIT  0xab // message from seq automation node to change voice
+#define MACRO_CC        0xaa // message to send with macro changes
+/* MACRO_CC message structure
+byte1 - status byte 0xaa as above
+byte2, data1 byte: xttaaa-b : tt= top level macro value sent (2 macros exist now, we can do 2 more if we want)
+                              aaa= macro destination value sent (4 destinations exist now, can do 8)
+                              b=macro mod target value top bit
+                              I have left a blank bit above this to make it easier to make more than 255 kit parameters
+                              if we ever want to take on that can of worms
+                              
+byte3, data2 byte: xbbbbbbb : b=macro mod target value lower 7 bits or top level value full
+*/
+
 #define MORPH_CC        0xac
 #define BANK_CHANGE_CC  0xad
 #define PARAM_CC        0xae
@@ -164,7 +176,7 @@ extern uint8_t frontPanel_longData;
 #define SEQ_COPY_TRACK_PATTERN         0x3a
 #define SEQ_PC_TIME                    0x3b
 #define SEQ_COPY_STEP_SET_SRC          0x3d // added message for copy step
-#define SEQ_COPY_STEP_SET_DST          0x3e // special shift-copy step function?
+#define SEQ_COPY_STEP_SET_DST          0x3e 
 
 //SysEx
 #define SYSEX_REQUEST_STEP_DATA			0x01
@@ -192,6 +204,7 @@ void frontPanel_sendData(uint8_t status, uint8_t data1, uint8_t data2);
 void frontPanel_sendByte(uint8_t data);
 void frontPanel_updatePatternLeds();
 void frontPanel_updateSubstepLeds();
+void frontPanel_sendMacro(uint8_t whichMacro,uint8_t value);
 
 extern volatile MidiMsg frontParser_midiMsg;
 

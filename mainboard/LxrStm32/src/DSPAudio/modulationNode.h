@@ -54,7 +54,11 @@ typedef struct ModulatorStruct
 //TODO move into corresponding voice
 extern ModulationNode velocityModulators[6];
 
+extern ModulationNode macroModulators[4];
+
+void modNode_updateMacro(ModulationNode* macroNode, float amount);
 void modNode_init(ModulationNode* vm);
+
 void modNode_resetTargets();
 void modNode_reassignVeloMod();
 

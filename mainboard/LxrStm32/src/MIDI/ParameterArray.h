@@ -334,6 +334,16 @@ enum ParamEnums
    PAR_LOAD_CYM,
    PAR_LOAD_HIHAT,
    
+   PAR_MAC1_DST1,
+   PAR_MAC1_DST1_AMT,
+   PAR_MAC1_DST2,
+   PAR_MAC1_DST2_AMT,
+   
+   PAR_MAC2_DST1,
+   PAR_MAC2_DST1_AMT,
+   PAR_MAC2_DST2,
+   PAR_MAC2_DST2_AMT,
+   
    END_OF_SOUND_PARAMETERS,
 	//#########################################
 	//######## End of sound Parameters ########

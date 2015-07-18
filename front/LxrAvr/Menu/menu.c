@@ -203,6 +203,19 @@ const Name valueNames[NUM_NAMES] PROGMEM =
       {SHORT_BUT_SHIFT_MODE, CAT_GLOBAL, LONG_BUT_SHIFT_MODE}, // TEXT_BUT_SHIFT_MODE
       {SHORT_LOAD_PERF_ON_BANK, CAT_GLOBAL, LONG_LOAD_PERF_ON_BANK}, // TEXT_LOAD_PERF_ON_BANK
       {SHORT_LOAD_FROM_KIT, CAT_VOICE, LONG_LOAD_FROM_KIT}, // text for kit load on automation
+      
+      {SHORT_MAC1, CAT_MACRO1, LONG_MAC1}, // text for macro 1 send amount
+      {SHORT_MAC1, CAT_MACRO2, LONG_MAC1}, // text for macro 2 send amount
+      
+      {SHORT_MAC1_DST1, CAT_MAC1D1, LONG_MAC1_DST1}, // text for macro 1 destination 1 assign
+      {SHORT_MAC1_DST1_AMT, CAT_MACRO1, LONG_MAC1_DST1_AMT}, // text for macro 1 destination 1 mod amount
+      {SHORT_MAC1_DST2, CAT_MAC1D2, LONG_MAC1_DST2}, // text for macro 1 destination 2 assign
+      {SHORT_MAC1_DST2_AMT, CAT_MACRO1, LONG_MAC1_DST2_AMT}, // text for macro 1 destination 2 mod amount
+            
+      {SHORT_MAC2_DST1, CAT_MAC2D1, LONG_MAC2_DST1}, // text for macro 2 destination 1 assign
+      {SHORT_MAC2_DST1_AMT, CAT_MACRO2, LONG_MAC2_DST1_AMT}, // text for macro 2 destination 1 mod amount
+      {SHORT_MAC2_DST2, CAT_MAC2D2, LONG_MAC2_DST2}, // text for macro 2 destination 2 assign
+      {SHORT_MAC2_DST2_AMT, CAT_MACRO2, LONG_MAC2_DST2_AMT}  // text for macro 2 destination 2 mod amount
 
 };
 
@@ -446,6 +459,16 @@ const enum Datatypes PROGMEM parameter_dtypes[NUM_PARAMS] = {
 	    /*PAR_LOAD_SNARE*/		DTYPE_0B127,
 	    /*PAR_LOAD_CYM*/		   DTYPE_0B127,
 	    /*PAR_LOAD_HIHAT*/		DTYPE_0B127,
+       
+       /*PAR_MAC1_DST1*/      DTYPE_AUTOM_TARGET,
+       /*PAR_MAC1_DST1_AMT*/  DTYPE_0B127, 
+       /*PAR_MAC1_DST2*/      DTYPE_AUTOM_TARGET,
+       /*PAR_MAC1_DST2_AMT*/  DTYPE_0B127,
+   
+       /*PAR_MAC2_DST1*/      DTYPE_AUTOM_TARGET,
+       /*PAR_MAC2_DST1_AMT*/  DTYPE_0B127,
+       /*PAR_MAC2_DST2*/      DTYPE_AUTOM_TARGET,
+       /*PAR_MAC2_DST2_AMT*/  DTYPE_0B127,
 
 	    /*PAR_ROLL*/ 			DTYPE_MENU | (MENU_ROLL_RATES<<4),
 	    /*PAR_MORPH*/ 			DTYPE_0B255,
@@ -471,6 +494,10 @@ const enum Datatypes PROGMEM parameter_dtypes[NUM_PARAMS] = {
 	    /*PAR_FLUX*/ 			DTYPE_0B127,
 	    /*PAR_SOM_FREQ*/ 		DTYPE_0B127,
 	    /*PAR_TRACK_ROTATION*/  DTYPE_1B16,  //**PATROT this is not shown in menu, but if it were it would really be 0 to 15
+
+       /*PAR_MAC1*/        DTYPE_PM63,
+       /*PAR_MAC2*/        DTYPE_PM63,
+
 	    /*PAR_BPM*/ 			DTYPE_0B255,							//251
 	    /*PAR_MIDI_CHAN_1*/ 	DTYPE_0B16,
 	    /*PAR_MIDI_CHAN_2*/ 	DTYPE_0B16,
@@ -579,6 +606,9 @@ void menu_init()
 	parameter_values[PAR_EUKLID_LENGTH] = 16;
 	parameter_values[PAR_EUKLID_STEPS] = 16;
 	parameter_values[PAR_EUKLID_ROTATION] = 0;
+   
+   parameter_values[PAR_MAC1] = 63;
+   parameter_values[PAR_MAC2] = 63;
 
 	//initialize the roll value
 	parameter_values[PAR_ROLL] = 8;
@@ -913,7 +943,31 @@ static uint8_t checkScrollSign(uint8_t activePage, uint8_t activeParameter)
 				return '*';
 			else // on 2nd screen, no sub-pages after this
 				return '<';
-		} else { // on 1st screen
+		}
+      else { // on 1st screen
+			if(has2ndPage(activePage)) { // have a second screen
+				if(activePage > 0)  // on first screen and there are sub-pages before this and a second screen after
+					return '*';
+				else
+					return '>';
+			} else { // don't have a second screen
+				if(activePage > 0) // on first screen and have sub-pages before this but not second screen after
+					return '<';
+				else // on first screen, no sub-pages before... would not happen
+					return 0;
+			}
+		}
+	}
+   
+   if(menu_activePage==PERFORMANCE_PAGE) {
+		if(is2ndPage) {
+			//if we are on 2nd screen, and there are more sub-pages after this show "*" to signify both ways are available
+			if((activePage < NUM_SUB_PAGES-1) && (pgm_read_byte(&menuPages[PERFORMANCE_PAGE][activePage+1].top1) != TEXT_EMPTY))
+				return '*';
+			else // on 2nd screen, no sub-pages after this
+				return '<';
+		}
+      else { // on 1st screen
 			if(has2ndPage(activePage)) { // have a second screen
 				if(activePage > 0)  // on first screen and there are sub-pages before this and a second screen after
 					return '*';
@@ -1016,9 +1070,16 @@ void menu_repaintGeneric()
 		{
 			//**AUTOM --AS this is an index into modTargets now
 			//Top row (which destination (1 or 2) and which voice it's targeting)
-			memcpy_P(&editDisplayBuffer[0][0],PSTR("AutDst"),6);
-			numtostru(&editDisplayBuffer[0][7],(uint8_t)( parNr - PAR_P1_DEST + 1));
+			if(menu_activePage==PERFORMANCE_PAGE){
+            //Top row left -> category
+			   strcpy_P(&editDisplayBuffer[0][0],
+				(const char PROGMEM *)(&catNames[pgm_read_byte(&valueNames[parName].category)]));
 
+         }
+         else {
+            memcpy_P(&editDisplayBuffer[0][0],PSTR("AutDst"),6);
+			   numtostru(&editDisplayBuffer[0][7],(uint8_t)( parNr - PAR_P1_DEST + 1));
+         }
 			// bottom row is the category and long name for the parameter being targeted
 			if( pgm_read_word(&modTargets[curParmVal].param)==PAR_NONE ) {
 				//  OFF
@@ -2274,12 +2335,25 @@ static void menu_encoderChangeParameter(int8_t inc)
 		break;
 
 	case DTYPE_AUTOM_TARGET: {//parameter_dtypes[paramNr] & 0x0F
-		const uint8_t nmt=getNumModTargets();
-		//**AUTOM - limit to valid range for encoder
-		if(*paramValue >= nmt)
-			*paramValue = (uint8_t)(nmt-1);
-		break;
+   
+    	const uint8_t nmt=getNumModTargets();
+   	//**AUTOM - limit to valid range for encoder
+   	if(*paramValue >= nmt)
+   		*paramValue = (uint8_t)(nmt-1);
+      if (menu_activePage == PERFORMANCE_PAGE)
+      {
+   		uint8_t value =  (uint8_t)pgm_read_word(&modTargets[*paramValue].param); // the value of the mod target
+         uint8_t lower = value&0x7f;
+         uint8_t upper = (uint8_t)
+                         ( ( ( (paramNr - PAR_MAC1_DST1) //  MAC1_DST1=0, M1D2=2, M2D1=4, M2D2=6
+                              >>1 )                      //  MAC1_DST1=0, M1D2=1, M2D1=2, M2D2=3
+                              <<2 )                      //  shift over 2 to make room for upper mod target bit
+                              |(value>>7) );
+                              
+         frontPanel_sendData(MACRO_CC,upper,lower);
+      }      
 	}
+   break;
 
 	case DTYPE_0B255:
 		//if(*paramValue > 255)
@@ -2514,9 +2588,8 @@ static void menu_encoderChangeShiftParameter(int8_t inc)
 		//**AUTOM - limit to valid range for encoder
 		if(*paramValue >= nmt)
 			*paramValue = (uint8_t)(nmt-1);
-		break;
 	}
-
+   break;
 	case DTYPE_0B255:
 		//if(*paramValue > 255)
 		//	*paramValue = 255;
@@ -2618,8 +2691,17 @@ checkvalid:
 				activePage++; // and change page
 				if(activePage >=NUM_SUB_PAGES)
 					activePage=0; // wrap around to 1st (would only happen if we fill all 8. unlikely)
-			} else
+         }
+         else if(menu_activePage==PERFORMANCE_PAGE) { // in perf menu, we can move to next sub-page
+				needLock=1;
+				activeParameter=0; // set to par 0 of next sub page
+				activePage++; // and change page
+				if(activePage >=NUM_SUB_PAGES)
+					activePage=0; // wrap around to 1st (would only happen if we fill all 8. unlikely)
+			} 
+         else{
 				return; // moved past last param on section 2. not allowed in most modes
+         }
 		}
 	} else { // inc == -1
 		if(activeParameter == 3) { // move to first section of sub-page
@@ -2631,8 +2713,19 @@ checkvalid:
 				activePage--; // and change page
 				if(activePage < 0)
 					activePage=NUM_SUB_PAGES-1; //wrap around to last page (would only happen if we fill all 8. unlikely)
-			} else
+         
+			} 
+         else if(menu_activePage==PERFORMANCE_PAGE) { // in global menu, we can move to previous sub-page
+				needLock=1;
+				activeParameter=7; // put us on the last param of the previous sub-page
+				activePage--; // and change page
+				if(activePage < 0)
+					activePage=NUM_SUB_PAGES-1; //wrap around to last page (would only happen if we fill all 8. unlikely)
+         
+			}
+         else{
 				return; // move past first param on section 1. not allowed in most modes
+         }
 		}
 	}
 
@@ -3150,7 +3243,16 @@ void menu_parseGlobalParam(uint16_t paramNr, uint8_t value)
 //-----------------------------------------------------------------
 static void menu_processSpecialCaseValues(uint16_t paramNr/*, const uint8_t *value*/)
 {
-	if(paramNr == PAR_BPM)
+   
+   if(paramNr == PAR_MAC1)
+   {
+      frontPanel_sendMacro(1,parameter_values[PAR_MAC1]);
+   }
+   else if (paramNr == PAR_MAC2)
+   {
+      frontPanel_sendMacro(2,parameter_values[PAR_MAC2]);
+   }
+	else if(paramNr == PAR_BPM)
 	{
 		//*value *= 2;
 		//*value+=1;
@@ -3350,6 +3452,33 @@ void menu_parseKnobValue(uint8_t potNr, uint8_t potValue)
 		frontPanel_sendData(CC_LFO_TARGET,upper,lower);
 	}
 		break;
+   case DTYPE_AUTOM_TARGET:
+   {
+      if (menu_activePage == PERFORMANCE_PAGE)
+      {
+         // bc: these are only used in perf for macro automation targets
+   
+   		const uint8_t value = (uint8_t)pgm_read_word(&modTargets[dtypeValue].param); // the value of the mod target
+         uint8_t lower = value&0x7f;
+         uint8_t upper = (uint8_t)
+                         ( ( ( (paramNr - PAR_MAC1_DST1) //  MAC1_DST1=0, M1D2=2, M2D1=4, M2D2=6
+                              >>1 )                      //  MAC1_DST1=0, M1D2=1, M2D1=2, M2D2=3
+                              <<2 )                      //  shift over 2 to make room for upper mod target bit
+                              |(value>>7) );
+                              
+         frontPanel_sendData(MACRO_CC,upper,lower);
+      }
+      else
+      {
+         if(paramNr<128) // => Sound Parameter below 128
+   			frontPanel_sendData(MIDI_CC,(uint8_t)paramNr,dtypeValue);
+   		else if(paramNr>=128 && (paramNr < END_OF_SOUND_PARAMETERS)) // => Sound Parameter above 127
+   			frontPanel_sendData(CC_2,(uint8_t)(paramNr-128),dtypeValue);
+   		else
+   			menu_parseGlobalParam(paramNr,dtypeValue);
+      }
+   }
+   break;
 
 	default: // all other sound parameters are send as CC or CC2. anything else is handled specially
 		if(paramNr<128) // => Sound Parameter below 128

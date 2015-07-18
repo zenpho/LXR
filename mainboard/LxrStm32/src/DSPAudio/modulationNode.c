@@ -44,6 +44,9 @@
 
 INCCMZ ModulationNode velocityModulators[6];
 
+//INCCMZ ModulationNode macroModulators[4];
+ModulationNode macroModulators[4];
+
  //-----------------------------------------------------------------------
 void modNode_init(ModulationNode* vm)
 {
@@ -96,7 +99,10 @@ void modNode_originalValueChanged(uint16_t idx)
 	{
 		modNode_setOriginalValueChanged(&velocityModulators[i],idx);
 	}
-
+   for(i=0;i<4;i++)
+	{
+		modNode_setOriginalValueChanged(&macroModulators[i],idx);
+	}
 	modNode_setOriginalValueChanged(&voiceArray[0].lfo.modTarget,idx);
 	modNode_setOriginalValueChanged(&voiceArray[1].lfo.modTarget,idx);
 	modNode_setOriginalValueChanged(&voiceArray[2].lfo.modTarget,idx);
@@ -112,7 +118,7 @@ void modNode_resetTargets()
 	{
 		paramArray_setParameter(velocityModulators[i].destination,velocityModulators[i].originalValue);
 	}
-
+   
 	paramArray_setParameter(voiceArray[0].lfo.modTarget.destination,voiceArray[0].lfo.modTarget.originalValue);
 	paramArray_setParameter(voiceArray[1].lfo.modTarget.destination,voiceArray[1].lfo.modTarget.originalValue);
 	paramArray_setParameter(voiceArray[2].lfo.modTarget.destination,voiceArray[2].lfo.modTarget.originalValue);
@@ -214,4 +220,37 @@ void modNode_updateValue(ModulationNode* vm, float val)
 
 	}
 }
+//-----------------------------------------------------------------------
+void modNode_updateMacro(ModulationNode* macroNode, float value)
+{      
+   Parameter const *paramAssign = &parameterArray[macroNode->destination];
 
+	macroNode->lastVal = value;
+   
+	switch(paramAssign->type) // p=paramAssign value; n=node amount; v=received value
+	{
+	case TYPE_UINT8:
+      // p = p*n*v +p 
+		(*((uint8_t*)paramAssign->ptr)) = (*((uint8_t*)paramAssign->ptr)) * macroNode->amount * value;// + (*((uint8_t*)paramAssign->ptr));
+		break;
+
+	case TYPE_UINT32:
+		(*((uint32_t*)paramAssign->ptr)) = (*((uint32_t*)paramAssign->ptr)) * macroNode->amount * value;// + (*((uint32_t*)paramAssign->ptr));
+		break;
+
+	case TYPE_FLT:
+		(*((float*)paramAssign->ptr)) = macroNode->originalValue.flt*value;//(*((float*)paramAssign->ptr)) * macroNode->amount * value;// + (*((float*)paramAssign->ptr));
+		break;
+
+	case TYPE_SPECIAL_F:
+		(*((float*)paramAssign->ptr)) = (*((float*)paramAssign->ptr)) * macroNode->amount * value;// + (*((float*)paramAssign->ptr));
+		break;
+
+	case TYPE_SPECIAL_P:
+	case TYPE_SPECIAL_FILTER_F:
+	default:
+		break;
+   }
+   
+
+}

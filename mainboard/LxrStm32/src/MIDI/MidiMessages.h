@@ -510,8 +510,19 @@ enum
 	CC2_MIDI_NOTE7, // s/b 111 i think
 	
 	//<<insert new parameters here>>
-	
-	
+   
+   CC2_KIT_VERSION, // bc: this does nothing, it's only here to offset future params
+   
+   CC2_MAC1_DST1,       // bc: change perf macro destinations
+   CC2_MAC1_DST1_AMT,
+   CC2_MAC1_DST2,
+   CC2_MAC1_DST2_AMT,
+   
+   CC2_MAC2_DST1,
+   CC2_MAC2_DST1_AMT,
+   CC2_MAC2_DST2,
+   CC2_MAC2_DST2_AMT,
+
 	
 
 	//Mute Button NRPN messages
@@ -533,6 +544,18 @@ enum
 //control messages from cortex for leds
 //status
 #define FRONT_SEQ_VOICE_LOAD           0xab // automation load drum voice from kit
+#define FRONT_CC_MACRO_TARGET          0xaa // performance macro changes to destination or main macro control, not amount
+/* MACRO_CC message structure
+byte1 - status byte 0xaa as above
+byte2, data1 byte: xttaaa-b : tt= top level macro value sent (2 macros exist now, we can do 2 more if we want)
+                              aaa= macro destination value sent (4 destinations exist now, can do 8)
+                              b=macro mod target value top bit
+                              I have left a blank bit above this to make it easier to make more than 255 kit parameters
+                              if we ever want to take on that can of worms
+                              
+byte3, data2 byte: xbbbbbbb : b=macro mod target value lower 7 bits or top level value full
+*/
+
 #define FRONT_STEP_LED_STATUS_BYTE 		0xb1
 #define FRONT_SEQ_CC					      0xb2
 #define FRONT_CODEC_CONTROL				0xb3

@@ -342,10 +342,23 @@ const char shortNames[][4] PROGMEM  =
 	{"co1"},  // trigger clock out1 ppq
 	{"co2"},  // trigger clock out2 ppq
 	{"pcr"}, // pattern change resets bar counter
-   	{"pci"}, // pattern change time is bar or step
-   	{"stg"}, // shift is toggle instead of momentary
-      {"b2p"}, // bank changes change perfs
-      {"kit"},
+   {"pci"}, // pattern change time is bar or step
+   {"stg"}, // shift is toggle instead of momentary
+   {"b2p"}, // bank changes change perfs
+   {"kit"},
+
+   {"mac"}, // TEXT_MAC1,
+   {"mac"}, // TEXT_MAC2,
+   
+   {"1d1"}, // TEXT_MAC1_DST1,
+   {"1a1"}, // TEXT_MAC1_DST1_AMT,
+   {"1d2"}, // TEXT_MAC1_DST2,
+   {"1a2"}, // TEXT_MAC1_DST2_AMT,
+   
+   {"2d1"}, // TEXT_MAC2_DST1,
+   {"2a1"}, // TEXT_MAC2_DST1_AMT,
+   {"2d2"}, // TEXT_MAC2_DST2,
+   {"2a2"}  // TEXT_MAC2_DST2_AMT,
 };
 //-----------------------------------------------------------------
 // These correspond with the catNamesEnum in menu.h
@@ -380,6 +393,12 @@ const char catNames[][16] PROGMEM =
 	{"Generatr"},
 	{"MIDI"},
 	{"Trigger"},
+   {"Macro 1"},
+   {"Macro 2"},
+   {"Mac1Dst1"},
+   {"Mac1Dst2"},
+   {"Mac2Dst1"},
+   {"Mac2Dst2"},
 };
 //-----------------------------------------------------------------
 // these must correspond to longNamesEnum
@@ -461,6 +480,18 @@ const char longNames[][16] PROGMEM =
    {"ShiftTog" }, // shift is toggle instead of momentary
    {"BnkToPrf" }, // Bank changes change perfs
    {"LoadKit#" }, // load voice from kit on automation
+   {"Amount"  }, // TEXT_MAC1,
+   {"Amount"  }, // TEXT_MAC2,
+   
+   {"Dest 1" }, // TEXT_MAC1_DST1,
+   {"Mod Amt 1" }, // TEXT_MAC1_DST1_AMT,
+   {"Dest 2" }, // TEXT_MAC1_DST2,
+   {"Mod Amt 2" }, // TEXT_MAC1_DST2_AMT,
+   
+   {"Dest 1" }, // TEXT_MAC2_DST1,
+   {"Mod Amt 2" }, // TEXT_MAC2_DST1_AMT,
+   {"Dest 2" }, // TEXT_MAC2_DST2,
+   {"Mod Amt 2" }  // TEXT_MAC2_DST2_AMT,  
 };
 
 

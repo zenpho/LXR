@@ -1104,7 +1104,23 @@ void midiParser_ccHandler(MidiMsg msg, uint8_t updateOriginalValue)
             
             }
             break;
-      
+         case CC2_MAC1_DST1:       // bc: these need to be handled with a separate status message like LFO dest's
+         case CC2_MAC1_DST2:       // this happens in frontPanelParser
+         case CC2_MAC2_DST1:
+         case CC2_MAC2_DST2:
+            break;
+         case CC2_MAC1_DST1_AMT:       // bc: change perf macro destination amounts
+         case CC2_MAC1_DST2_AMT:
+         case CC2_MAC2_DST1_AMT:
+         case CC2_MAC2_DST2_AMT:
+            {
+               uint8_t macModNumber = ((msg.data1-CC2_MAC1_DST1_AMT)>>1); // amounts are every other one so
+                                                                          // right shift one to turn 0,2,4,6 to 0,1,2,3
+               //seq_setBpm(msg.data2);
+               macroModulators[macModNumber].amount = ( ((float)(msg.data2)) / 128.f);
+            }
+            break;
+            
          default:
             break;
       }

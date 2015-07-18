@@ -286,7 +286,7 @@ inline void mixer_addDataToOutput(uint8_t dest, const float panL, const float pa
 //-----------------------------------------------------------------------
 void mixer_calcNextSampleBlock(int16_t* output,int16_t* output2)
 {
-	modNode_resetTargets();
+	modNode_resetTargets();  
 	//re assign velocity modulation
 	modNode_reassignVeloMod();
 

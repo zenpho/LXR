@@ -437,7 +437,53 @@ static void frontParser_handleMidiMessage()
 
    switch(frontParser_midiMsg.status)
    {
-   //SEQ MESSAGES
+      case FRONT_CC_MACRO_TARGET: //frontParser_midiMsg.status
+         {
+         
+            /* MACRO_CC message structure
+            byte1 - status byte 0xaa as above
+            byte2, data1 byte: xtta aa-b : tt= top level macro value sent (2 macros exist now, we can do 2 more if we want)
+                                           aaa= macro destination value sent (4 destinations exist now, can do 8)
+                                           b=macro mod target value top bit
+                                           I have left a blank bit above this to make it easier to make more than 255 kit parameters
+                                           if we ever want to take on that can of worms
+                                          
+            byte3, data2 byte: xbbb bbbb : b=macro mod target value lower 7 bits or top level value full
+            */
+            
+            uint8_t upper = frontParser_midiMsg.data1;
+            uint8_t lower = frontParser_midiMsg.data2;
+           
+            if (upper&0x20)
+            {
+               float value = (float)(lower);
+               value = value/32;
+               // top level macro amount message received
+               modNode_updateMacro(&macroModulators[0],(value));
+               //modNode_updateMacro(&macroModulators[1],(value));
+               //modNode_updateValue(&velocityModulators[0],lower/127.f);
+            }
+            else if (upper&0x40)
+            {
+               float value = (float)(lower);
+               value = value/32;
+               // top level macro amount message received
+               modNode_updateMacro(&macroModulators[2],(value));
+               modNode_updateMacro(&macroModulators[3],(value));
+               //modNode_updateValue(&velocityModulators[0],lower/127.f);
+            }
+            else
+            {
+               // macro destination message
+               uint16_t value = (uint16_t)( ( (upper&0x03)<<8) | lower);
+               uint8_t whichModDest = (uint8_t)( 0x07&(upper>>2) ); // whichModDest 0,1,2,3 mac1d1,mac1d2,mac2d1,mac2d2
+
+               modNode_setDestination(&macroModulators[whichModDest], value);
+            }
+         
+         }
+         break; // case FRONT_CC_LFO_TARGET
+      //SEQ MESSAGES
       case FRONT_SEQ_CC: // frontParser_midiMsg.status
          frontParser_handleSeqCC();
          break;
@@ -682,7 +728,24 @@ static void frontParser_handleMidiMessage()
          break;
    } // frontParser_midiMsg.status
 }
+//------------------------------------------------------
+// Sequencer message handler
+// This is called when we have received a message with status FRONT_SEQ_CC
+void frontParser_handleMacro()
+{  
 
+   uint8_t whichMacro = frontParser_midiMsg.data1;
+   float amount = (float)( (frontParser_midiMsg.data2-63)/64 );
+   if (whichMacro == 1){
+      modNode_updateValue(&velocityModulators[0],amount);
+      modNode_updateValue(&velocityModulators[1],amount);
+   }
+   else if (whichMacro == 2){
+      modNode_updateValue(&macroModulators[2],amount);
+      modNode_updateValue(&macroModulators[3],amount);
+   }
+   
+}
 //------------------------------------------------------
 // Sequencer message handler
 // This is called when we have received a message with status FRONT_SEQ_CC
