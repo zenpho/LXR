@@ -1018,7 +1018,7 @@ void buttonHandler_buttonPressed(uint8_t buttonNr) {
       case BUT_MODE4:
       // voice/perf patgen/step/load save menu
          buttonHandler_handleModeButtons((uint8_t) (buttonNr - BUT_MODE1));
-      break;
+         break;
    
       case BUT_START_STOP:
       //Sequencer Start Stop button
@@ -1166,7 +1166,6 @@ void buttonHandler_buttonPressed(uint8_t buttonNr) {
          break;
    }
 }
-
 //--------------------------------------------------------
 void buttonHandler_buttonReleased(uint8_t buttonNr) {
 
@@ -1182,40 +1181,44 @@ void buttonHandler_buttonReleased(uint8_t buttonNr) {
 	// for the rest...
    switch (buttonNr) {
       case BUT_COPY:
-         if(buttonHandler_stateMemory.seqErasing) {
-         // --AS **RECORD if we are in erase mode, exit that mode
-            buttonHandler_stateMemory.seqErasing=0;
-            frontPanel_sendData(SEQ_CC, SEQ_ERASE_ON_OFF,
-               				buttonHandler_stateMemory.seqErasing);
-         } 
-         else {
-            if (!buttonHandler_getShift()) {
-                  switch(buttonHandler_stateMemory.selectButtonMode) {
-                     case SELECT_MODE_VOICE:
-                        if ((menu_activePage<=VOICE7_PAGE)&&(editModeActive))
-                           menu_repaintAll();
-                        else
-                           buttonHandler_leaveSeqMode();
-                        break;
-                     case SELECT_MODE_PERF:
-                        led_clearAllBlinkLeds();
-                        led_clearSelectLeds();
-                        menu_switchPage(PERFORMANCE_PAGE);
-                        led_initPerformanceLeds();
-                        return;
-                     case SELECT_MODE_PAT_GEN:
-                     //led_clearAllBlinkLeds();
-                        led_clearSelectLeds();
-                        led_setValue(1,	(uint8_t) (menu_getViewedPattern() + LED_PART_SELECT1));
-                        menu_switchPage(EUKLID_PAGE);
-                        break;
-                     case SELECT_MODE_STEP:
-                        buttonHandler_enterSeqModeStepMode();
-                        break;
-                     default:
-                        break;
-                  }
-                  copyClear_reset();
+         {
+            if(buttonHandler_stateMemory.seqErasing) 
+            {
+            // --AS **RECORD if we are in erase mode, exit that mode
+               buttonHandler_stateMemory.seqErasing=0;
+               frontPanel_sendData(SEQ_CC, SEQ_ERASE_ON_OFF,
+                  				buttonHandler_stateMemory.seqErasing);
+            } 
+            else if (!buttonHandler_getShift()) 
+            {//copy mode abort/exit
+               copyClear_reset();
+               // get previous led modes after copyclear
+               switch(buttonHandler_stateMemory.selectButtonMode) 
+               {
+                  case SELECT_MODE_VOICE:
+                     if ((menu_activePage<=VOICE7_PAGE)&&(editModeActive))
+                        menu_repaintAll();
+                     else
+                        buttonHandler_leaveSeqMode();
+                     break;
+                  case SELECT_MODE_PERF:
+                     led_clearAllBlinkLeds();
+                     led_clearSelectLeds();
+                     menu_switchPage(PERFORMANCE_PAGE);
+                     led_initPerformanceLeds();
+                     return;
+                  case SELECT_MODE_PAT_GEN:
+                  //led_clearAllBlinkLeds();
+                     led_clearSelectLeds();
+                     led_setValue(1,	(uint8_t) (menu_getViewedPattern() + LED_PART_SELECT1));
+                     menu_switchPage(EUKLID_PAGE);
+                     break;
+                  case SELECT_MODE_STEP:
+                     buttonHandler_enterSeqModeStepMode();
+                     break;
+                  default:
+                     break;
+               }
             }
          }
          break;
