@@ -207,6 +207,9 @@ enum NamesEnum
    TEXT_MAC2_DST1_AMT,
    TEXT_MAC2_DST2,
    TEXT_MAC2_DST2_AMT,
+   TEXT_ROLL_NOTE,
+   TEXT_ROLL_VELOCITY,
+   TEXT_RECORD_NOTES,
 	NUM_NAMES
 };
 //-----------------------------------------------------------------
@@ -311,6 +314,9 @@ enum shortNamesEnum
    SHORT_MAC2_DST1_AMT,
    SHORT_MAC2_DST2,
    SHORT_MAC2_DST2_AMT,
+   SHORT_ROLL_NOTE,
+   SHORT_ROLL_VELOCITY,
+   SHORT_RECORD_NOTES,
 
 	
 };
@@ -444,6 +450,9 @@ enum longNamesEnum
    LONG_MAC2_DST1_AMT,
    LONG_MAC2_DST2,
    LONG_MAC2_DST2_AMT,
+   LONG_ROLL_NOTE,
+   LONG_ROLL_VELOCITY,
+   LONG_RECORD_NOTES,
 	
 };
 

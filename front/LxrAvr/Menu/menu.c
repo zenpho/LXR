@@ -215,7 +215,11 @@ const Name valueNames[NUM_NAMES] PROGMEM =
       {SHORT_MAC2_DST1, CAT_MAC2D1, LONG_MAC2_DST1}, // text for macro 2 destination 1 assign
       {SHORT_MAC2_DST1_AMT, CAT_MACRO2, LONG_MAC2_DST1_AMT}, // text for macro 2 destination 1 mod amount
       {SHORT_MAC2_DST2, CAT_MAC2D2, LONG_MAC2_DST2}, // text for macro 2 destination 2 assign
-      {SHORT_MAC2_DST2_AMT, CAT_MACRO2, LONG_MAC2_DST2_AMT}  // text for macro 2 destination 2 mod amount
+      {SHORT_MAC2_DST2_AMT, CAT_MACRO2, LONG_MAC2_DST2_AMT},  // text for macro 2 destination 2 mod amount
+      
+      {SHORT_ROLL_NOTE, CAT_PATTERN, LONG_ROLL_NOTE},  
+      {SHORT_ROLL_VELOCITY, CAT_PATTERN, LONG_ROLL_VELOCITY},  
+      {SHORT_RECORD_NOTES, CAT_SEQUENCER, LONG_RECORD_NOTES}, 
 
 };
 
@@ -495,8 +499,12 @@ const enum Datatypes PROGMEM parameter_dtypes[NUM_PARAMS] = {
 	    /*PAR_SOM_FREQ*/ 		DTYPE_0B127,
 	    /*PAR_TRACK_ROTATION*/  DTYPE_1B16,  //**PATROT this is not shown in menu, but if it were it would really be 0 to 15
 
-       /*PAR_MAC1*/        DTYPE_PM63,
-       /*PAR_MAC2*/        DTYPE_PM63,
+       /*PAR_MAC1*/        DTYPE_0B127,
+       /*PAR_MAC2*/        DTYPE_0B127,
+     
+      /*PAR_ROLL_NOTE*/ DTYPE_NOTE_NAME,
+      /*PAR_ROLL_VELOCITY*/ DTYPE_0B127,
+      /*PAR_RECORD_NOTES*/  DTYPE_ON_OFF,
 
 	    /*PAR_BPM*/ 			DTYPE_0B255,							//251
 	    /*PAR_MIDI_CHAN_1*/ 	DTYPE_0B16,
@@ -523,6 +531,7 @@ const enum Datatypes PROGMEM parameter_dtypes[NUM_PARAMS] = {
 	   /*PAR_SEQ_PC_TIME*/  DTYPE_ON_OFF, // -bc- change patterns on sub-step instead of bar
 	   /*PAR_BUT_SHIFT_MODE*/ DTYPE_ON_OFF, // -bc- make shift a toggle
       /*PAR_LOAD_PERF_ON_BANK*/  DTYPE_ON_OFF, // -bc- load perfs instead of kits on bank change cc
+
 };
 
 
@@ -607,11 +616,15 @@ void menu_init()
 	parameter_values[PAR_EUKLID_STEPS] = 16;
 	parameter_values[PAR_EUKLID_ROTATION] = 0;
    
-   parameter_values[PAR_MAC1] = 63;
-   parameter_values[PAR_MAC2] = 63;
+   parameter_values[PAR_MAC1] = 127;
+   parameter_values[PAR_MAC2] = 127;
 
 	//initialize the roll value
 	parameter_values[PAR_ROLL] = 8;
+   parameter_values[PAR_ROLL_NOTE] = 63;
+   parameter_values[PAR_ROLL_VELOCITY] = 100;
+   parameter_values[PAR_RECORD_NOTES] = 1;
+   
 	//frontPanel_sendData(SEQ_CC,SEQ_ROLL_RATE,8); //value is initialized in cortex firmware
 
 	parameter_values[PAR_BPM] = 120;
@@ -936,33 +949,10 @@ static uint8_t checkScrollSign(uint8_t activePage, uint8_t activeParameter)
 
 	//**GMENU show '*' when both left and right movement are possible in the global settings menu
 	// show > or < as appropriate
-	if(menu_activePage==MENU_MIDI_PAGE) {
+	if(menu_activePage==MENU_MIDI_PAGE||menu_activePage==PERFORMANCE_PAGE) {
 		if(is2ndPage) {
 			//if we are on 2nd screen, and there are more sub-pages after this show "*" to signify both ways are available
-			if((activePage < NUM_SUB_PAGES-1) && (pgm_read_byte(&menuPages[MENU_MIDI_PAGE][activePage+1].top1) != TEXT_EMPTY))
-				return '*';
-			else // on 2nd screen, no sub-pages after this
-				return '<';
-		}
-      else { // on 1st screen
-			if(has2ndPage(activePage)) { // have a second screen
-				if(activePage > 0)  // on first screen and there are sub-pages before this and a second screen after
-					return '*';
-				else
-					return '>';
-			} else { // don't have a second screen
-				if(activePage > 0) // on first screen and have sub-pages before this but not second screen after
-					return '<';
-				else // on first screen, no sub-pages before... would not happen
-					return 0;
-			}
-		}
-	}
-   
-   if(menu_activePage==PERFORMANCE_PAGE) {
-		if(is2ndPage) {
-			//if we are on 2nd screen, and there are more sub-pages after this show "*" to signify both ways are available
-			if((activePage < NUM_SUB_PAGES-1) && (pgm_read_byte(&menuPages[PERFORMANCE_PAGE][activePage+1].top1) != TEXT_EMPTY))
+			if((activePage < NUM_SUB_PAGES-1) && (pgm_read_byte(&menuPages[menu_activePage][activePage+1].top1) != TEXT_EMPTY))
 				return '*';
 			else // on 2nd screen, no sub-pages after this
 				return '<';
@@ -2217,6 +2207,7 @@ void menu_parseEncoder(int8_t inc, uint8_t button)
 // given a delta, will apply that to the current parameter
 static void menu_encoderChangeParameter(int8_t inc)
 {
+   screensaver_touch();
 	const uint8_t activeParameter	= menuIndex & MASK_PARAMETER;
 	const uint8_t activePage		= (menuIndex&MASK_PAGE)>>PAGE_SHIFT;
 
@@ -2431,10 +2422,11 @@ static void menu_encoderChangeParameter(int8_t inc)
 // -bc- called when edit mode is active
 // and shift is pressed - we can add some
 // special functions here, primarily
-// i wanted to add shift+encoder changes morph parameters
+// add shift+encoder changes morph parameters
 
 static void menu_encoderChangeShiftParameter(int8_t inc)
 {
+   screensaver_touch();
 	const uint8_t activeParameter	= menuIndex & MASK_PARAMETER;
 	const uint8_t activePage		= (menuIndex&MASK_PAGE)>>PAGE_SHIFT;
 
@@ -2455,10 +2447,26 @@ static void menu_encoderChangeShiftParameter(int8_t inc)
    {
       isMorphParam = 0;
    } 
+   else if ( (paramNr>=PAR_MIDI_NOTE1) && (paramNr <= PAR_MAC1_DST1) )
+   {
+      isMorphParam = 0;
+   }
+   else if (paramNr==PAR_MAC1_DST2)
+   {
+      isMorphParam = 0;
+   }
+   else if (paramNr==PAR_MAC2_DST1)
+   {
+      isMorphParam = 0;
+   }
+   else if (paramNr==PAR_MAC2_DST2)
+   {
+      isMorphParam = 0;
+   }		
    else if (paramNr>=END_OF_SOUND_PARAMETERS)
    {
       isMorphParam = 0;
-   }	
+   }
    else
    {
       isMorphParam = 1;
@@ -2667,7 +2675,7 @@ static void menu_encoderChangeShiftParameter(int8_t inc)
 // or not change it if boundaries are reached
 static void menu_moveToMenuItem(int8_t inc)
 {
-
+   screensaver_touch();
 	int8_t activeParameter	= menuIndex & MASK_PARAMETER; // will be 0 to 7
 	int8_t activePage		= (int8_t)(menuIndex >> PAGE_SHIFT); // will be 0 to 31
 	uint8_t needLock=0;
@@ -3130,6 +3138,22 @@ void menu_parseGlobalParam(uint16_t paramNr, uint8_t value)
 			14 - 1/128
 		 */
 		frontPanel_sendData(SEQ_CC,SEQ_ROLL_RATE,value);
+	}
+   break;
+   case PAR_ROLL_NOTE:
+	{
+		frontPanel_sendData(SEQ_CC,SEQ_ROLL_NOTE,value);
+	}
+   break;
+   case PAR_ROLL_VELOCITY:
+	{
+		frontPanel_sendData(SEQ_CC,SEQ_ROLL_VELOCITY,value);
+	}
+   break;
+   case PAR_RECORD_NOTES:
+	{
+      // record notes if the sequencer note lock is 0
+		frontPanel_sendData(SEQ_CC,SEQ_LOCK_NOTES,(uint8_t)(1-value));
 	}
 	break;
 

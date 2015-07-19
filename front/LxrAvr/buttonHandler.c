@@ -286,8 +286,12 @@ static void buttonHandler_handleModeButtons(uint8_t mode) {
 
 		//set menu to perf page
 		lastActiveSubPage = menu_getSubPage();
-		menu_switchPage(PERFORMANCE_PAGE);
-		menu_switchSubPage(0);
+		
+      if (menu_activePage==PERFORMANCE_PAGE)
+		   menu_switchSubPage(0);
+      else
+         menu_switchPage(PERFORMANCE_PAGE);
+         
 		menu_repaintAll();
 
 	}
@@ -1014,7 +1018,7 @@ void buttonHandler_buttonPressed(uint8_t buttonNr) {
       case BUT_MODE4:
       // voice/perf patgen/step/load save menu
          buttonHandler_handleModeButtons((uint8_t) (buttonNr - BUT_MODE1));
-         break;
+      break;
    
       case BUT_START_STOP:
       //Sequencer Start Stop button
@@ -1192,29 +1196,14 @@ void buttonHandler_buttonReleased(uint8_t buttonNr) {
             }
          }
          
-         // bc - i'm putting in the same release actions as for shift (mostly to get leds back in perf mode)
+         // bc - i'm putting in the same release actions as for shift when in perf mode
          switch(buttonHandler_stateMemory.selectButtonMode) {
-            case SELECT_MODE_VOICE:
-               if ((menu_activePage<=VOICE7_PAGE)&&(editModeActive))
-                  menu_repaintAll();
-               else
-                  buttonHandler_leaveSeqMode();
-               break;
             case SELECT_MODE_PERF:
                led_clearAllBlinkLeds();
                led_clearSelectLeds();
                menu_switchPage(PERFORMANCE_PAGE);
                led_initPerformanceLeds();
                return;
-            case SELECT_MODE_PAT_GEN:
-            //led_clearAllBlinkLeds();
-               led_clearSelectLeds();
-               led_setValue(1,	(uint8_t) (menu_getViewedPattern() + LED_PART_SELECT1));
-               menu_switchPage(EUKLID_PAGE);
-               break;
-            case SELECT_MODE_STEP:
-               buttonHandler_enterSeqModeStepMode();
-               break;
             default:
                break;
          }

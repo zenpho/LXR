@@ -137,6 +137,7 @@ void modNode_reassignVeloMod()
 		modNode_updateValue(&velocityModulators[i], velocityModulators[i].lastVal);
 	}
 }
+
 //-----------------------------------------------------------------------
 // set a modulation destination to one of the sound parameters.
 // This is called when the mod target changes or is initialized.
@@ -221,29 +222,50 @@ void modNode_updateValue(ModulationNode* vm, float val)
 	}
 }
 //-----------------------------------------------------------------------
-void modNode_updateMacro(ModulationNode* macroNode, float value)
+void modNode_resetMacros()
+{
+	uint8_t i;
+	for(i=0;i<4;i++)
+	{
+      paramArray_setParameter(macroModulators[i].destination,macroModulators[i].originalValue);
+   }
+}
+//-----------------------------------------------------------------------
+void modNode_reassignMacroMod()
+{
+	uint8_t i;
+	for(i=0;i<4;i++)
+	{
+		modNode_updateValue(&macroModulators[i], macroModulators[i].lastVal);
+	}
+}
+//-----------------------------------------------------------------------
+/*void modNode_updateMacro(ModulationNode* macroNode, float value)
 {      
    Parameter const *paramAssign = &parameterArray[macroNode->destination];
-
-	macroNode->lastVal = value;
+   
+   macroNode->lastVal = value;
    
 	switch(paramAssign->type) // p=paramAssign value; n=node amount; v=received value
 	{
 	case TYPE_UINT8:
-      // p = p*n*v +p 
-		(*((uint8_t*)paramAssign->ptr)) = (*((uint8_t*)paramAssign->ptr)) * macroNode->amount * value;// + (*((uint8_t*)paramAssign->ptr));
+      //(*((uint8_t*)paramAssign->ptr)) = macroNode->originalValue.itg;
+		(*((uint8_t*)paramAssign->ptr)) = (*((uint32_t*)paramAssign->ptr)) - ( (*((uint32_t*)paramAssign->ptr)) * (1-value) * macroNode->amount);// + (*((uint8_t*)paramAssign->ptr));
 		break;
 
 	case TYPE_UINT32:
-		(*((uint32_t*)paramAssign->ptr)) = (*((uint32_t*)paramAssign->ptr)) * macroNode->amount * value;// + (*((uint32_t*)paramAssign->ptr));
+      //(*((uint32_t*)paramAssign->ptr)) = macroNode->originalValue.itg;
+		(*((uint32_t*)paramAssign->ptr)) = (*((uint32_t*)paramAssign->ptr)) - ( (*((uint32_t*)paramAssign->ptr)) * (1-value) * macroNode->amount);// + (*((uint32_t*)paramAssign->ptr));
 		break;
 
 	case TYPE_FLT:
-		(*((float*)paramAssign->ptr)) = macroNode->originalValue.flt*value;//(*((float*)paramAssign->ptr)) * macroNode->amount * value;// + (*((float*)paramAssign->ptr));
+      //(*((float*)paramAssign->ptr)) = macroNode->originalValue.flt;
+		(*((float*)paramAssign->ptr)) = (*((float*)paramAssign->ptr)) - ( (*((float*)paramAssign->ptr)) * (1-value) * macroNode->amount);//(*((float*)paramAssign->ptr)) * macroNode->amount * value;// + (*((float*)paramAssign->ptr));
 		break;
 
 	case TYPE_SPECIAL_F:
-		(*((float*)paramAssign->ptr)) = (*((float*)paramAssign->ptr)) * macroNode->amount * value;// + (*((float*)paramAssign->ptr));
+      //(*((float*)paramAssign->ptr)) = macroNode->originalValue.flt; 
+		(*((float*)paramAssign->ptr)) = (*((float*)paramAssign->ptr)) - ( (*((float*)paramAssign->ptr)) * (1-value) * macroNode->amount);// + (*((float*)paramAssign->ptr));
 		break;
 
 	case TYPE_SPECIAL_P:
@@ -251,6 +273,6 @@ void modNode_updateMacro(ModulationNode* macroNode, float value)
 	default:
 		break;
    }
-   
 
 }
+*/

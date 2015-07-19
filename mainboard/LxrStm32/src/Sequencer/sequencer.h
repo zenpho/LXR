@@ -138,6 +138,8 @@ extern uint8_t seq_resetBarOnPatternChange;
 
 extern uint8_t switchOnNextStep;
 
+extern uint8_t seq_lockNotes;
+
 //------------------------------------------------------------------------------
 void seq_triggerVoice(uint8_t voiceNr, uint8_t vol, uint8_t note);
 //------------------------------------------------------------------------------
@@ -216,6 +218,10 @@ void seq_sendMainStepInfoToFront(uint16_t stepNr);
 void seq_setRoll(uint8_t voice, uint8_t onOff);
 //------------------------------------------------------------------------------
 void seq_setRollRate(uint8_t rate);
+//------------------------------------------------------------------------------
+void seq_setRollNote(uint8_t note);
+//------------------------------------------------------------------------------
+void seq_setRollVelocity(uint8_t velocity);
 //------------------------------------------------------------------------------
 /** add a note to the current pattern position*/
 void seq_addNote(uint8_t trackNr,uint8_t vel, uint8_t note);

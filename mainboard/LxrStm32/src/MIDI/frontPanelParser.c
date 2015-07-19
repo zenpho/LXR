@@ -456,29 +456,25 @@ static void frontParser_handleMidiMessage()
            
             if (upper&0x20)
             {
-               float value = (float)(lower);
-               value = value/32;
+               float value = ((float)(lower))/127.f;
                // top level macro amount message received
-               modNode_updateMacro(&macroModulators[0],(value));
-               //modNode_updateMacro(&macroModulators[1],(value));
-               //modNode_updateValue(&velocityModulators[0],lower/127.f);
+               modNode_updateValue(&macroModulators[0],(value));
+               modNode_updateValue(&macroModulators[1],(value));
             }
             else if (upper&0x40)
             {
-               float value = (float)(lower);
-               value = value/32;
+               float value = ((float)(lower))/127.f;
                // top level macro amount message received
-               modNode_updateMacro(&macroModulators[2],(value));
-               modNode_updateMacro(&macroModulators[3],(value));
-               //modNode_updateValue(&velocityModulators[0],lower/127.f);
+               modNode_updateValue(&macroModulators[2],(value));
+               modNode_updateValue(&macroModulators[3],(value));
             }
             else
             {
                // macro destination message
                uint16_t value = (uint16_t)( ( (upper&0x03)<<8) | lower);
                uint8_t whichModDest = (uint8_t)( 0x07&(upper>>2) ); // whichModDest 0,1,2,3 mac1d1,mac1d2,mac2d1,mac2d2
-
                modNode_setDestination(&macroModulators[whichModDest], value);
+               modNode_updateValue(&macroModulators[whichModDest],macroModulators[whichModDest].lastVal);
             }
          
          }
@@ -727,24 +723,6 @@ static void frontParser_handleMidiMessage()
          }
          break;
    } // frontParser_midiMsg.status
-}
-//------------------------------------------------------
-// Sequencer message handler
-// This is called when we have received a message with status FRONT_SEQ_CC
-void frontParser_handleMacro()
-{  
-
-   uint8_t whichMacro = frontParser_midiMsg.data1;
-   float amount = (float)( (frontParser_midiMsg.data2-63)/64 );
-   if (whichMacro == 1){
-      modNode_updateValue(&velocityModulators[0],amount);
-      modNode_updateValue(&velocityModulators[1],amount);
-   }
-   else if (whichMacro == 2){
-      modNode_updateValue(&macroModulators[2],amount);
-      modNode_updateValue(&macroModulators[3],amount);
-   }
-   
 }
 //------------------------------------------------------
 // Sequencer message handler
@@ -1041,6 +1019,15 @@ static void frontParser_handleSeqCC()
    
       case FRONT_SEQ_ROLL_RATE:
          seq_setRollRate(frontParser_midiMsg.data2);
+         break;
+      case FRONT_SEQ_ROLL_NOTE:
+         seq_setRollNote(frontParser_midiMsg.data2);
+         break;
+      case FRONT_SEQ_ROLL_VELOCITY:
+         seq_setRollVelocity(frontParser_midiMsg.data2);
+         break;
+      case FRONT_SEQ_LOCK_NOTES:
+         seq_lockNotes = frontParser_midiMsg.data2;
          break;
    
       case FRONT_SEQ_ROLL_ON_OFF:

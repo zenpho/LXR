@@ -56,7 +56,9 @@ extern ModulationNode velocityModulators[6];
 
 extern ModulationNode macroModulators[4];
 
-void modNode_updateMacro(ModulationNode* macroNode, float amount);
+//void modNode_updateMacro(ModulationNode* macroNode, float amount);
+void modNode_resetMacros();
+void modNode_reassignMacroMod();
 void modNode_init(ModulationNode* vm);
 
 void modNode_resetTargets();

@@ -513,6 +513,13 @@ enum
    
    CC2_KIT_VERSION, // bc: this does nothing, it's only here to offset future params
    
+   CC2_LOAD_DRUM1,      // bc: these don't do anything here, just an offset
+   CC2_LOAD_DRUM2,
+   CC2_LOAD_DRUM3,
+   CC2_LOAD_SNARE,
+   CC2_LOAD_CYM,
+   CC2_LOAD_HIHAT,
+   
    CC2_MAC1_DST1,       // bc: change perf macro destinations
    CC2_MAC1_DST1_AMT,
    CC2_MAC1_DST2,
@@ -654,6 +661,9 @@ byte3, data2 byte: xbbbbbbb : b=macro mod target value lower 7 bits or top level
 #define FRONT_SEQ_PC_TIME_MODE         0x3b // setting for change pattern on bar or step
 #define FRONT_SEQ_COPY_SRC            0x3d // added message for copy step
 #define FRONT_SEQ_COPY_DST            0x3e 
+#define FRONT_SEQ_ROLL_NOTE            0x40
+#define FRONT_SEQ_ROLL_VELOCITY        0x41
+#define FRONT_SEQ_LOCK_NOTES           0x42
 
 //codec control messages
 #define EQ_ON_OFF						0x01

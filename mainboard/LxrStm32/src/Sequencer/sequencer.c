@@ -61,8 +61,11 @@
 static uint8_t seq_prescaleCounter = 0;
 
 uint8_t seq_masterStepCnt=0;				/** keeps track of the played steps between 0 and 127 independent from the track counters*/
-uint8_t seq_rollRate = 0x08;				//start with roll rate = 1/16
+uint8_t seq_rollRate = 0x08;				// start with roll rate = 1/16
+uint8_t seq_rollNote = 63;             // note roll uses - start with Dsharp5
+uint8_t seq_rollVelocity = 100;
 uint8_t seq_rollState = 0;					/**< each bit represents a voice. if bit is set, roll is active*/
+uint8_t seq_lockNotes = 0;
 
 static int8_t 	seq_stepIndex[NUM_TRACKS+1];	/**< we have 16 steps consisting of 8 sub steps = 128 steps.
 											     each track has its own counter to allow different pattern lengths */
@@ -619,12 +622,25 @@ static void seq_nextStep()
             {
                if((seq_stepIndex[i]%seq_rollRate)==0)
                {
-                  const uint8_t vol = ROLL_VOLUME;
-               
-                  const uint8_t note = seq_patternSet.seq_subStepPattern[seq_activePattern][i][seq_stepIndex[i]].note;
+                  uint8_t vol;
+                  uint8_t note;
+                  // rolling, not recording - use roll control when notes are not locked
+                  // rolling, recording - use roll control for both if notes not locked, always record velocity
+                  if (seq_lockNotes)
+                  {
+                     note = seq_patternSet.seq_subStepPattern[seq_activePattern][i][seq_stepIndex[i]].note;
+                     if (seq_recordActive)
+                        vol = seq_rollVelocity;
+                     else
+                        vol =  seq_patternSet.seq_subStepPattern[seq_activePattern][i][seq_stepIndex[i]].volume&0x7f;
+                  }
+                  else
+                  {
+                     note = seq_rollNote;
+                     vol  = seq_rollVelocity;
+                  }
                   seq_triggerVoice(i,vol,note);
-               
-                  seq_addNote(i,vol, note); // --AS todo should this be note or should it be SEQ_DEFAULT_NOTE (before my change it would have been SEQ_DEFAULT_NOTE)
+                  seq_addNote(i,vol,note);
                }
             }
          }
@@ -1054,15 +1070,25 @@ void seq_setRoll(uint8_t voice, uint8_t onOff)
       seq_rollState |= (1<<voice);
       if(seq_rollRate == 0xff) {
       	//trigger one shot
-         seq_triggerVoice(voice,ROLL_VOLUME,SEQ_DEFAULT_NOTE);
+         seq_triggerVoice(voice,seq_rollVelocity,seq_rollNote);
       	//record roll notes
-         seq_addNote(voice,ROLL_VOLUME,SEQ_DEFAULT_NOTE);
+         seq_addNote(voice,seq_rollVelocity,seq_rollNote);
       }
    } 
    else {
       seq_rollState &= ~(1<<voice);
    }
 };
+//--------------------------------------------------------------------------------
+void seq_setRollNote(uint8_t note)
+{  
+   seq_rollNote = note;
+}
+//--------------------------------------------------------------------------------
+void seq_setRollVelocity(uint8_t velocity)
+{
+   seq_rollVelocity = velocity;
+}
 //--------------------------------------------------------------------------------
 void seq_setRollRate(uint8_t rate)
 {
@@ -1263,7 +1289,10 @@ void seq_addNote(uint8_t trackNr,uint8_t vel, uint8_t note)
    
    	//set the current step in the requested track active
       stepPtr=&seq_patternSet.seq_subStepPattern[targetPattern][trackNr][quantizedStep];
-      stepPtr->note 		= note;				// note (--AS was SEQ_DEFAULT_NOTE)
+      if (seq_lockNotes!=1)
+      {
+         stepPtr->note 		= note;				// note (--AS was SEQ_DEFAULT_NOTE)
+      }
       stepPtr->volume		= vel;				// new velocity
       stepPtr->prob		= 127;				// 100% probability
       stepPtr->volume 	|= STEP_ACTIVE_MASK;

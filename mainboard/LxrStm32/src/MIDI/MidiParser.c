@@ -1110,17 +1110,21 @@ void midiParser_ccHandler(MidiMsg msg, uint8_t updateOriginalValue)
          case CC2_MAC2_DST2:
             break;
          case CC2_MAC1_DST1_AMT:       // bc: change perf macro destination amounts
-         case CC2_MAC1_DST2_AMT:
-         case CC2_MAC2_DST1_AMT:
-         case CC2_MAC2_DST2_AMT:
-            {
-               uint8_t macModNumber = ((msg.data1-CC2_MAC1_DST1_AMT)>>1); // amounts are every other one so
-                                                                          // right shift one to turn 0,2,4,6 to 0,1,2,3
-               //seq_setBpm(msg.data2);
-               macroModulators[macModNumber].amount = ( ((float)(msg.data2)) / 128.f);
-            }
+            macroModulators[0].amount = msg.data2/127.f;
+            modNode_updateValue(&macroModulators[0],macroModulators[0].lastVal);
             break;
-            
+         case CC2_MAC1_DST2_AMT:
+            macroModulators[1].amount = msg.data2/127.f;
+            modNode_updateValue(&macroModulators[1],macroModulators[1].lastVal);
+            break;
+         case CC2_MAC2_DST1_AMT:
+            macroModulators[2].amount = msg.data2/127.f;
+            modNode_updateValue(&macroModulators[2],macroModulators[2].lastVal);
+            break;
+         case CC2_MAC2_DST2_AMT:
+            macroModulators[3].amount = msg.data2/127.f;
+            modNode_updateValue(&macroModulators[3],macroModulators[3].lastVal);
+            break;            
          default:
             break;
       }

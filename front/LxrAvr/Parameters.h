@@ -360,6 +360,10 @@ enum ParamEnums
    
    PAR_MAC1,      // bc:perf macros
    PAR_MAC2,
+   
+   PAR_ROLL_NOTE,
+   PAR_ROLL_VELOCITY,
+   PAR_RECORD_NOTES,
 
 	
 	//#########################################
@@ -401,7 +405,7 @@ enum ParamEnums
    PAR_SEQ_PC_TIME,                 // bool, 0 for bar sequence change, 1 for step change
 	PAR_BUT_SHIFT_MODE,              // 0 normal shift operation, 1 shift button is a toggle
    PAR_LOAD_PERF_ON_BANK,           // 0, incoming bank changes select kit, 1 bank changes select perf
-
+   
    NUM_PARAMS
 };
 
