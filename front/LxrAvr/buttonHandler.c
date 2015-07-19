@@ -1182,7 +1182,6 @@ void buttonHandler_buttonReleased(uint8_t buttonNr) {
 	// for the rest...
    switch (buttonNr) {
       case BUT_COPY:
-      
          if(buttonHandler_stateMemory.seqErasing) {
          // --AS **RECORD if we are in erase mode, exit that mode
             buttonHandler_stateMemory.seqErasing=0;
@@ -1191,25 +1190,34 @@ void buttonHandler_buttonReleased(uint8_t buttonNr) {
          } 
          else {
             if (!buttonHandler_getShift()) {
-            //copy mode abort/exit
-               copyClear_reset();
+                  switch(buttonHandler_stateMemory.selectButtonMode) {
+                     case SELECT_MODE_VOICE:
+                        if ((menu_activePage<=VOICE7_PAGE)&&(editModeActive))
+                           menu_repaintAll();
+                        else
+                           buttonHandler_leaveSeqMode();
+                        break;
+                     case SELECT_MODE_PERF:
+                        led_clearAllBlinkLeds();
+                        led_clearSelectLeds();
+                        menu_switchPage(PERFORMANCE_PAGE);
+                        led_initPerformanceLeds();
+                        return;
+                     case SELECT_MODE_PAT_GEN:
+                     //led_clearAllBlinkLeds();
+                        led_clearSelectLeds();
+                        led_setValue(1,	(uint8_t) (menu_getViewedPattern() + LED_PART_SELECT1));
+                        menu_switchPage(EUKLID_PAGE);
+                        break;
+                     case SELECT_MODE_STEP:
+                        buttonHandler_enterSeqModeStepMode();
+                        break;
+                     default:
+                        break;
+                  }
+                  copyClear_reset();
             }
          }
-         
-         // bc - i'm putting in the same release actions as for shift when in perf mode
-         switch(buttonHandler_stateMemory.selectButtonMode) {
-            case SELECT_MODE_PERF:
-               led_clearAllBlinkLeds();
-               led_clearSelectLeds();
-               menu_switchPage(PERFORMANCE_PAGE);
-               led_initPerformanceLeds();
-               return;
-            default:
-               break;
-         }
-
-      
-      
          break;
    
       case BUT_SHIFT: // when this button is released, revert back to normal operating mode
