@@ -1244,6 +1244,12 @@ void buttonHandler_buttonReleased(uint8_t buttonNr) {
                else
                   buttonHandler_leaveSeqMode();
                break;
+            case SELECT_MODE_PERF:
+               led_clearAllBlinkLeds();
+               led_clearSelectLeds();
+               menu_switchPage(PERFORMANCE_PAGE);
+               led_initPerformanceLeds();
+               return;
             case SELECT_MODE_PAT_GEN:
             //led_clearAllBlinkLeds();
                led_clearSelectLeds();
