@@ -949,6 +949,11 @@ static void frontParser_handleSeqCC()
          uart_sendFrontpanelByte(FRONT_SEQ_CC);
          uart_sendFrontpanelByte(FRONT_SEQ_TRACK_ROTATION);
          uart_sendFrontpanelByte(seq_getTrackRotation(frontParser_activeTrack));
+         
+         uart_sendFrontpanelByte(FRONT_SEQ_CC);
+         uart_sendFrontpanelByte(FRONT_SEQ_TRANSPOSE);
+         uart_sendFrontpanelByte(seq_transpose_voiceAmount[frontParser_activeTrack]);
+         
          break;
    
       case FRONT_SEQ_REQUEST_STEP_PARAMS:
@@ -1029,6 +1034,12 @@ static void frontParser_handleSeqCC()
       case FRONT_SEQ_LOCK_NOTES:
          seq_lockNotes = frontParser_midiMsg.data2;
          break;
+      case FRONT_SEQ_TRANSPOSE:
+         seq_transpose_voiceAmount[frontParser_activeTrack]=frontParser_midiMsg.data2;
+      break;
+      case FRONT_SEQ_TRANSPOSE_ON_OFF:
+         seq_transposeOnOff = frontParser_midiMsg.data2;
+      break;
    
       case FRONT_SEQ_ROLL_ON_OFF:
          {

@@ -421,6 +421,11 @@ void frontPanel_parseData(uint8_t data)
                         
                      }
 							break;
+                     
+                  case SEQ_TRANSPOSE:
+                     parameter_values[PAR_TRANSPOSE] = frontParser_midiMsg.data2;
+                     menu_repaint();
+                  break;
 						
 						case SEQ_EUKLID_LENGTH:
 							parameter_values[PAR_EUKLID_LENGTH] = frontParser_midiMsg.data2;

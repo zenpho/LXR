@@ -37,6 +37,7 @@ extern uint8_t morphValue;
 //kit, drum1, drum2, drum3, snare, cym, hh, morph sound, pattern, performance, all
 extern uint8_t menu_currentPresetNr[NUM_PRESET_LOCATIONS];
 void menu_setShownPattern(uint8_t patternNr);
+void menu_resetSubPage();
 uint8_t menu_getViewedPattern();
 
 
@@ -210,6 +211,8 @@ enum NamesEnum
    TEXT_ROLL_NOTE,
    TEXT_ROLL_VELOCITY,
    TEXT_RECORD_NOTES,
+   TEXT_TRANSPOSE,
+   TEXT_TRANSPOSE_ON_OFF,
 	NUM_NAMES
 };
 //-----------------------------------------------------------------
@@ -317,6 +320,9 @@ enum shortNamesEnum
    SHORT_ROLL_NOTE,
    SHORT_ROLL_VELOCITY,
    SHORT_RECORD_NOTES,
+   
+   SHORT_TRANSPOSE,
+   SHORT_TRANSPOSE_ON_OFF,
 
 	
 };
@@ -358,7 +364,8 @@ enum catNamesEnum
    CAT_MAC1D1,
    CAT_MAC1D2,
    CAT_MAC2D1,
-   CAT_MAC2D2
+   CAT_MAC2D2,
+   CAT_TRANSPOSE,
    
 };
 //-----------------------------------------------------------------
@@ -453,6 +460,8 @@ enum longNamesEnum
    LONG_ROLL_NOTE,
    LONG_ROLL_VELOCITY,
    LONG_RECORD_NOTES,
+   LONG_TRANSPOSE,
+   LONG_TRANSPOSE_ON_OFF,
 	
 };
 

@@ -220,6 +220,9 @@ const Name valueNames[NUM_NAMES] PROGMEM =
       {SHORT_ROLL_NOTE, CAT_PATTERN, LONG_ROLL_NOTE},  
       {SHORT_ROLL_VELOCITY, CAT_PATTERN, LONG_ROLL_VELOCITY},  
       {SHORT_RECORD_NOTES, CAT_SEQUENCER, LONG_RECORD_NOTES}, 
+      
+      {SHORT_TRANSPOSE, CAT_TRANSPOSE, LONG_TRANSPOSE},
+      {SHORT_TRANSPOSE_ON_OFF, CAT_TRANSPOSE, LONG_TRANSPOSE_ON_OFF},
 
 };
 
@@ -465,14 +468,14 @@ const enum Datatypes PROGMEM parameter_dtypes[NUM_PARAMS] = {
 	    /*PAR_LOAD_HIHAT*/		DTYPE_0B127,
        
        /*PAR_MAC1_DST1*/      DTYPE_AUTOM_TARGET,
-       /*PAR_MAC1_DST1_AMT*/  DTYPE_0B127, 
+       /*PAR_MAC1_DST1_AMT*/  DTYPE_PM63, 
        /*PAR_MAC1_DST2*/      DTYPE_AUTOM_TARGET,
-       /*PAR_MAC1_DST2_AMT*/  DTYPE_0B127,
+       /*PAR_MAC1_DST2_AMT*/  DTYPE_PM63,
    
        /*PAR_MAC2_DST1*/      DTYPE_AUTOM_TARGET,
-       /*PAR_MAC2_DST1_AMT*/  DTYPE_0B127,
+       /*PAR_MAC2_DST1_AMT*/  DTYPE_PM63,
        /*PAR_MAC2_DST2*/      DTYPE_AUTOM_TARGET,
-       /*PAR_MAC2_DST2_AMT*/  DTYPE_0B127,
+       /*PAR_MAC2_DST2_AMT*/  DTYPE_PM63,
 
 	    /*PAR_ROLL*/ 			DTYPE_MENU | (MENU_ROLL_RATES<<4),
 	    /*PAR_MORPH*/ 			DTYPE_0B255,
@@ -505,6 +508,9 @@ const enum Datatypes PROGMEM parameter_dtypes[NUM_PARAMS] = {
       /*PAR_ROLL_NOTE*/ DTYPE_NOTE_NAME,
       /*PAR_ROLL_VELOCITY*/ DTYPE_0B127,
       /*PAR_RECORD_NOTES*/  DTYPE_ON_OFF,
+      
+      /*PAR_TRANSPOSE,*/      DTYPE_PM63,
+      /*PAR_TRANSPOSE_ON_OFF,*/DTYPE_ON_OFF,
 
 	    /*PAR_BPM*/ 			DTYPE_0B255,							//251
 	    /*PAR_MIDI_CHAN_1*/ 	DTYPE_0B16,
@@ -616,14 +622,16 @@ void menu_init()
 	parameter_values[PAR_EUKLID_STEPS] = 16;
 	parameter_values[PAR_EUKLID_ROTATION] = 0;
    
-   parameter_values[PAR_MAC1] = 127;
-   parameter_values[PAR_MAC2] = 127;
+   parameter_values[PAR_MAC1] = 0;
+   parameter_values[PAR_MAC2] = 0;
 
 	//initialize the roll value
 	parameter_values[PAR_ROLL] = 8;
    parameter_values[PAR_ROLL_NOTE] = 63;
    parameter_values[PAR_ROLL_VELOCITY] = 100;
    parameter_values[PAR_RECORD_NOTES] = 1;
+   parameter_values[PAR_TRANSPOSE] = 63;
+   parameter_values[PAR_TRANSPOSE_ON_OFF] = 0;
    
 	//frontPanel_sendData(SEQ_CC,SEQ_ROLL_RATE,8); //value is initialized in cortex firmware
 
@@ -2779,6 +2787,11 @@ void menu_resetSaveParameters()
 
 }
 //-----------------------------------------------------------------
+void menu_resetSubPage() // forces menu to first sub-page, disregarding toggle
+{
+   menuIndex = 0;
+}
+//-----------------------------------------------------------------
 // switches us to a different menu sub page. If that page is already active
 // and has multiple screens, will toggle to the other screen
 // if its the global menu, and there are multiple pages will toggle to the next page
@@ -2817,7 +2830,9 @@ void menu_switchSubPage(uint8_t subPageNr)
 			}
 			activeParameter=0;
 		}
-	} else { // move to different sub page
+	} 
+   else 
+   { // move to different sub page
 		// we are moving to a different (specific) subpage
 		activePage=subPageNr;
 		if(activeParameter > 3 && has2ndPage(activePage))
@@ -3156,6 +3171,16 @@ void menu_parseGlobalParam(uint16_t paramNr, uint8_t value)
 		frontPanel_sendData(SEQ_CC,SEQ_LOCK_NOTES,(uint8_t)(1-value));
 	}
 	break;
+   case PAR_TRANSPOSE:
+   {
+      frontPanel_sendData(SEQ_CC,SEQ_TRANSPOSE,value);
+   }
+   break;
+   case PAR_TRANSPOSE_ON_OFF:
+   {
+      frontPanel_sendData(SEQ_CC,SEQ_TRANSPOSE_ON_OFF,value);
+   }
+   break;
 
 
 

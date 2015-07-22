@@ -364,6 +364,8 @@ enum ParamEnums
    PAR_ROLL_NOTE,
    PAR_ROLL_VELOCITY,
    PAR_RECORD_NOTES,
+   PAR_TRANSPOSE,
+   PAR_TRANSPOSE_ON_OFF,
 
 	
 	//#########################################

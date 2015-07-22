@@ -150,6 +150,9 @@ PatternSet seq_patternSet;
 
 TempPattern seq_tmpPattern;
 
+uint8_t seq_transpose_voiceAmount[7];
+uint8_t seq_transposeOnOff;
+
 uint8_t seq_newPatternAvailable = 0; //indicate that a new pattern has loaded in the background and we should switch
 
 //for the automation tracks each track needs 2 modNodes
@@ -178,6 +181,9 @@ void seq_init()
 
    memset(seq_stepIndex,0,NUM_TRACKS+1);
    memset(seq_lastMasterStep,0,NUM_TRACKS+1);
+   memset(seq_transpose_voiceAmount,63,NUM_TRACKS);
+   
+   seq_transposeOnOff = 0;
 
 
    for(i=0;i<NUM_PATTERN;i++)
@@ -416,6 +422,44 @@ void seq_triggerVoice(uint8_t voiceNr, uint8_t vol, uint8_t note)
       	seq_patternSet.seq_subStepPattern[seq_activePattern][voiceNr][seq_stepIndex[voiceNr]].volume&STEP_VOLUME_MASK);
 }
 //------------------------------------------------------------------------------
+uint8_t seq_getTransposedNote(uint8_t voice, uint8_t step, uint8_t note)
+{
+   uint8_t retNote = note;
+   uint8_t transpose = 63;
+   if (seq_transposeOnOff)
+   {
+      // transpose is on - use track value
+      transpose = seq_transpose_voiceAmount[voice];
+      if (seq_recordActive)
+      {
+         // set the step's transpose amount to the current voice transpose value
+         seq_patternSet.seq_subStepPattern[seq_activePattern][voice][step].transpose=seq_transpose_voiceAmount[voice];  
+      }
+   }
+   else if (seq_recordActive) // transpose is off, but record is active - transpose based on step value
+   {
+      transpose = seq_patternSet.seq_subStepPattern[seq_activePattern][voice][step].transpose;
+   }
+   
+   if (transpose!=63)
+   { // legitimate transpose value - do the transpose
+      if (note<(63-transpose)) // transposing would result in a note less than zero!
+      {
+         retNote = 0;
+      }
+      else
+      {
+         retNote = (uint8_t)(note+(seq_transpose_voiceAmount[voice]-63));
+      }
+      if (retNote>127)
+      {
+         retNote=127;
+      }
+   }
+   
+   return retNote;
+}
+//------------------------------------------------------------------------------
 static uint8_t seq_determineNextPattern()
 {
    const PatternSetting * const p=&seq_patternSet.seq_patternSettings[seq_activePattern];
@@ -603,8 +647,9 @@ static void seq_nextStep()
                   
                      if( (seq_rndValue[i]) <= seq_patternSet.seq_subStepPattern[seq_activePattern][i][seq_stepIndex[i]].prob )
                      {
-                        const uint8_t vol = seq_patternSet.seq_subStepPattern[seq_activePattern][i][seq_stepIndex[i]].volume&STEP_VOLUME_MASK;
-                        const uint8_t note = seq_patternSet.seq_subStepPattern[seq_activePattern][i][seq_stepIndex[i]].note;
+                        uint8_t vol = seq_patternSet.seq_subStepPattern[seq_activePattern][i][seq_stepIndex[i]].volume&STEP_VOLUME_MASK;
+                        uint8_t note = seq_patternSet.seq_subStepPattern[seq_activePattern][i][seq_stepIndex[i]].note;
+                        note = seq_getTransposedNote(i, seq_stepIndex[i], note);
                         if(activeScaledStep)
                            seq_triggerVoice(i,vol,note);
                      }
@@ -639,6 +684,7 @@ static void seq_nextStep()
                      note = seq_rollNote;
                      vol  = seq_rollVelocity;
                   }
+                  note = seq_getTransposedNote(i, seq_stepIndex[i], note);
                   seq_triggerVoice(i,vol,note);
                   seq_addNote(i,vol,note);
                }
@@ -1070,9 +1116,10 @@ void seq_setRoll(uint8_t voice, uint8_t onOff)
       seq_rollState |= (1<<voice);
       if(seq_rollRate == 0xff) {
       	//trigger one shot
+         uint8_t note = seq_getTransposedNote(voice, seq_stepIndex[voice], seq_rollNote);
          seq_triggerVoice(voice,seq_rollVelocity,seq_rollNote);
       	//record roll notes
-         seq_addNote(voice,seq_rollVelocity,seq_rollNote);
+         seq_addNote(voice,seq_rollVelocity,note);
       }
    } 
    else {
@@ -1262,8 +1309,16 @@ void seq_addNote(uint8_t trackNr,uint8_t vel, uint8_t note)
 	//only record notes when seq is running and recording
    if(seq_running && seq_recordActive)
    {
-      const int8_t quantizedStep = seq_quantize(seq_stepIndex[trackNr]);
-   
+      const int8_t unquantizedStep = seq_stepIndex[trackNr];
+      int8_t quantizedStep;
+      if (vel)
+      {
+         quantizedStep = seq_quantize(unquantizedStep);
+      }
+      else
+      {
+         quantizedStep = unquantizedStep;
+      }
    
    	// --AS **RECORD fix for recording across patterns
       if(quantizedStep==0 && seq_stepIndex[trackNr] > (NUM_STEPS/2)) {
@@ -1288,7 +1343,11 @@ void seq_addNote(uint8_t trackNr,uint8_t vel, uint8_t note)
       }
    
    	//set the current step in the requested track active
-      stepPtr=&seq_patternSet.seq_subStepPattern[targetPattern][trackNr][quantizedStep];
+      if (vel)
+         stepPtr=&seq_patternSet.seq_subStepPattern[targetPattern][trackNr][quantizedStep];
+      else
+         stepPtr=&seq_patternSet.seq_subStepPattern[targetPattern][trackNr][quantizedStep];
+      
       if (seq_lockNotes!=1)
       {
          stepPtr->note 		= note;				// note (--AS was SEQ_DEFAULT_NOTE)
@@ -1342,6 +1401,35 @@ static void seq_eraseStepAndSubSteps(const uint8_t voice, const uint8_t mainStep
 //------------------------------------------------------------------------
 void seq_setRecordingMode(uint8_t active)
 {
+   
+   uint8_t i,k,transposeAmt,trnNote;
+   if (seq_recordActive&&!active) // switching from recording to not recording
+   {
+      for (i=0;i<128;i++) // merge transpose into notes
+      {
+         for (k=0;k<NUM_TRACKS;k++)
+         {
+            transposeAmt = seq_patternSet.seq_subStepPattern[seq_activePattern][k][i].transpose;
+            if (transposeAmt!=63)
+            { // legitimate transpose value - do the transpose
+               trnNote = seq_patternSet.seq_subStepPattern[seq_activePattern][k][i].note;
+               if (trnNote<(63-transposeAmt)) // transposing would result in a note less than zero!
+               {
+                  trnNote = 0;
+               }
+               else
+               {
+                  trnNote = (uint8_t)(trnNote+transposeAmt-63);
+               }
+               if (trnNote>127)
+               {
+                  trnNote=127;
+               }
+               seq_patternSet.seq_subStepPattern[seq_activePattern][k][i].note = trnNote;
+            }
+         }
+      }
+   }
    seq_recordActive = active;
 }
 
@@ -1361,6 +1449,7 @@ static void seq_resetNote(Step *step)
    step->param2Val	= 0;
    step->prob		= 127;
    step->volume	= 100; // clears active bit as well
+   step->transpose = 63;
 }
 //------------------------------------------------------------------------------
 void seq_clearTrack(uint8_t trackNr, uint8_t pattern)
@@ -1379,7 +1468,7 @@ void seq_clearTrack(uint8_t trackNr, uint8_t pattern)
    seq_patternSet.seq_mainSteps[pattern][trackNr] = 0;
 
 	//**PATROT all pattern rotations off and all patterns set to length 16
-   seq_patternSet.seq_patternLengthRotate[pattern][trackNr].value=0;
+   seq_patternSet.seq_patternLengthRotate[pattern][trackNr].rotate=0;
 
 }
 //------------------------------------------------------------------------------
@@ -1458,6 +1547,7 @@ void seq_copyPattern(uint8_t src, uint8_t dst)
          pdst->param2Val		= psrc->param2Val;
          pdst->prob			= psrc->prob;
          pdst->volume		= psrc->volume;
+         pdst->transpose   = psrc->transpose;
       }
    
       seq_patternSet.seq_mainSteps[dst][j] = seq_patternSet.seq_mainSteps[src][j];
@@ -1485,6 +1575,7 @@ void seq_copyTrackPattern(uint8_t srcNr, uint8_t dstPat, uint8_t srcPat)
       pdst->param2Val		= psrc->param2Val;
       pdst->prob			= psrc->prob;
       pdst->volume		= psrc->volume;
+      pdst->transpose   = pdst->transpose;
    }
    
    seq_patternSet.seq_mainSteps[dstPat][srcNr] = seq_patternSet.seq_mainSteps[srcPat][srcNr];
@@ -1510,6 +1601,7 @@ void seq_copySubStep(uint8_t src, uint8_t dst, uint8_t track)
          pdst->param2Val		= psrc->param2Val;
          pdst->prob			= psrc->prob;
          pdst->volume		= psrc->volume;
+         pdst->transpose   = psrc->transpose;
       
 
 }
@@ -1591,7 +1683,16 @@ void seq_sendMidiNoteOn(const uint8_t channel, const uint8_t note, const uint8_t
    msg.data1=note;
    msg.data2=veloc;
    seq_sendMidi(msg);
-
+   
+   // bc - if velocity is zero, send note off also
+   if (!veloc)
+   {
+      msg.status=NOTE_OFF | channel;
+      msg.data1=note;
+      msg.data2=veloc;
+      seq_sendMidi(msg);
+   }
+   
 	// keep track of which notes are on so we can turn them off later
    midi_chan_notes[channel]=note;
    midi_notes_on |= (1 << channel);

@@ -1110,19 +1110,19 @@ void midiParser_ccHandler(MidiMsg msg, uint8_t updateOriginalValue)
          case CC2_MAC2_DST2:
             break;
          case CC2_MAC1_DST1_AMT:       // bc: change perf macro destination amounts
-            macroModulators[0].amount = msg.data2/127.f;
+            macroModulators[0].amount = (msg.data2/64.f)-1;
             modNode_updateValue(&macroModulators[0],macroModulators[0].lastVal);
             break;
          case CC2_MAC1_DST2_AMT:
-            macroModulators[1].amount = msg.data2/127.f;
+            macroModulators[1].amount = (msg.data2/64.f)-1;
             modNode_updateValue(&macroModulators[1],macroModulators[1].lastVal);
             break;
          case CC2_MAC2_DST1_AMT:
-            macroModulators[2].amount = msg.data2/127.f;
+            macroModulators[2].amount = (msg.data2/64.f)-1;
             modNode_updateValue(&macroModulators[2],macroModulators[2].lastVal);
             break;
          case CC2_MAC2_DST2_AMT:
-            macroModulators[3].amount = msg.data2/127.f;
+            macroModulators[3].amount = (msg.data2/64.f)-1;
             modNode_updateValue(&macroModulators[3],macroModulators[3].lastVal);
             break;            
          default:
@@ -1208,10 +1208,11 @@ static void midiParser_noteOn(uint8_t voice, uint8_t note, uint8_t vel, uint8_t 
 
 }
 //------------------------------------------------------
-//static void midiParser_noteOff(uint8_t voice, uint8_t note, uint8_t vel)
-//{
-// in case we ever need it
-//}
+static void midiParser_noteOff(uint8_t voice, uint8_t note, uint8_t vel, uint8_t do_rec)
+{
+   vel=0;
+   midiParser_noteOn(voice, note, vel, do_rec);
+}
 
 
 //-----------------------------------------------------------
@@ -1333,12 +1334,12 @@ void midiParser_parseMidiMessage(MidiMsg msg)
          // the voice that is currently active on the front.
             if(midi_MidiChannels[7]==chanonly) {
             
-                                          // -bc- first, check to see if active track is set to 'any' - use chromatic mode if it is
-               if( (msgonly==NOTE_ON && msg.data2) && !midi_NoteOverride[frontParser_activeTrack] ) {
+               // -bc- first, check to see if active track is set to 'any' - use chromatic mode if it is
+               if( (msgonly==NOTE_ON/* && msg.data2*/) && !midi_NoteOverride[frontParser_activeTrack] ) {
                   midiParser_noteOn(frontParser_activeTrack, msg.data1, msg.data2, 1);
                } 
                // current active track is not set to 'any' - user wants to assign voices to global notes
-               else if (msgonly==NOTE_ON && msg.data2){
+               else if (msgonly==NOTE_ON/* && msg.data2*/){
                   for(v=0;v<7;v++){
                      if (midi_NoteOverride[v]==msg.data1){
                         midiParser_noteOn(v, msg.data1, msg.data2, 1);
@@ -1346,20 +1347,30 @@ void midiParser_parseMidiMessage(MidiMsg msg)
                   }
                
                }
-               else { // NOTE_OFF or zero velocity note
-               //midiParser_noteOff(v, msg.data1, msg.data2);
+               else if( (msgonly==NOTE_OFF) && !midi_NoteOverride[frontParser_activeTrack] ) {
+                  midiParser_noteOff(frontParser_activeTrack, msg.data1, msg.data2, 1);
+               } 
+               // current active track is not set to 'any' - user wants to assign voices to global notes
+               else if (msgonly==NOTE_OFF){
+                  for(v=0;v<7;v++){
+                     if (midi_NoteOverride[v]==msg.data1){
+                        midiParser_noteOff(v, msg.data1, msg.data2, 1);
+                     }
+                  }
+               
                }
             }
            
             // additionally, check each voice channel to see if it cares about this message
             for(v=0;v<7;v++) {
                if(midi_MidiChannels[v]==chanonly) { // if channel match and we haven't sent it already for the voice
-                  if(msgonly==NOTE_ON && msg.data2) {
+                  if(msgonly==NOTE_ON/* && msg.data2*/) {
                      midiParser_noteOn(v, msg.data1, msg.data2, 0);
                      //Also used in sequencer trigger note function
                   } 
-                  else { // NOTE_OFF or zero velocity note
-                     //midiParser_noteOff(v, msg.data1, msg.data2);
+                  else if (msgonly==NOTE_OFF)
+                  { 
+                     midiParser_noteOff(v, msg.data1, msg.data2, 0);
                   }
                } // if channel matches
             } // for each voice

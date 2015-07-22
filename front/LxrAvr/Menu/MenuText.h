@@ -361,7 +361,9 @@ const char shortNames[][4] PROGMEM  =
    {"2a2"}, // TEXT_MAC2_DST2_AMT,
    {"rln"}, // TEXT_ROLL_NOTE,
    {"rlv"}, // TEXT_ROLL_VELOCITY
-   {"nte"}  // TEXT_RECORD_NOTES
+   {"nte"}, // TEXT_RECORD_NOTES
+   {"xps"}, // TEXT_TRANSPOSE,
+   {"xps"}, // TEXT_TRANSPOSE_ON_OFF,
 };
 //-----------------------------------------------------------------
 // These correspond with the catNamesEnum in menu.h
@@ -402,6 +404,7 @@ const char catNames[][16] PROGMEM =
    {"Mac1Dst2"},
    {"Mac2Dst1"},
    {"Mac2Dst2"},
+   {"Trnspos"},
 };
 //-----------------------------------------------------------------
 // these must correspond to longNamesEnum
@@ -499,6 +502,8 @@ const char longNames[][16] PROGMEM =
    {"RollNote" },  // TEXT_ROLL_NOTE,
    {"RollVelo" },  // TEXT_ROLL_VELOCITY,
    {"NoteRec" },  // TEXT_RECORD_NOTES
+   {"NoteAmt"},   // TEXT_TRANSPOSE
+   {"Sequence"}, // TEXT_TRANSPOSE_ON_OFF,
 };
 
 

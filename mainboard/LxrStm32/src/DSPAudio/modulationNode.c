@@ -195,31 +195,63 @@ void modNode_updateValue(ModulationNode* vm, float val)
 	// --AS **PATROT avoid setting this if it's not set to something good
 	if(!p->ptr)
 		return;
+      
+  if (vm->amount<0)
+  {
+      switch(p->type)
+   	{
+   	case TYPE_UINT8:
+   		(*((uint8_t*)p->ptr)) = (*((uint8_t*)p->ptr)) * vm->amount * val + (*((uint8_t*)p->ptr));
+   		break;
+   
+   	case TYPE_UINT32:
+   		(*((uint32_t*)p->ptr)) = (*((uint32_t*)p->ptr)) * vm->amount * val + (*((uint32_t*)p->ptr));
+   		break;
+   
+   	case TYPE_FLT:
+   		(*((float*)p->ptr)) = (*((float*)p->ptr)) * vm->amount * val + (*((float*)p->ptr));
+   		break;
+   
+   	case TYPE_SPECIAL_F:
+   		(*((float*)p->ptr)) = (*((float*)p->ptr)) * vm->amount * val + (*((float*)p->ptr));
+   		break;
+   
+   	case TYPE_SPECIAL_P:
+   	case TYPE_SPECIAL_FILTER_F:
+   	default:
+   		break;
+   
+   	}
+  }
+  else
+  {
 
-	switch(p->type)
-	{
-	case TYPE_UINT8:
-		(*((uint8_t*)p->ptr)) = (*((uint8_t*)p->ptr)) * vm->amount * val + (1.f-vm->amount) * (*((uint8_t*)p->ptr));
-		break;
-
-	case TYPE_UINT32:
-		(*((uint32_t*)p->ptr)) = (*((uint32_t*)p->ptr)) * vm->amount * val + (1.f-vm->amount) * (*((uint32_t*)p->ptr));
-		break;
-
-	case TYPE_FLT:
-		(*((float*)p->ptr)) = (*((float*)p->ptr)) * vm->amount * val + (1.f-vm->amount) * (*((float*)p->ptr));
-		break;
-
-	case TYPE_SPECIAL_F:
-		(*((float*)p->ptr)) = (*((float*)p->ptr)) * vm->amount * val + (1.f-vm->amount) * (*((float*)p->ptr));
-		break;
-
-	case TYPE_SPECIAL_P:
-	case TYPE_SPECIAL_FILTER_F:
-	default:
-		break;
-
-	}
+   	switch(p->type)
+   	{
+   	case TYPE_UINT8:
+   		(*((uint8_t*)p->ptr)) = (*((uint8_t*)p->ptr)) * vm->amount * val + (1.f-vm->amount) * (*((uint8_t*)p->ptr));
+   		break;
+   
+   	case TYPE_UINT32:
+   		(*((uint32_t*)p->ptr)) = (*((uint32_t*)p->ptr)) * vm->amount * val + (1.f-vm->amount) * (*((uint32_t*)p->ptr));
+   		break;
+   
+   	case TYPE_FLT:
+   		(*((float*)p->ptr)) = (*((float*)p->ptr)) * vm->amount * val + (1.f-vm->amount) * (*((float*)p->ptr));
+   		break;
+   
+   	case TYPE_SPECIAL_F:
+   		(*((float*)p->ptr)) = (*((float*)p->ptr)) * vm->amount * val + (1.f-vm->amount) * (*((float*)p->ptr));
+   		break;
+   
+   	case TYPE_SPECIAL_P:
+   	case TYPE_SPECIAL_FILTER_F:
+   	default:
+   		break;
+   
+   	}
+      
+   }
 }
 //-----------------------------------------------------------------------
 void modNode_resetMacros()
