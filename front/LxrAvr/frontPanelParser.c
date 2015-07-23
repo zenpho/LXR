@@ -382,7 +382,31 @@ void frontPanel_parseData(uint8_t data)
 				}
 				else if(frontParser_midiMsg.status == VOICE_LOAD_KIT)
             {
-               preset_loadVoice(frontParser_midiMsg.data2, (uint8_t)(frontParser_midiMsg.data1+1), 0);
+               uint8_t signum=0;
+               switch(frontParser_midiMsg.data1)
+               { // voice load - each voice has unique bits
+                  case 0:
+                     signum = 0x01;
+                  break;
+                  case 1:
+                     signum = 0x02;
+                  break;
+                  case 2:
+                     signum = 0x04;
+                  break;
+                  case 3:
+                     signum = 0x08;
+                  break;
+                  case 4:
+                     signum = 0x10;
+                  break;
+                  case 5:
+                     signum = 0x60;
+                  break;
+                  default:
+                  break;
+               }
+               preset_loadVoice(frontParser_midiMsg.data2, signum, 0);
             }
 				else if(frontParser_midiMsg.status == SEQ_CC)
 				{

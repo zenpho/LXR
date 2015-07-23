@@ -357,18 +357,23 @@ static void seq_parseAutomationNodes(uint8_t track, Step* stepData)
    uint8_t param2 = stepData->param2Nr;
    uint8_t val1 = stepData->param1Val;
    uint8_t val2 = stepData->param2Val;
-   
-   if(param1>=PAR_LOAD_DRUM1&&param1<=PAR_LOAD_HIHAT)
+   if(val1)
    {
-         uart_sendFrontpanelByte(FRONT_SEQ_VOICE_LOAD);
-         uart_sendFrontpanelByte(track);
-         uart_sendFrontpanelByte(val1);
+      if(param1>=PAR_LOAD_DRUM1&&param1<=PAR_LOAD_HIHAT)
+      {
+            uart_sendFrontpanelByte(FRONT_SEQ_VOICE_LOAD);
+            uart_sendFrontpanelByte((uint8_t)(param1-PAR_LOAD_DRUM1));
+            uart_sendFrontpanelByte(val1);
+      }
    }
-   if(param2>=PAR_LOAD_DRUM1&&param2<=PAR_LOAD_HIHAT)
+   if(val2)
    {
-         uart_sendFrontpanelByte(FRONT_SEQ_VOICE_LOAD);
-         uart_sendFrontpanelByte(track);
-         uart_sendFrontpanelByte(val2);
+      if(param2>=PAR_LOAD_DRUM1&&param2<=PAR_LOAD_HIHAT)
+      {
+            uart_sendFrontpanelByte(FRONT_SEQ_VOICE_LOAD);
+            uart_sendFrontpanelByte((uint8_t)(param2-PAR_LOAD_DRUM1));
+            uart_sendFrontpanelByte(val2);
+      }
    }
 
    {

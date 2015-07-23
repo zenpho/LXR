@@ -355,7 +355,7 @@ error:
 
    //----------------------------------------------------
 uint8_t preset_loadVoice(uint8_t presetNr, uint8_t voiceArray, uint8_t isMorph)
-{
+{//FYI DRUM1:0x01 DRUM2:0x02 DRUM3:0x04 SNARE:0x08 CYM:0x10 HIHAT:0x60
 #if USE_SD_CARD
 	//filename in 8.3  format
    char filename[9];

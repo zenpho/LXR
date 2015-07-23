@@ -202,7 +202,7 @@ const Name valueNames[NUM_NAMES] PROGMEM =
       {SHORT_SEQ_PC_TIME, CAT_SEQUENCER, LONG_SEQ_PC_TIME}, // TEXT_SEQ_PC_TIME
       {SHORT_BUT_SHIFT_MODE, CAT_GLOBAL, LONG_BUT_SHIFT_MODE}, // TEXT_BUT_SHIFT_MODE
       {SHORT_LOAD_PERF_ON_BANK, CAT_GLOBAL, LONG_LOAD_PERF_ON_BANK}, // TEXT_LOAD_PERF_ON_BANK
-      {SHORT_LOAD_FROM_KIT, CAT_VOICE, LONG_LOAD_FROM_KIT}, // text for kit load on automation
+      {SHORT_LOAD_FROM_KIT, CAT_LOADVOICE, LONG_LOAD_FROM_KIT}, // text for kit load on automation
       
       {SHORT_MAC1, CAT_MACRO1, LONG_MAC1}, // text for macro 1 send amount
       {SHORT_MAC1, CAT_MACRO2, LONG_MAC1}, // text for macro 2 send amount

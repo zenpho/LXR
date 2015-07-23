@@ -345,7 +345,7 @@ const char shortNames[][4] PROGMEM  =
    {"pci"}, // pattern change time is bar or step
    {"stg"}, // shift is toggle instead of momentary
    {"b2p"}, // bank changes change perfs
-   {"kit"},
+   {"!k@"},
 
    {"mac"}, // TEXT_MAC1,
    {"mac"}, // TEXT_MAC2,
@@ -405,6 +405,7 @@ const char catNames[][16] PROGMEM =
    {"Mac2Dst1"},
    {"Mac2Dst2"},
    {"Trnspos"},
+   {"!!GETVoi"},
 };
 //-----------------------------------------------------------------
 // these must correspond to longNamesEnum
@@ -485,7 +486,7 @@ const char longNames[][16] PROGMEM =
    {"PCInstnt" }, // pattern change occurs on bar or step
    {"ShiftTog" }, // shift is toggle instead of momentary
    {"BnkToPrf" }, // Bank changes change perfs
-   {"LoadKit#" }, // load voice from kit on automation
+   {"ce<-KIT#" }, // load voice from kit on automation
    {"Amount"  }, // TEXT_MAC1,
    {"Amount"  }, // TEXT_MAC2,
    

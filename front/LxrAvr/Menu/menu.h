@@ -366,7 +366,7 @@ enum catNamesEnum
    CAT_MAC2D1,
    CAT_MAC2D2,
    CAT_TRANSPOSE,
-   
+   CAT_LOADVOICE,
 };
 //-----------------------------------------------------------------
 // these must correspond with longNames in MenuText.h
