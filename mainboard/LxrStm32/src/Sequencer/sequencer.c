@@ -454,7 +454,7 @@ uint8_t seq_getTransposedNote(uint8_t voice, uint8_t step, uint8_t note)
       }
       else
       {
-         retNote = (uint8_t)(note+(seq_transpose_voiceAmount[voice]-63));
+         retNote = (uint8_t)(note+(transpose-63));
       }
       if (retNote>127)
       {
