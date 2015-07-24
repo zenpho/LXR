@@ -673,7 +673,7 @@ static void seq_nextStep()
          	//check if roll is active
             
             seq_rollCounter[i]--;
-            if(seq_rollCounter[i]<=0)
+            if(seq_rollCounter[i]==0||seq_rollCounter[i]>192)
             {
                uint8_t vol;
                uint8_t note;
@@ -699,6 +699,7 @@ static void seq_nextStep()
             } // end if rollCounter
             
          }// end if seq_rollState
+         
       }//end oneshot
    
    }
@@ -1144,14 +1145,14 @@ void seq_setRoll(uint8_t voice, uint8_t onOff)
          whereStep = seq_stepIndex[NUM_TRACKS]%quantMult;
          if (whereStep<(quantMult/2)) // just missed the quantized division, trigger immediate and short-load 1st roll count
          {
-            seq_rollCounter[voice] = seq_rollRate-whereStep;
+            seq_rollCounter[voice] = (seq_rollRate-whereStep)&0x7f;
             seq_triggerVoice(voice,seq_rollVelocity,seq_rollNote);
       	   //record roll notes
             seq_addNote(voice,seq_rollVelocity,note);
          }
          else // triggered before the quantize division. short-load the first roll count and let counter deal with it
          {
-            seq_rollCounter[voice] = seq_rollRate-whereStep;
+            seq_rollCounter[voice] = whereStep;
          }
       }
       else // not one-shot or roll quantized, trigger and start counter
@@ -1164,6 +1165,7 @@ void seq_setRoll(uint8_t voice, uint8_t onOff)
    } 
    else {
       seq_rollState &= ~(1<<voice);
+      seq_rollCounter[voice] = seq_rollRate;
    }
 };
 //--------------------------------------------------------------------------------
