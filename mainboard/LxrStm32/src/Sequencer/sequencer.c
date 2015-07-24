@@ -61,7 +61,7 @@
 static uint8_t seq_prescaleCounter = 0;
 
 uint8_t seq_masterStepCnt=0;				/** keeps track of the played steps between 0 and 127 independent from the track counters*/
-uint8_t seq_rollRate = 0x08;				// start with roll rate = 1/16
+uint8_t seq_rollRate = 8;				// start with roll rate = 1/16
 uint8_t seq_rollNote = 63;             // note roll uses - start with Dsharp5
 uint8_t seq_rollVelocity = 100;
 uint8_t seq_rollState = 0;					/**< each bit represents a voice. if bit is set, roll is active*/
@@ -70,6 +70,8 @@ uint8_t seq_lockNotes = 0;
 static int8_t 	seq_stepIndex[NUM_TRACKS+1];	/**< we have 16 steps consisting of 8 sub steps = 128 steps.
 											     each track has its own counter to allow different pattern lengths */
                                       // -bc- +1 so we don't have to use DRUM1 as a reference
+                                      
+int8_t seq_rollCounter[NUM_TRACKS];       // runs a counter for every roll trigger
 
 static uint16_t seq_tempo = 120;			/**< seq speed in bpm*/
 
@@ -473,7 +475,7 @@ static uint8_t seq_determineNextPattern()
    else
       return seq_activePattern;
 }
-
+//------------------------------------------------------------------------------
 static void seq_nextStep()
 {
 
@@ -669,32 +671,34 @@ static void seq_nextStep()
          if(seq_rollState & (1<<i))
          {
          	//check if roll is active
+            
+            seq_rollCounter[i]--;
+            if(seq_rollCounter[i]<=0)
             {
-               if((seq_stepIndex[i]%seq_rollRate)==0)
+               uint8_t vol;
+               uint8_t note;
+               // rolling, not recording - use roll control when notes are not locked
+               // rolling, recording - use roll control for both if notes not locked, always record velocity
+               if (seq_lockNotes)
                {
-                  uint8_t vol;
-                  uint8_t note;
-                  // rolling, not recording - use roll control when notes are not locked
-                  // rolling, recording - use roll control for both if notes not locked, always record velocity
-                  if (seq_lockNotes)
-                  {
-                     note = seq_patternSet.seq_subStepPattern[seq_activePattern][i][seq_stepIndex[i]].note;
-                     if (seq_recordActive)
-                        vol = seq_rollVelocity;
-                     else
-                        vol =  seq_patternSet.seq_subStepPattern[seq_activePattern][i][seq_stepIndex[i]].volume&0x7f;
-                  }
+                  note = seq_patternSet.seq_subStepPattern[seq_activePattern][i][seq_stepIndex[i]].note;
+                  if (seq_recordActive)
+                     vol = seq_rollVelocity;
                   else
-                  {
-                     note = seq_rollNote;
-                     vol  = seq_rollVelocity;
-                  }
-                  note = seq_getTransposedNote(i, seq_stepIndex[i], note);
-                  seq_triggerVoice(i,vol,note);
-                  seq_addNote(i,vol,note);
+                     vol =  seq_patternSet.seq_subStepPattern[seq_activePattern][i][seq_stepIndex[i]].volume&0x7f;
                }
-            }
-         }
+               else
+               {
+                  note = seq_rollNote;
+                  vol  = seq_rollVelocity;
+               }
+               note = seq_getTransposedNote(i, seq_stepIndex[i], note);
+               seq_triggerVoice(i,vol,note);
+               seq_addNote(i,vol,note);
+               seq_rollCounter[i] = seq_rollRate;
+            } // end if rollCounter
+            
+         }// end if seq_rollState
       }//end oneshot
    
    }
@@ -1116,12 +1120,43 @@ void seq_setRoll(uint8_t voice, uint8_t onOff)
 {
    if(voice >= 7) 
       return;
-
+   uint8_t note = seq_getTransposedNote(voice, seq_stepIndex[voice], seq_rollNote);
    if(onOff) {
       seq_rollState |= (1<<voice);
       if(seq_rollRate == 0xff) {
       	//trigger one shot
-         uint8_t note = seq_getTransposedNote(voice, seq_stepIndex[voice], seq_rollNote);
+         seq_triggerVoice(voice,seq_rollVelocity,seq_rollNote);
+      	//record roll notes
+         seq_addNote(voice,seq_rollVelocity,note);
+      }
+      else if (seq_quantisation) // quantization selected, roll start gets tricky
+      {
+         uint8_t whereStep,quantMult;
+         /*enum Seq_QuantisationEnum
+         {
+         	NO_QUANTISATION,
+         	QUANT_8,
+         	QUANT_16,
+         	QUANT_32,
+         	QUANT_64,
+         };*/
+         quantMult = 0x01<<(seq_quantisation+2); // how many steps are in 1 quantize unit
+         whereStep = seq_stepIndex[NUM_TRACKS]%quantMult;
+         if (whereStep<(quantMult/2)) // just missed the quantized division, trigger immediate and short-load 1st roll count
+         {
+            seq_rollCounter[voice] = seq_rollRate-whereStep;
+            seq_triggerVoice(voice,seq_rollVelocity,seq_rollNote);
+      	   //record roll notes
+            seq_addNote(voice,seq_rollVelocity,note);
+         }
+         else // triggered before the quantize division. short-load the first roll count and let counter deal with it
+         {
+            seq_rollCounter[voice] = seq_rollRate-whereStep;
+         }
+      }
+      else // not one-shot or roll quantized, trigger and start counter
+      {
+         seq_rollCounter[voice] = seq_rollRate;
          seq_triggerVoice(voice,seq_rollVelocity,seq_rollNote);
       	//record roll notes
          seq_addNote(voice,seq_rollVelocity,note);
@@ -1144,89 +1179,102 @@ void seq_setRollVelocity(uint8_t velocity)
 //--------------------------------------------------------------------------------
 void seq_setRollRate(uint8_t rate)
 {
-	/*
-	0 - one shot immediate trigger
-	1 - 1/1
-	2 - 1/2
-	3 - 1/3
-	4 - 1/4
-	5 - 1/6
-	6 - 1/8
-	7 - 1/12
-	8 - 1/16
-	9 - 1/24
-	10 - 1/32
-	11 - 1/48
-	12 - 1/64
-	13 - 1/128
-				*/
+	/*roll rates
+      
+			0 - one shot immediate trigger
+         1 - dotted bar (196 steps)
+			2 - 1/1
+         3 - dotted half (96 steps)
+			4 - 1/2
+         5 - dotted quarter (48 steps)
+			6 - 1/4
+			7 - dotted 8th (24 steps)
+			8 - 1/8
+			9 - dotted 16th (12 steps)
+			10 - 1/16
+			11 - dotted 32nd (6 steps)
+			12 - 1/32
+			13 - dotted 64th (3 steps)
+			14 - 1/64
+			15 - 1/128
+         
+		 */
 
    switch(rate)
    {
-      case 0:
-         seq_rollRate = 0xfe;
+      case 0: // one shot
+         seq_rollRate = 0xff;
          break;
-      case 1: // 1/1
-         seq_rollRate = 0x7f;
-         break;
-   
-      case 2: // 1/2
-         seq_rollRate = 0x3f;
+      case 1: // dotted bar
+         seq_rollRate = 192;
          break;
    
-      case 3:// 1/3
-         seq_rollRate = 0x2a;
+      case 2: // bar
+         seq_rollRate = 128;
          break;
    
-      case 4:// 1/4
-         seq_rollRate = 0x1f;
+      case 3:// dotted half
+         seq_rollRate = 96;
          break;
    
-      case 5:// 1/6
-         seq_rollRate = 0x31;
+      case 4:// half
+         seq_rollRate = 64;
          break;
    
-      case 6:// 1/8
-         seq_rollRate = 0x0f;
+      case 5:// dotted quarter
+         seq_rollRate = 48;
          break;
    
-      case 7:// 1/12
-         seq_rollRate = 0x0a;
+      case 6:// 1/4
+         seq_rollRate = 32;
          break;
    
-      case 8:// 1/16
-         seq_rollRate = 0x07;
+      case 7:// dotted 8th
+         seq_rollRate = 24;
          break;
    
-      case 9: // 1/24
-         seq_rollRate = 0x05;
+      case 8:// 1/8
+         seq_rollRate = 16;
          break;
    
-      case 10:// 1/32
-         seq_rollRate = 0x03;
+      case 9: // dotted 16th
+         seq_rollRate = 12;
          break;
    
-      case 11:// 1/48
-         seq_rollRate = 0x02;
+      case 10:// 1/16
+         seq_rollRate = 8;
          break;
    
-      case 12://1/64
-         seq_rollRate = 0x01;
+      case 11:// dotted 32nd
+         seq_rollRate = 6;
          break;
    
-      case 13://1/128
-         seq_rollRate = 0x00;
+      case 12:// 1/32
+         seq_rollRate = 4;
+         break;
+   
+      case 13:// dotted 64th
+         seq_rollRate = 3;
+         break;
+      
+      case 14://1/64
+         seq_rollRate = 2;
+         break;
+      
+      case 15://1/128
+         seq_rollRate = 1;
          break;
    }
-   seq_rollRate +=1; //is there a reason for this offset here? seems the value could be assigned directly!?!
+
 
 }
 //------------------------------------------------------------------------
 /** quantize a step to the seq_quantisation value*/
 #define QUANT(x) (NUM_STEPS/x)
-static int8_t seq_quantize(int8_t step)
+static int8_t seq_quantize(int8_t step, uint8_t track)
 {
    uint8_t quantisationMultiplier=1;
+   uint8_t scale=seq_patternSet.seq_patternLengthRotate[seq_activePattern][track].scale;
    switch(seq_quantisation)
    {
       case QUANT_8:
@@ -1250,7 +1298,12 @@ static int8_t seq_quantize(int8_t step)
          return step;
          break;
    }
-
+   // adjust for track scale
+   quantisationMultiplier = quantisationMultiplier>>scale;
+   if (quantisationMultiplier<1)
+   {
+      quantisationMultiplier = 1;
+   }
 	//now calc the quantisation
    float frac = step/(float)quantisationMultiplier;
    int8_t itg = (int8_t)frac;
@@ -1267,7 +1320,7 @@ void seq_recordAutomation(uint8_t voice, uint8_t dest, uint8_t value)
 {
    if(seq_recordActive)
    {
-      uint8_t quantizedStep = seq_quantize(seq_stepIndex[voice]);
+      uint8_t quantizedStep = seq_quantize(seq_stepIndex[voice], voice);
    
    	//only record to active steps
       if( seq_intIsMainStepActive(voice,quantizedStep/8,seq_activePattern) &&
@@ -1318,7 +1371,7 @@ void seq_addNote(uint8_t trackNr,uint8_t vel, uint8_t note)
       int8_t quantizedStep;
       if (vel)
       {
-         quantizedStep = seq_quantize(unquantizedStep);
+         quantizedStep = seq_quantize(unquantizedStep, trackNr);
       }
       else
       {

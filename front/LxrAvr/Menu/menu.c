@@ -3136,21 +3136,24 @@ void menu_parseGlobalParam(uint16_t paramNr, uint8_t value)
 	case PAR_ROLL:
 	{
 		/*roll rates
+      
 			0 - one shot immediate trigger
-			1 - 1/1
-			2 - 1/2
-			3 - 1/3
-			4 - 1/4
-			5 - 1/6
-			6 - 1/8
-			7 - 1/12
-			8 - 1/16
-			9 - 1/24
-			10 - 1/32
-			11 - 1/48
-			12 - 1/64
-			13 - 1/96
-			14 - 1/128
+         1 - dotted bar (196 steps)
+			2 - 1/1
+         3 - dotted half (96 steps)
+			4 - 1/2
+         5 - dotted quarter (48 steps)
+			6 - 1/4
+			7 - dotted 8th (24 steps)
+			8 - 1/8
+			9 - dotted 16th (12 steps)
+			10 - 1/16
+			11 - dotted 32nd (6 steps)
+			12 - 1/32
+			13 - dotted 64th (3 steps)
+			14 - 1/64
+			15 - 1/128
+         
 		 */
 		frontPanel_sendData(SEQ_CC,SEQ_ROLL_RATE,value);
 	}

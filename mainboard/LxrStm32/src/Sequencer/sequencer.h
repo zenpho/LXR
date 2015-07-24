@@ -58,6 +58,7 @@
 #define STEP_ACTIVE_MASK 0x80
 #define STEP_VOLUME_MASK 0x7f
 
+
 // **PATROT these are not used anymore
 //#define PATTERN_END_MASK 0x7f
 //#define PATTERN_END 0x80
