@@ -71,7 +71,7 @@ static int8_t 	seq_stepIndex[NUM_TRACKS+1];	/**< we have 16 steps consisting of 
 											     each track has its own counter to allow different pattern lengths */
                                       // -bc- +1 so we don't have to use DRUM1 as a reference
                                       
-int8_t seq_rollCounter[NUM_TRACKS];       // runs a counter for every roll trigger
+uint8_t seq_rollCounter[NUM_TRACKS];       // runs a counter for every roll trigger
 
 static uint16_t seq_tempo = 120;			/**< seq speed in bpm*/
 
