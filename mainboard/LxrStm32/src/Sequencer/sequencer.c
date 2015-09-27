@@ -1012,10 +1012,23 @@ uint8_t seq_isMainStepActive(uint8_t voice, uint8_t mainStepNr, uint8_t pattern)
 //------------------------------------------------------------------------------
 void seq_setMute(uint8_t trackNr, uint8_t isMuted)
 {
+   
    if(trackNr==7)
    {
-   	//unmute all
-      seq_mutedTracks = 0;
+      if (isMuted)
+      {
+         uint8_t idx = 0;
+         seq_mutedTracks = 0xFF;
+         for (idx=0;idx<7;idx++)
+         {
+            voiceControl_noteOff(midi_MidiChannels[idx]);
+         }
+      }
+      else
+      {
+   	   //unmute all
+         seq_mutedTracks = 0;
+      }
    } 
    else {
    	//mute/unmute tracks

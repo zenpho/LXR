@@ -332,30 +332,30 @@ void midiParser_ccHandler(MidiMsg msg, uint8_t updateOriginalValue)
          case F_OSC4_FINE:
             {
             //clear lower nibble
-			      snareVoice.osc.midiFreq &= 0xff00;
-			   //set lower nibble
-			      snareVoice.osc.midiFreq |= msg.data2;
-			      osc_recalcFreq(&snareVoice.osc);
-		      }
-				break;
-
-		   case F_OSC5_FINE:
-		      {
-			   //clear lower nibble
-			      cymbalVoice.osc.midiFreq &= 0xff00;
-			   //set lower nibble
-			      cymbalVoice.osc.midiFreq |= msg.data2;
-			      osc_recalcFreq(&cymbalVoice.osc);
-		      }
-				break;
-
-		   case F_OSC6_FINE:
-		      {
-			   //clear lower nibble
-			      hatVoice.osc.midiFreq &= 0xff00;
-			   //set lower nibble
-			      hatVoice.osc.midiFreq |= msg.data2;
-			      osc_recalcFreq(&hatVoice.osc);
+               snareVoice.osc.midiFreq &= 0xff00;
+            //set lower nibble
+               snareVoice.osc.midiFreq |= msg.data2;
+               osc_recalcFreq(&snareVoice.osc);
+            }
+            break;
+      
+         case F_OSC5_FINE:
+            {
+            //clear lower nibble
+               cymbalVoice.osc.midiFreq &= 0xff00;
+            //set lower nibble
+               cymbalVoice.osc.midiFreq |= msg.data2;
+               osc_recalcFreq(&cymbalVoice.osc);
+            }
+            break;
+      
+         case F_OSC6_FINE:
+            {
+            //clear lower nibble
+               hatVoice.osc.midiFreq &= 0xff00;
+            //set lower nibble
+               hatVoice.osc.midiFreq |= msg.data2;
+               osc_recalcFreq(&hatVoice.osc);
             }
             break;
       
@@ -3375,7 +3375,30 @@ void midiParser_MIDIccHandler(MidiMsg msg, uint8_t updateOriginalValue)
                break;
             case UNDEF_110: // CYM_MOD_OSC_F2, MOD_OSC_F2 (voice 5,6)
                break;
-            case ALL_SOUND_OFF: /*120*/	//128+CC2_MUTE_* (1-6)
+            case TRACK1_SOUND_OFF: /*113*/	//128+CC2_MUTE_* (1-6)
+            case TRACK2_SOUND_OFF:
+            case TRACK3_SOUND_OFF:
+            case TRACK4_SOUND_OFF:
+            case TRACK5_SOUND_OFF:
+            case TRACK6_SOUND_OFF:
+            case TRACK7_SOUND_OFF:
+            case ALL_SOUND_OFF:     /*120*/
+               {
+               
+                  if(msg.data2 == 0)
+                  {
+                     seq_setMute(MIDIparamNr-TRACK1_SOUND_OFF,0);
+                  }
+                  else
+                  {
+                     seq_setMute(MIDIparamNr-TRACK1_SOUND_OFF,1);
+                  }
+               
+               }
+               LXRparamNr=128+CC2_MUTE_1+MIDIparamNr-TRACK1_SOUND_OFF;
+               break;
+               /*
+            case ALL_SOUND_OFF: //120	//128+CC2_MUTE_* (1-6)
                {
                
                   if(msg.data2 == 0)
@@ -3390,6 +3413,7 @@ void midiParser_MIDIccHandler(MidiMsg msg, uint8_t updateOriginalValue)
                }
                LXRparamNr=128+CC2_MUTE_7;
                break;
+               */
             default:
                break;
          }
