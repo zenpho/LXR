@@ -332,30 +332,30 @@ void midiParser_ccHandler(MidiMsg msg, uint8_t updateOriginalValue)
          case F_OSC4_FINE:
             {
             //clear lower nibble
-			      snareVoice.osc.midiFreq &= 0xff00;
-			   //set lower nibble
-			      snareVoice.osc.midiFreq |= msg.data2;
-			      osc_recalcFreq(&snareVoice.osc);
-		      }
-				break;
-
-		   case F_OSC5_FINE:
-		      {
-			   //clear lower nibble
-			      cymbalVoice.osc.midiFreq &= 0xff00;
-			   //set lower nibble
-			      cymbalVoice.osc.midiFreq |= msg.data2;
-			      osc_recalcFreq(&cymbalVoice.osc);
-		      }
-				break;
-
-		   case F_OSC6_FINE:
-		      {
-			   //clear lower nibble
-			      hatVoice.osc.midiFreq &= 0xff00;
-			   //set lower nibble
-			      hatVoice.osc.midiFreq |= msg.data2;
-			      osc_recalcFreq(&hatVoice.osc);
+               snareVoice.osc.midiFreq &= 0xff00;
+            //set lower nibble
+               snareVoice.osc.midiFreq |= msg.data2;
+               osc_recalcFreq(&snareVoice.osc);
+            }
+            break;
+      
+         case F_OSC5_FINE:
+            {
+            //clear lower nibble
+               cymbalVoice.osc.midiFreq &= 0xff00;
+            //set lower nibble
+               cymbalVoice.osc.midiFreq |= msg.data2;
+               osc_recalcFreq(&cymbalVoice.osc);
+            }
+            break;
+      
+         case F_OSC6_FINE:
+            {
+            //clear lower nibble
+               hatVoice.osc.midiFreq &= 0xff00;
+            //set lower nibble
+               hatVoice.osc.midiFreq |= msg.data2;
+               osc_recalcFreq(&hatVoice.osc);
             }
             break;
       
@@ -1104,7 +1104,39 @@ void midiParser_ccHandler(MidiMsg msg, uint8_t updateOriginalValue)
             
             }
             break;
-      
+         case CC2_MAC1_DST1:       // bc: these need to be handled with a separate status message like LFO dest's
+         case CC2_MAC1_DST2:       // this happens in frontPanelParser
+         case CC2_MAC2_DST1:
+         case CC2_MAC2_DST2:
+            break;
+         case CC2_MAC1_DST1_AMT:       // bc: change perf macro destination amounts
+            if (msg.data2)
+               macroModulators[0].amount = ((msg.data2+1)/64.f)-1;
+            else
+               macroModulators[0].amount = -1;
+            modNode_updateValue(&macroModulators[0],macroModulators[0].lastVal);
+            break;
+         case CC2_MAC1_DST2_AMT:
+            if (msg.data2)
+               macroModulators[1].amount = ((msg.data2+1)/64.f)-1;
+            else
+               macroModulators[1].amount = -1;
+            modNode_updateValue(&macroModulators[1],macroModulators[1].lastVal);
+            break;
+         case CC2_MAC2_DST1_AMT:
+            if (msg.data2)
+               macroModulators[2].amount = ((msg.data2+1)/64.f)-1;
+            else
+               macroModulators[2].amount = -1;
+            modNode_updateValue(&macroModulators[2],macroModulators[2].lastVal);
+            break;
+         case CC2_MAC2_DST2_AMT:
+            if (msg.data2)
+               macroModulators[3].amount = ((msg.data2+1)/64.f)-1;
+            else
+               macroModulators[3].amount = -1;
+            modNode_updateValue(&macroModulators[3],macroModulators[3].lastVal);
+            break;            
          default:
             break;
       }
@@ -1188,10 +1220,11 @@ static void midiParser_noteOn(uint8_t voice, uint8_t note, uint8_t vel, uint8_t 
 
 }
 //------------------------------------------------------
-//static void midiParser_noteOff(uint8_t voice, uint8_t note, uint8_t vel)
-//{
-// in case we ever need it
-//}
+static void midiParser_noteOff(uint8_t voice, uint8_t note, uint8_t vel, uint8_t do_rec)
+{
+   vel=0;
+   midiParser_noteOn(voice, note, vel, do_rec);
+}
 
 
 //-----------------------------------------------------------
@@ -1313,12 +1346,12 @@ void midiParser_parseMidiMessage(MidiMsg msg)
          // the voice that is currently active on the front.
             if(midi_MidiChannels[7]==chanonly) {
             
-                                          // -bc- first, check to see if active track is set to 'any' - use chromatic mode if it is
-               if( (msgonly==NOTE_ON && msg.data2) && !midi_NoteOverride[frontParser_activeTrack] ) {
+               // -bc- first, check to see if active track is set to 'any' - use chromatic mode if it is
+               if( (msgonly==NOTE_ON/* && msg.data2*/) && !midi_NoteOverride[frontParser_activeTrack] ) {
                   midiParser_noteOn(frontParser_activeTrack, msg.data1, msg.data2, 1);
                } 
                // current active track is not set to 'any' - user wants to assign voices to global notes
-               else if (msgonly==NOTE_ON && msg.data2){
+               else if (msgonly==NOTE_ON/* && msg.data2*/){
                   for(v=0;v<7;v++){
                      if (midi_NoteOverride[v]==msg.data1){
                         midiParser_noteOn(v, msg.data1, msg.data2, 1);
@@ -1326,20 +1359,30 @@ void midiParser_parseMidiMessage(MidiMsg msg)
                   }
                
                }
-               else { // NOTE_OFF or zero velocity note
-               //midiParser_noteOff(v, msg.data1, msg.data2);
+               else if( (msgonly==NOTE_OFF) && !midi_NoteOverride[frontParser_activeTrack] ) {
+                  midiParser_noteOff(frontParser_activeTrack, msg.data1, msg.data2, 1);
+               } 
+               // current active track is not set to 'any' - user wants to assign voices to global notes
+               else if (msgonly==NOTE_OFF){
+                  for(v=0;v<7;v++){
+                     if (midi_NoteOverride[v]==msg.data1){
+                        midiParser_noteOff(v, msg.data1, msg.data2, 1);
+                     }
+                  }
+               
                }
             }
            
             // additionally, check each voice channel to see if it cares about this message
             for(v=0;v<7;v++) {
                if(midi_MidiChannels[v]==chanonly) { // if channel match and we haven't sent it already for the voice
-                  if(msgonly==NOTE_ON && msg.data2) {
+                  if(msgonly==NOTE_ON/* && msg.data2*/) {
                      midiParser_noteOn(v, msg.data1, msg.data2, 0);
                      //Also used in sequencer trigger note function
                   } 
-                  else { // NOTE_OFF or zero velocity note
-                     //midiParser_noteOff(v, msg.data1, msg.data2);
+                  else if (msgonly==NOTE_OFF)
+                  { 
+                     midiParser_noteOff(v, msg.data1, msg.data2, 0);
                   }
                } // if channel matches
             } // for each voice
@@ -3332,7 +3375,30 @@ void midiParser_MIDIccHandler(MidiMsg msg, uint8_t updateOriginalValue)
                break;
             case UNDEF_110: // CYM_MOD_OSC_F2, MOD_OSC_F2 (voice 5,6)
                break;
-            case ALL_SOUND_OFF: /*120*/	//128+CC2_MUTE_* (1-6)
+            case TRACK1_SOUND_OFF: /*113*/	//128+CC2_MUTE_* (1-6)
+            case TRACK2_SOUND_OFF:
+            case TRACK3_SOUND_OFF:
+            case TRACK4_SOUND_OFF:
+            case TRACK5_SOUND_OFF:
+            case TRACK6_SOUND_OFF:
+            case TRACK7_SOUND_OFF:
+            case ALL_SOUND_OFF:     /*120*/
+               {
+               
+                  if(msg.data2 == 0)
+                  {
+                     seq_setMute(MIDIparamNr-TRACK1_SOUND_OFF,0);
+                  }
+                  else
+                  {
+                     seq_setMute(MIDIparamNr-TRACK1_SOUND_OFF,1);
+                  }
+               
+               }
+               LXRparamNr=128+CC2_MUTE_1+MIDIparamNr-TRACK1_SOUND_OFF;
+               break;
+               /*
+            case ALL_SOUND_OFF: //120	//128+CC2_MUTE_* (1-6)
                {
                
                   if(msg.data2 == 0)
@@ -3347,6 +3413,7 @@ void midiParser_MIDIccHandler(MidiMsg msg, uint8_t updateOriginalValue)
                }
                LXRparamNr=128+CC2_MUTE_7;
                break;
+               */
             default:
                break;
          }

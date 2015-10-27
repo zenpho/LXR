@@ -212,13 +212,13 @@ UNDEF_109, // CYM_MOD_OSC_GAIN1, MOD_OSC_GAIN2 (voice 5,6)
 UNDEF_110, // CYM_MOD_OSC_F2, MOD_OSC_F2 (voice 5,6)
 UNDEF_111,
 UNDEF_112, /*112*/
-UNDEF_113,
-UNDEF_114,
-UNDEF_115,
-UNDEF_116,
-UNDEF_117,
-UNDEF_118,
-UNDEF_119,
+TRACK1_SOUND_OFF, // bc - track mutes, these should apply only to the global channel
+TRACK2_SOUND_OFF,
+TRACK3_SOUND_OFF,
+TRACK4_SOUND_OFF,
+TRACK5_SOUND_OFF,
+TRACK6_SOUND_OFF,
+TRACK7_SOUND_OFF,
 ALL_SOUND_OFF, /*120*/	//CC2_MUTE_* (1-6)
 RESET_ALL_CONTROLLERS,
 SWITCH_LOCAL_CONTROL,
@@ -510,8 +510,26 @@ enum
 	CC2_MIDI_NOTE7, // s/b 111 i think
 	
 	//<<insert new parameters here>>
-	
-	
+   
+   CC2_KIT_VERSION, // bc: this does nothing, it's only here to offset future params
+   
+   CC2_LOAD_DRUM1,      // bc: these don't do anything here, just an offset
+   CC2_LOAD_DRUM2,
+   CC2_LOAD_DRUM3,
+   CC2_LOAD_SNARE,
+   CC2_LOAD_CYM,
+   CC2_LOAD_HIHAT,
+   
+   CC2_MAC1_DST1,       // bc: change perf macro destinations
+   CC2_MAC1_DST1_AMT,
+   CC2_MAC1_DST2,
+   CC2_MAC1_DST2_AMT,
+   
+   CC2_MAC2_DST1,
+   CC2_MAC2_DST1_AMT,
+   CC2_MAC2_DST2,
+   CC2_MAC2_DST2_AMT,
+
 	
 
 	//Mute Button NRPN messages
@@ -524,6 +542,7 @@ enum
 	CC2_MUTE_5,
 	CC2_MUTE_6,
 	CC2_MUTE_7,
+   CC2_MUTE_ALL,
 
 }Param2Enums;
 
@@ -533,6 +552,18 @@ enum
 //control messages from cortex for leds
 //status
 #define FRONT_SEQ_VOICE_LOAD           0xab // automation load drum voice from kit
+#define FRONT_CC_MACRO_TARGET          0xaa // performance macro changes to destination or main macro control, not amount
+/* MACRO_CC message structure
+byte1 - status byte 0xaa as above
+byte2, data1 byte: xttaaa-b : tt= top level macro value sent (2 macros exist now, we can do 2 more if we want)
+                              aaa= macro destination value sent (4 destinations exist now, can do 8)
+                              b=macro mod target value top bit
+                              I have left a blank bit above this to make it easier to make more than 255 kit parameters
+                              if we ever want to take on that can of worms
+                              
+byte3, data2 byte: xbbbbbbb : b=macro mod target value lower 7 bits or top level value full
+*/
+
 #define FRONT_STEP_LED_STATUS_BYTE 		0xb1
 #define FRONT_SEQ_CC					      0xb2
 #define FRONT_CODEC_CONTROL				0xb3
@@ -631,6 +662,11 @@ enum
 #define FRONT_SEQ_PC_TIME_MODE         0x3b // setting for change pattern on bar or step
 #define FRONT_SEQ_COPY_SRC            0x3d // added message for copy step
 #define FRONT_SEQ_COPY_DST            0x3e 
+#define FRONT_SEQ_ROLL_NOTE            0x40
+#define FRONT_SEQ_ROLL_VELOCITY        0x41
+#define FRONT_SEQ_LOCK_NOTES           0x42
+#define FRONT_SEQ_TRANSPOSE            0x43
+#define FRONT_SEQ_TRANSPOSE_ON_OFF     0x44
 
 //codec control messages
 #define EQ_ON_OFF						0x01

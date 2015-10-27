@@ -305,6 +305,16 @@ enum ParamEnums
    PAR_LOAD_SNARE,
    PAR_LOAD_CYM,
    PAR_LOAD_HIHAT,
+   
+   PAR_MAC1_DST1,
+   PAR_MAC1_DST1_AMT,
+   PAR_MAC1_DST2,
+   PAR_MAC1_DST2_AMT,
+   
+   PAR_MAC2_DST1,
+   PAR_MAC2_DST1_AMT,
+   PAR_MAC2_DST2,
+   PAR_MAC2_DST2_AMT,
 
 	//#########################################
 	//######## End of sound Parameters ########
@@ -313,10 +323,10 @@ enum ParamEnums
 	//all parameters in this section are only there to be referenced from the menu
 	//they are not saved anywhere
 	END_OF_SOUND_PARAMETERS,
-	PAR_ROLL= END_OF_SOUND_PARAMETERS, //238
+	PAR_ROLL= END_OF_SOUND_PARAMETERS, //246
 	PAR_MORPH,
 
-	PAR_ACTIVE_STEP, 					/*236*/
+	PAR_ACTIVE_STEP, 					
 	PAR_STEP_VOLUME,
 	PAR_STEP_PROB,
 	PAR_STEP_NOTE,
@@ -347,6 +357,15 @@ enum ParamEnums
 	PAR_FLUX,
 	PAR_SOM_FREQ,
 	PAR_TRACK_ROTATION,				// --AS **PATROT
+   
+   PAR_MAC1,      // bc:perf macros
+   PAR_MAC2,
+   
+   PAR_ROLL_NOTE,
+   PAR_ROLL_VELOCITY,
+   PAR_RECORD_NOTES,
+   PAR_TRANSPOSE,
+   PAR_TRANSPOSE_ON_OFF,
 
 	
 	//#########################################
@@ -388,7 +407,7 @@ enum ParamEnums
    PAR_SEQ_PC_TIME,                 // bool, 0 for bar sequence change, 1 for step change
 	PAR_BUT_SHIFT_MODE,              // 0 normal shift operation, 1 shift button is a toggle
    PAR_LOAD_PERF_ON_BANK,           // 0, incoming bank changes select kit, 1 bank changes select perf
-
+   
    NUM_PARAMS
 };
 
