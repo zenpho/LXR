@@ -1131,34 +1131,44 @@ void seq_sendStepInfoToFront(uint16_t stepNr)
 }
 //-------------------------------------------------------------------------------
 void seq_setRoll(uint8_t voice, uint8_t onOff)
-{
+{  
    if(voice >= 7) 
       return;
+      
    uint8_t note = seq_getTransposedNote(voice, seq_stepIndex[voice], seq_rollNote);
-   if(onOff) {
+   
+   if(onOff) { // setting roll on for this voice
       seq_rollState |= (1<<voice);
       if(seq_rollRate == 0xff) {
-      	//trigger one shot
+      
+      	//trigger one shot if that is the selected roll
          seq_triggerVoice(voice,seq_rollVelocity,seq_rollNote);
+         
       	//record roll notes
          seq_addNote(voice,seq_rollVelocity,note);
+         return; // one-shot on is dealt with, we're done here.
       }
-      else if (seq_quantisation) // quantization selected, roll start gets tricky
+      
+      if (seq_quantisation) // quantization selected, roll start gets tricky
       {
-         uint8_t whereStep,quantMult;
-         /*enum Seq_QuantisationEnum
+         int8_t whereStep; // how many steps until the seqnencer reaches the quantized step?
+         int8_t quantStep = seq_quantize((int8_t)(seq_stepIndex[NUM_TRACKS]), voice); // what is the quantized step number?
+         whereStep = quantStep - seq_stepIndex[NUM_TRACKS]; // how many steps until the quantized step?
+         
+         if (whereStep<-32) // we've rolled over - the quantized step is on the next bar, load the counter only
          {
-         	NO_QUANTISATION,
-         	QUANT_8,
-         	QUANT_16,
-         	QUANT_32,
-         	QUANT_64,
-         };*/
-         quantMult = 0x01<<(seq_quantisation+2); // how many steps are in 1 quantize unit
-         whereStep = seq_stepIndex[NUM_TRACKS]%quantMult;
-         if (whereStep<(quantMult/2)) // just missed the quantized division, trigger immediate and short-load 1st roll count
+            seq_rollCounter[voice] = 128+whereStep;
+         }
+         else if (whereStep>32) // the quantized step is on the previous bar - trigger immediate and short-load counter
          {
-            seq_rollCounter[voice] = (seq_rollRate-whereStep)&0x7f;
+            seq_rollCounter[voice] = ((uint8_t)(seq_rollRate+whereStep-128))&0x7f;
+            seq_triggerVoice(voice,seq_rollVelocity,seq_rollNote);
+      	   //record roll notes
+            seq_addNote(voice,seq_rollVelocity,note);
+         }
+         else if (whereStep<0) // just missed the quantized division, trigger immediate and short-load 1st roll count
+         {
+            seq_rollCounter[voice] = seq_rollRate+whereStep;
             seq_triggerVoice(voice,seq_rollVelocity,seq_rollNote);
       	   //record roll notes
             seq_addNote(voice,seq_rollVelocity,note);
@@ -1168,7 +1178,8 @@ void seq_setRoll(uint8_t voice, uint8_t onOff)
             seq_rollCounter[voice] = whereStep;
          }
       }
-      else // not one-shot or roll quantized, trigger and start counter
+      
+      else // not quantized, trigger and start counter
       {
          seq_rollCounter[voice] = seq_rollRate;
          seq_triggerVoice(voice,seq_rollVelocity,seq_rollNote);
@@ -1176,7 +1187,8 @@ void seq_setRoll(uint8_t voice, uint8_t onOff)
          seq_addNote(voice,seq_rollVelocity,note);
       }
    } 
-   else {
+   
+   else { // onOff is zero, turn roll off for this voice
       seq_rollState &= ~(1<<voice);
       seq_rollCounter[voice] = seq_rollRate;
    }
@@ -1286,7 +1298,7 @@ void seq_setRollRate(uint8_t rate)
 //------------------------------------------------------------------------
 /** quantize a step to the seq_quantisation value*/
 #define QUANT(x) (NUM_STEPS/x)
-static int8_t seq_quantize(int8_t step, uint8_t track)
+int8_t seq_quantize(int8_t step, uint8_t track)
 {
    uint8_t quantisationMultiplier=1;
    uint8_t scale=seq_patternSet.seq_patternLengthRotate[seq_activePattern][track].scale;
