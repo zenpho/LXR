@@ -2159,6 +2159,7 @@ void menu_parseEncoder(int8_t inc, uint8_t button)
 	// handle the button being clicked or released
 	if(button != lastEncoderButton) { // was the button clicked?
 		btnClicked=button;
+      screensaver_touch();
 		if(btnClicked) // toggle edit mode
 			editModeActive = (uint8_t)(1-editModeActive);
 		lastEncoderButton = button;
@@ -2168,6 +2169,10 @@ void menu_parseEncoder(int8_t inc, uint8_t button)
 	
 
 	inc = (int8_t)(inc * -1);
+   if (inc != 0)
+   {
+      screensaver_touch();
+   }
 
 	if(menu_activePage == LOAD_PAGE)
    {
