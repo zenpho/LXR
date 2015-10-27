@@ -1166,7 +1166,7 @@ void seq_setRoll(uint8_t voice, uint8_t onOff)
       	   //record roll notes
             seq_addNote(voice,seq_rollVelocity,note);
          }
-         else if (whereStep<0) // just missed the quantized division, trigger immediate and short-load 1st roll count
+         else if (whereStep<=0) // just missed the quantized division, trigger immediate and short-load 1st roll count
          {
             seq_rollCounter[voice] = seq_rollRate+whereStep;
             seq_triggerVoice(voice,seq_rollVelocity,seq_rollNote);
