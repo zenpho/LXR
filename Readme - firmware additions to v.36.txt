@@ -1,10 +1,50 @@
 Brendan Clarke
-Additions to LXR .34 firmware
+Additions to LXR .36 firmware
 LXR by Julian Schmidt (www.sonic-potions.com)
 
 !!!BACK UP YOUR SD CARD!!!
 
 Latest additions are at the top of the list.
+23. Track Transpose - in the PERF menu, when SHIFT is held. This is per track. Note that in the custom firmware, shift+track selects, and the active track LED will flash while shift is held.
+	There is a 'transpose amount' and a 'transpose on/off' control available. Transpose is temporary, but will be applied to the sequencer track if RECORD is turned on. While in RECORD mode, transpose is stored per-step in a temporary parameter, and is not applied until RECORD is switched OFF. Therefore, you can turn on record, set some transpose value, and quickly toggle transpose on/off to apply transpose to only a few steps. Choose a new transpose value, and repeat until you have a pattern you like, then turn record OFF to make it permanent. 
+
+22. Expanded Performance Menu. 
+There are now 4 pages, the top two can be switched with multiple presses of the 'perf' button, all can be accessed with the encoder.
+page 1: (mac mac mrp srt)
+	In addition to the usual morph and sample-rate controls there are two 'Performance Macros'. These are assignable controls that can change up to 2 parameters each. They work in the same way as the lfo's - the actual kit parameters are unaffected, only the sound changes.
+
+page 2: (shu rol rln rlv)
+	In addition to the usual shuffle and roll rate controls, there are now 'roll note' and 'roll velocity' controls. These allow the sound of a roll to be changed, and help speed up recording to the sequencer with rolls.
+
+page 3: (1d1 1a1 1d2 1a2)
+	These are the assignments for 'Performance Macro 1' on page 1.
+page 4: (2d1 2a1 2d2 2a2)
+	These are the assignments for 'Performance Macro 2' on page 1.
+
+	In addition, to make note entry easier with the new roll functions, there is a new entry under the 'sequencer record' menu (the one you get to with shift+record). 'nte' - Sequencer Note Record - can be set to on or off. This exists to let you record 'note' and 'velocity' from roll in separate passes. basically:
+1. turn record on, 'sequencer note record' on
+2. record notes by pressing roll buttons, turning roll note knob.
+3. turn 'sequencer note record' off.
+4. press roll buttons, turn the roll velocity knob to record velocity only.
+	It may help to turn quantization on for this process, too.
+
+	Pro tip: when record is OFF, setting 'nte' to 'off' here will force rolls to use the sequencer data instead of the 2 roll control knobs.
+
+21. Voices can be changed by pattern automation. There is a new step automation parameter "Voice LoadKit#". When this is set, and the step is activated, the voice will do an individual voice load from the kit file number specified by the automation value. The load is not instantaneous, so it is recommended the load not be done on a step that you want to sound (though this can sometimes sound nicely glitchy), but done on a silent (velocity 0) intermediate step.
+
+The new parameter shouldn't cause old patterns to load strangely, but to be on the safe side you might not want to overwrite patterns or kits that you want re-use with older versions of the OS.
+
+20. Step copy and sub-step copy:
+	- Press and hold 'copy', press a step, press another step. Copies all the substep data from one main step to another
+	- Press and hold 'copy', press a step, press one of the 8 'select' buttons, then press a different main step, then press another 'select' button. this will copy individual sub-steps between or within main steps. You can also press two 'select' buttons in sequence to copy within the same main step.
+
+Note that the copy function does not copy main step on/off (ie if one of the sequencer lights is lit for the step) - this be set manually.
+
+19. Kit versions - are stored as a parameter. Versioning prevents kits with filter set to 'off' being inadvertently changed to 'LP2'. This does not apply to individual voice loads.
+
+18. Merged .36 stock firmware changes - adds new 'LP2' filter and fix for kick transient
+
+17. Fixes to roll: roll now does not 'reset' at the end of a bar - it acts independently of bar, track length, or scale. It also takes the 'record quantization' (shift+rec) parameter into account when triggering. Record quantization is fixed to take track scale into account also.
 
 16. Quick access to morph target parameters. When viewing a single parameter (click in and adjust with the encoder), press 'shift' to edit and view the parameter for the morph target.
 

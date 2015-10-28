@@ -35,7 +35,7 @@ static uint8_t voice4presetMask[37]={4,14,15,27,28, 40,46,55,      56,65,68,73, 
 static uint8_t voice5presetMask[37]={6,16,17,23,    24,29,30,31,   32,41,47,57,  58,66,69,92,   100,106,112,119,125, 132,141,147,153,        159,165,171,    177,183,189,195,    201,207,213,219,225}; 
 static uint8_t voice6presetMask[37]={7,18,19,25,    26,33,34,35,   36,42,48,59,  60,61,67,93,   101,107,113,120,126, 133,142,148,154,        160,166,172,    178,184,190,196,    202,208,214,220,226};         
 
-#define FILE_VERSION 3
+#define FILE_VERSION 4
 
 
 #define NUM_TRACKS 7
@@ -355,7 +355,7 @@ error:
 
    //----------------------------------------------------
 uint8_t preset_loadVoice(uint8_t presetNr, uint8_t voiceArray, uint8_t isMorph)
-{
+{//FYI DRUM1:0x01 DRUM2:0x02 DRUM3:0x04 SNARE:0x08 CYM:0x10 HIHAT:0x60
 #if USE_SD_CARD
 	//filename in 8.3  format
    char filename[9];
@@ -460,15 +460,14 @@ error:
 // send loaded parameters to back
 void preset_sendDrumsetParameters()
 {
-   uint8_t i;
+   uint8_t i,value,upper,lower;
 	//special case mod targets
    for(i=0;i<6;i++)
    {
    	//**VELO load drumkit. translate to param value before sending
    	// parameter_values[PAR_VEL_DEST_1+i] is an index into modTargets, we need to send
    	// a parameter number
-      uint8_t value = (uint8_t)pgm_read_word(&modTargets[parameter_values[PAR_VEL_DEST_1+i]].param);
-      uint8_t upper,lower;
+      value = (uint8_t)pgm_read_word(&modTargets[parameter_values[PAR_VEL_DEST_1+i]].param);
       upper = (uint8_t)(((value&0x80)>>7) | (((i)&0x3f)<<1));
       lower = value&0x7f;
       frontPanel_sendData(CC_VELO_TARGET,upper,lower);
@@ -484,7 +483,30 @@ void preset_sendDrumsetParameters()
       lower = value&0x7f;
       frontPanel_sendData(CC_LFO_TARGET,upper,lower);
    }
-
+   // bc: special case macro targets - re-send targets on kit load
+   /* MACRO_CC message structure
+   byte1 - status byte 0xaa as above
+   byte2, data1 byte: xtta aa-b : x= MIDI message, only 7 bits; -= as yet unassigned
+                                  tt= top level macro value sent (2 macros exist now, we can do 2 more if we want)
+                                  aaa= macro destination value sent (4 destinations exist now, can do 8)
+                                  b=macro mod target value top bit
+                                  I have left a blank bit above this to make it easier to make more than 255 kit parameters
+                                  if we ever want to take on that can of worms
+                                 
+   byte3, data2 byte: xbbb bbbb : b=macro mod target value lower 7 bits or top level value full
+   */
+   for(i=0;i<7; i=(uint8_t)(i+2) ) // 0,2,4,6
+   {
+		value =  (uint8_t)pgm_read_word(&modTargets[parameter_values[PAR_MAC1_DST1+i]].param); // the value of the mod target
+      uint8_t lower = value&0x7f;
+      uint8_t upper = (uint8_t)
+                      ( ( ( ( i ) //  MAC1_DST1=0, M1D2=2, M2D1=4, M2D2=6
+                           >>1 )  //  MAC1_DST1=0, M1D2=1, M2D1=2, M2D2=3
+                           <<2 )  //  shift over 2 to make room for upper mod target bit
+                           |(value>>7) );
+                           
+      frontPanel_sendData(MACRO_CC,upper,lower);
+   }
 	// --AS todo will this morph (and fuck up) our modulation targets?
 	// send parameters (possibly combined with morph parameters) to back
    preset_morph(parameter_values[PAR_MORPH]);

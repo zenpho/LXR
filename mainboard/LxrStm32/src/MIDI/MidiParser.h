@@ -77,6 +77,7 @@ extern uint8_t midiParser_originalCcValues[0xff];
 
 extern uint8_t midi_MidiChannels[8]; // last element is global channel
 extern uint8_t midi_NoteOverride[7];
+extern uint8_t midi_KitChange[6];
 //extern uint8_t midi_mode; --AS not used anymore
 
 //enum MIDI_modeEnum

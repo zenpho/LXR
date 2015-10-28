@@ -37,6 +37,7 @@ extern uint8_t morphValue;
 //kit, drum1, drum2, drum3, snare, cym, hh, morph sound, pattern, performance, all
 extern uint8_t menu_currentPresetNr[NUM_PRESET_LOCATIONS];
 void menu_setShownPattern(uint8_t patternNr);
+void menu_resetSubPage();
 uint8_t menu_getViewedPattern();
 
 
@@ -196,6 +197,22 @@ enum NamesEnum
 	TEXT_SEQ_PC_TIME,
 	TEXT_BUT_SHIFT_MODE,
    TEXT_LOAD_PERF_ON_BANK,
+   TEXT_LOAD_FROM_KIT,
+   TEXT_MAC1,
+   TEXT_MAC2,
+   TEXT_MAC1_DST1,
+   TEXT_MAC1_DST1_AMT,
+   TEXT_MAC1_DST2,
+   TEXT_MAC1_DST2_AMT,
+   TEXT_MAC2_DST1,
+   TEXT_MAC2_DST1_AMT,
+   TEXT_MAC2_DST2,
+   TEXT_MAC2_DST2_AMT,
+   TEXT_ROLL_NOTE,
+   TEXT_ROLL_VELOCITY,
+   TEXT_RECORD_NOTES,
+   TEXT_TRANSPOSE,
+   TEXT_TRANSPOSE_ON_OFF,
 	NUM_NAMES
 };
 //-----------------------------------------------------------------
@@ -289,7 +306,23 @@ enum shortNamesEnum
    SHORT_SEQ_PC_TIME,
    SHORT_BUT_SHIFT_MODE,
    SHORT_LOAD_PERF_ON_BANK,
-
+   SHORT_LOAD_FROM_KIT,
+   SHORT_MAC1,
+   SHORT_MAC2,
+   SHORT_MAC1_DST1,
+   SHORT_MAC1_DST1_AMT,
+   SHORT_MAC1_DST2,
+   SHORT_MAC1_DST2_AMT,
+   SHORT_MAC2_DST1,
+   SHORT_MAC2_DST1_AMT,
+   SHORT_MAC2_DST2,
+   SHORT_MAC2_DST2_AMT,
+   SHORT_ROLL_NOTE,
+   SHORT_ROLL_VELOCITY,
+   SHORT_RECORD_NOTES,
+   
+   SHORT_TRANSPOSE,
+   SHORT_TRANSPOSE_ON_OFF,
 
 	
 };
@@ -324,7 +357,16 @@ enum catNamesEnum
 	CAT_SEQUENCER,
 	CAT_GENERATOR,
 	CAT_MIDI,
-	CAT_TRIGGER
+	CAT_TRIGGER,
+   
+   CAT_MACRO1,
+   CAT_MACRO2,
+   CAT_MAC1D1,
+   CAT_MAC1D2,
+   CAT_MAC2D1,
+   CAT_MAC2D2,
+   CAT_TRANSPOSE,
+   CAT_LOADVOICE,
 };
 //-----------------------------------------------------------------
 // these must correspond with longNames in MenuText.h
@@ -404,6 +446,22 @@ enum longNamesEnum
    LONG_SEQ_PC_TIME,
    LONG_BUT_SHIFT_MODE,
    LONG_LOAD_PERF_ON_BANK,
+   LONG_LOAD_FROM_KIT,
+   LONG_MAC1,
+   LONG_MAC2,
+   LONG_MAC1_DST1,
+   LONG_MAC1_DST1_AMT,
+   LONG_MAC1_DST2,
+   LONG_MAC1_DST2_AMT,
+   LONG_MAC2_DST1,
+   LONG_MAC2_DST1_AMT,
+   LONG_MAC2_DST2,
+   LONG_MAC2_DST2_AMT,
+   LONG_ROLL_NOTE,
+   LONG_ROLL_VELOCITY,
+   LONG_RECORD_NOTES,
+   LONG_TRANSPOSE,
+   LONG_TRANSPOSE_ON_OFF,
 	
 };
 
@@ -499,7 +557,8 @@ enum Datatypes
 	DTYPE_TARGET_SELECTION_LFO,
 	DTYPE_TARGET_SELECTION_VELO,	
 	DTYPE_VOICE_LFO,
-	DTYPE_AUTOM_TARGET,
+	DTYPE_AUTOM_TARGET, // bc: these only get used for macroMod targets now, there is some
+                       // special code parsing their change in menu if new params get this dtype
 	DTYPE_0b1,
 	DTYPE_NOTE_NAME, // --AS eg C#0, D 1 for note name
 	DTYPE_0B15,		//0-15

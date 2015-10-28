@@ -44,6 +44,9 @@
 
 INCCMZ ModulationNode velocityModulators[6];
 
+//INCCMZ ModulationNode macroModulators[4];
+ModulationNode macroModulators[4];
+
  //-----------------------------------------------------------------------
 void modNode_init(ModulationNode* vm)
 {
@@ -96,7 +99,10 @@ void modNode_originalValueChanged(uint16_t idx)
 	{
 		modNode_setOriginalValueChanged(&velocityModulators[i],idx);
 	}
-
+   for(i=0;i<4;i++)
+	{
+		modNode_setOriginalValueChanged(&macroModulators[i],idx);
+	}
 	modNode_setOriginalValueChanged(&voiceArray[0].lfo.modTarget,idx);
 	modNode_setOriginalValueChanged(&voiceArray[1].lfo.modTarget,idx);
 	modNode_setOriginalValueChanged(&voiceArray[2].lfo.modTarget,idx);
@@ -112,7 +118,7 @@ void modNode_resetTargets()
 	{
 		paramArray_setParameter(velocityModulators[i].destination,velocityModulators[i].originalValue);
 	}
-
+   
 	paramArray_setParameter(voiceArray[0].lfo.modTarget.destination,voiceArray[0].lfo.modTarget.originalValue);
 	paramArray_setParameter(voiceArray[1].lfo.modTarget.destination,voiceArray[1].lfo.modTarget.originalValue);
 	paramArray_setParameter(voiceArray[2].lfo.modTarget.destination,voiceArray[2].lfo.modTarget.originalValue);
@@ -131,6 +137,7 @@ void modNode_reassignVeloMod()
 		modNode_updateValue(&velocityModulators[i], velocityModulators[i].lastVal);
 	}
 }
+
 //-----------------------------------------------------------------------
 // set a modulation destination to one of the sound parameters.
 // This is called when the mod target changes or is initialized.
@@ -188,30 +195,116 @@ void modNode_updateValue(ModulationNode* vm, float val)
 	// --AS **PATROT avoid setting this if it's not set to something good
 	if(!p->ptr)
 		return;
+      
+  if (vm->amount<0)
+  {
+      switch(p->type)
+   	{
+   	case TYPE_UINT8:
+   		(*((uint8_t*)p->ptr)) = (*((uint8_t*)p->ptr)) * vm->amount * val + (*((uint8_t*)p->ptr));
+   		break;
+   
+   	case TYPE_UINT32:
+   		(*((uint32_t*)p->ptr)) = (*((uint32_t*)p->ptr)) * vm->amount * val + (*((uint32_t*)p->ptr));
+   		break;
+   
+   	case TYPE_FLT:
+   		(*((float*)p->ptr)) = (*((float*)p->ptr)) * vm->amount * val + (*((float*)p->ptr));
+   		break;
+   
+   	case TYPE_SPECIAL_F:
+   		(*((float*)p->ptr)) = (*((float*)p->ptr)) * vm->amount * val + (*((float*)p->ptr));
+   		break;
+   
+   	case TYPE_SPECIAL_P:
+   	case TYPE_SPECIAL_FILTER_F:
+   	default:
+   		break;
+   
+   	}
+  }
+  else
+  {
 
-	switch(p->type)
+   	switch(p->type)
+   	{
+   	case TYPE_UINT8:
+   		(*((uint8_t*)p->ptr)) = (*((uint8_t*)p->ptr)) * vm->amount * val + (1.f-vm->amount) * (*((uint8_t*)p->ptr));
+   		break;
+   
+   	case TYPE_UINT32:
+   		(*((uint32_t*)p->ptr)) = (*((uint32_t*)p->ptr)) * vm->amount * val + (1.f-vm->amount) * (*((uint32_t*)p->ptr));
+   		break;
+   
+   	case TYPE_FLT:
+   		(*((float*)p->ptr)) = (*((float*)p->ptr)) * vm->amount * val + (1.f-vm->amount) * (*((float*)p->ptr));
+   		break;
+   
+   	case TYPE_SPECIAL_F:
+   		(*((float*)p->ptr)) = (*((float*)p->ptr)) * vm->amount * val + (1.f-vm->amount) * (*((float*)p->ptr));
+   		break;
+   
+   	case TYPE_SPECIAL_P:
+   	case TYPE_SPECIAL_FILTER_F:
+   	default:
+   		break;
+   
+   	}
+      
+   }
+}
+//-----------------------------------------------------------------------
+void modNode_resetMacros()
+{
+	uint8_t i;
+	for(i=0;i<4;i++)
+	{
+      paramArray_setParameter(macroModulators[i].destination,macroModulators[i].originalValue);
+   }
+}
+//-----------------------------------------------------------------------
+void modNode_reassignMacroMod()
+{
+	uint8_t i;
+	for(i=0;i<4;i++)
+	{
+		modNode_updateValue(&macroModulators[i], macroModulators[i].lastVal);
+	}
+}
+//-----------------------------------------------------------------------
+/*void modNode_updateMacro(ModulationNode* macroNode, float value)
+{      
+   Parameter const *paramAssign = &parameterArray[macroNode->destination];
+   
+   macroNode->lastVal = value;
+   
+	switch(paramAssign->type) // p=paramAssign value; n=node amount; v=received value
 	{
 	case TYPE_UINT8:
-		(*((uint8_t*)p->ptr)) = (*((uint8_t*)p->ptr)) * vm->amount * val + (1.f-vm->amount) * (*((uint8_t*)p->ptr));
+      //(*((uint8_t*)paramAssign->ptr)) = macroNode->originalValue.itg;
+		(*((uint8_t*)paramAssign->ptr)) = (*((uint32_t*)paramAssign->ptr)) - ( (*((uint32_t*)paramAssign->ptr)) * (1-value) * macroNode->amount);// + (*((uint8_t*)paramAssign->ptr));
 		break;
 
 	case TYPE_UINT32:
-		(*((uint32_t*)p->ptr)) = (*((uint32_t*)p->ptr)) * vm->amount * val + (1.f-vm->amount) * (*((uint32_t*)p->ptr));
+      //(*((uint32_t*)paramAssign->ptr)) = macroNode->originalValue.itg;
+		(*((uint32_t*)paramAssign->ptr)) = (*((uint32_t*)paramAssign->ptr)) - ( (*((uint32_t*)paramAssign->ptr)) * (1-value) * macroNode->amount);// + (*((uint32_t*)paramAssign->ptr));
 		break;
 
 	case TYPE_FLT:
-		(*((float*)p->ptr)) = (*((float*)p->ptr)) * vm->amount * val + (1.f-vm->amount) * (*((float*)p->ptr));
+      //(*((float*)paramAssign->ptr)) = macroNode->originalValue.flt;
+		(*((float*)paramAssign->ptr)) = (*((float*)paramAssign->ptr)) - ( (*((float*)paramAssign->ptr)) * (1-value) * macroNode->amount);//(*((float*)paramAssign->ptr)) * macroNode->amount * value;// + (*((float*)paramAssign->ptr));
 		break;
 
 	case TYPE_SPECIAL_F:
-		(*((float*)p->ptr)) = (*((float*)p->ptr)) * vm->amount * val + (1.f-vm->amount) * (*((float*)p->ptr));
+      //(*((float*)paramAssign->ptr)) = macroNode->originalValue.flt; 
+		(*((float*)paramAssign->ptr)) = (*((float*)paramAssign->ptr)) - ( (*((float*)paramAssign->ptr)) * (1-value) * macroNode->amount);// + (*((float*)paramAssign->ptr));
 		break;
 
 	case TYPE_SPECIAL_P:
 	case TYPE_SPECIAL_FILTER_F:
 	default:
 		break;
+   }
 
-	}
 }
-
+*/

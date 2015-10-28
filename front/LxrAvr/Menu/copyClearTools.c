@@ -6,6 +6,7 @@
  */ 
 #include "copyClearTools.h"
 #include "../frontPanelParser.h"
+#include "../buttonHandler.h"
 #include <avr/io.h>
 #include "../Hardware/lcd.h"
 #include "../ledHandler.h"
@@ -17,7 +18,11 @@ int8_t buttonHandler_copySrc = SRC_DST_NONE;
 int8_t buttonHandler_copyDst = SRC_DST_NONE;
 static uint8_t copyClear_clearTarget = CLEAR_TRACK;
 
-
+//-----------------------------------------------------------------------------
+uint8_t copyClear_getCopyMode()
+{
+   return copyClear_Mode;
+}
 //-----------------------------------------------------------------------------
 void copyClear_clearTrackAutom(uint8_t automTrack)
 {
@@ -62,7 +67,9 @@ void copyClear_reset()
 {
    copyClear_Mode = MODE_NONE;
    led_clearAllBlinkLeds();
+   led_clearSelectLeds();
    buttonHandler_copySrc = buttonHandler_copyDst = SRC_DST_NONE;
+   menu_repaintAll();
 	
 };
 //-----------------------------------------------------------------------------
@@ -70,6 +77,11 @@ void copyClear_setSrc(int8_t src, uint8_t type)
 {
    buttonHandler_copySrc = src;
    copyClear_Mode = type;
+};
+//-----------------------------------------------------------------------------
+int8_t copyClear_getSrc()
+{
+   return buttonHandler_copySrc;
 };
 //-----------------------------------------------------------------------------
 void copyClear_setDst(int8_t dst, uint8_t type)
@@ -128,6 +140,38 @@ void copyClear_copyTrackPattern()
    frontPanel_sendData(SEQ_CC,SEQ_COPY_TRACK_PATTERN,value);
 	
    buttonHandler_copySrc = buttonHandler_copyDst = SRC_DST_NONE;
+};
+//-----------------------------------------------------------------------------
+void copyClear_copyStep()
+{
+
+   uint8_t srcStep = (uint8_t)(buttonHandler_copySrc);
+   uint8_t dstStep = (uint8_t)(buttonHandler_copyDst);
+   uint8_t i;
+   
+   //led_clearSequencerLeds();
+   for (i=0;i<8;i++)
+   {
+      frontPanel_sendData(SEQ_CC,SEQ_COPY_STEP_SET_SRC,(uint8_t)(srcStep+i));
+      frontPanel_sendData(SEQ_CC,SEQ_COPY_STEP_SET_DST,(uint8_t)(dstStep+i));
+      
+   }
+   led_clearAllBlinkLeds();
+	copyClear_Mode = MODE_NONE;
+   buttonHandler_copySrc = buttonHandler_copyDst = SRC_DST_NONE;
+   led_clearSelectLeds();
+};
+//-----------------------------------------------------------------------------
+void copyClear_copySubStep()
+{
+
+   //led_clearSequencerLeds();
+   frontPanel_sendData(SEQ_CC,SEQ_COPY_STEP_SET_SRC,(uint8_t)buttonHandler_copySrc);
+   frontPanel_sendData(SEQ_CC,SEQ_COPY_STEP_SET_DST,(uint8_t)buttonHandler_copyDst);
+   led_clearAllBlinkLeds();
+   copyClear_Mode = MODE_NONE;
+   buttonHandler_copySrc = buttonHandler_copyDst = SRC_DST_NONE;
+   led_clearSelectLeds();
 };
 //-----------------------------------------------------------------------------
 uint8_t copyClear_isClearModeActive() 

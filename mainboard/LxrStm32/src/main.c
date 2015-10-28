@@ -217,6 +217,11 @@ int main(void)
 	{
 		modNode_init(&velocityModulators[i]);
 	}
+   for(i=0;i<4;i++)
+	{
+		modNode_init(&macroModulators[i]);
+	}
+
 
 	initMidiUart();
 

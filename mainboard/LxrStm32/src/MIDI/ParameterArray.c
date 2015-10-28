@@ -664,6 +664,39 @@ void parameterArray_init()
 	parameterArray[PAR_MIDI_NOTE6].type 	= TYPE_UINT8;
 	parameterArray[PAR_MIDI_NOTE7].ptr 		= &midi_NoteOverride[6];
 	parameterArray[PAR_MIDI_NOTE7].type 	= TYPE_UINT8;
+   
+   parameterArray[PAR_LOAD_DRUM1].ptr 		= &midi_KitChange[1];
+	parameterArray[PAR_LOAD_DRUM1].type		= TYPE_UINT8;
+	parameterArray[PAR_LOAD_DRUM2].ptr 		= &midi_KitChange[2];
+	parameterArray[PAR_LOAD_DRUM2].type 	= TYPE_UINT8;
+	parameterArray[PAR_LOAD_DRUM3].ptr 		= &midi_KitChange[3];
+	parameterArray[PAR_LOAD_DRUM3].type 	= TYPE_UINT8;
+	parameterArray[PAR_LOAD_SNARE].ptr 		= &midi_KitChange[4];
+	parameterArray[PAR_LOAD_SNARE].type 	= TYPE_UINT8;
+	parameterArray[PAR_LOAD_CYM].ptr 		= &midi_KitChange[5];
+	parameterArray[PAR_LOAD_CYM].type 	   = TYPE_UINT8;
+	parameterArray[PAR_LOAD_HIHAT].ptr 		= &midi_KitChange[6];
+	parameterArray[PAR_LOAD_HIHAT].type 	= TYPE_UINT8;
+   
+   parameterArray[PAR_MAC1_DST1].ptr 		= &macroModulators[0].destination;
+	parameterArray[PAR_MAC1_DST1].type		= TYPE_UINT8;
+	parameterArray[PAR_MAC1_DST1_AMT].ptr 	= &macroModulators[0].amount;
+	parameterArray[PAR_MAC1_DST1_AMT].type = TYPE_FLT;
+	parameterArray[PAR_MAC1_DST2].ptr 		= &macroModulators[1].destination;
+	parameterArray[PAR_MAC1_DST2].type 	   = TYPE_UINT8;
+	parameterArray[PAR_MAC1_DST2_AMT].ptr 	= &macroModulators[1].amount;
+	parameterArray[PAR_MAC1_DST2_AMT].type = TYPE_FLT;
+   
+   parameterArray[PAR_MAC2_DST1].ptr 		= &macroModulators[2].destination;
+	parameterArray[PAR_MAC2_DST1].type		= TYPE_UINT8;
+	parameterArray[PAR_MAC2_DST1_AMT].ptr 	= &macroModulators[2].amount;
+	parameterArray[PAR_MAC2_DST1_AMT].type = TYPE_FLT;
+	parameterArray[PAR_MAC2_DST2].ptr 		= &macroModulators[3].destination;
+	parameterArray[PAR_MAC2_DST2].type 	   = TYPE_UINT8;
+	parameterArray[PAR_MAC2_DST2_AMT].ptr 	= &macroModulators[3].amount;
+	parameterArray[PAR_MAC2_DST2_AMT].type = TYPE_FLT;
+
+   
 	//#########################################
 	//######## End of sound Parameters ########
 	//#########################################

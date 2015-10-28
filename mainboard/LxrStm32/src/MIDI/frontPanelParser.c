@@ -80,6 +80,8 @@ uint8_t frontParser_activeTrack=0;	/** the active track on the Frontpanel. track
 uint8_t frontParser_shownPattern = 0;
 uint8_t frontParser_activeStep=0;
 
+uint8_t frontParser_stepCopySource=0;
+
 //------------------------------------------------------
 /**send all active step numbers to frontpanel to light up corresponding LEDs*/
 void frontParser_updateTrackLeds(const uint8_t trackNr, uint8_t patternNr)
@@ -88,30 +90,63 @@ void frontParser_updateTrackLeds(const uint8_t trackNr, uint8_t patternNr)
    {
    
       frontParser_activeFrontTrack = trackNr;
-   
-      int i=0;
-   
-      for(;i<16;i++)
+      
+      uint8_t ledByte = 0x00;
+      uint8_t i;
+      uint8_t k;
+      
+      for(k=0;k<4;k++)
       {
-         if(seq_isMainStepActive(trackNr,i,patternNr))
+         for(i=0;i<4;i++)
          {
-            uart_sendFrontpanelByte(FRONT_STEP_LED_STATUS_BYTE);
-            uart_sendFrontpanelByte(FRONT_LED_SEQ_BUTTON);
-            uart_sendFrontpanelByte(i*8);
+            if(seq_isMainStepActive(trackNr,(uint8_t)( (k<<2) + i),patternNr))
+            {
+               ledByte |= (0x01<<i);
+            }
          }
+         
+         uart_sendFrontpanelByte(FRONT_STEP_LED_STATUS_BYTE);
+         uart_sendFrontpanelByte((uint8_t)(FRONT_LED_SEQ_MAIN_ONE+k));
+         uart_sendFrontpanelByte(ledByte);
+         
+         ledByte = 0x00;
       }
-   
-      uint8_t start = (frontParser_activeStep/8)*8;
-      for(i=start;i<(start+8);i++) //only send visible substeps
-      {
-         if(seq_isStepActive(trackNr,i,patternNr))
-         {
-            uart_sendFrontpanelByte(FRONT_STEP_LED_STATUS_BYTE);
-            uart_sendFrontpanelByte(FRONT_LED_SEQ_SUB_STEP);
-            uart_sendFrontpanelByte(i);
-         }
-      }
+
+      
+      frontParser_updateSubStepLeds(trackNr, patternNr);
    }
+}
+
+void frontParser_updateSubStepLeds(const uint8_t trackNr, uint8_t patternNr)
+{
+      uint8_t start = frontParser_activeStep&0x78; // truncate to main step
+      uint8_t ledByte = 0x00;
+      uint8_t i;
+      
+      for(i=0;i<4;i++)
+      {
+         if(seq_isStepActive(trackNr,(start+i),patternNr))
+         {
+            ledByte |= (0x01<<i);
+         }
+      }
+      
+      uart_sendFrontpanelByte(FRONT_STEP_LED_STATUS_BYTE);
+      uart_sendFrontpanelByte(FRONT_LED_SEQ_SUB_STEP_LOWER);
+      uart_sendFrontpanelByte(ledByte);
+      
+      ledByte = 0x00;
+      
+      for(i=0;i<4;i++)
+      {
+         if(seq_isStepActive(trackNr,(start+4+i),patternNr))
+         {
+            ledByte |= (0x01<<i);
+         }
+      }
+      uart_sendFrontpanelByte(FRONT_STEP_LED_STATUS_BYTE);
+      uart_sendFrontpanelByte(FRONT_LED_SEQ_SUB_STEP_UPPER);
+      uart_sendFrontpanelByte(ledByte);
 }
 
 //------------------------------------------------------
@@ -402,7 +437,49 @@ static void frontParser_handleMidiMessage()
 
    switch(frontParser_midiMsg.status)
    {
-   //SEQ MESSAGES
+      case FRONT_CC_MACRO_TARGET: //frontParser_midiMsg.status
+         {
+         
+            /* MACRO_CC message structure
+            byte1 - status byte 0xaa as above
+            byte2, data1 byte: xtta aa-b : tt= top level macro value sent (2 macros exist now, we can do 2 more if we want)
+                                           aaa= macro destination value sent (4 destinations exist now, can do 8)
+                                           b=macro mod target value top bit
+                                           I have left a blank bit above this to make it easier to make more than 255 kit parameters
+                                           if we ever want to take on that can of worms
+                                          
+            byte3, data2 byte: xbbb bbbb : b=macro mod target value lower 7 bits or top level value full
+            */
+            
+            uint8_t upper = frontParser_midiMsg.data1;
+            uint8_t lower = frontParser_midiMsg.data2;
+           
+            if (upper&0x20)
+            {
+               float value = ((float)(lower))/127.f;
+               // top level macro amount message received
+               modNode_updateValue(&macroModulators[0],(value));
+               modNode_updateValue(&macroModulators[1],(value));
+            }
+            else if (upper&0x40)
+            {
+               float value = ((float)(lower))/127.f;
+               // top level macro amount message received
+               modNode_updateValue(&macroModulators[2],(value));
+               modNode_updateValue(&macroModulators[3],(value));
+            }
+            else
+            {
+               // macro destination message
+               uint16_t value = (uint16_t)( ( (upper&0x03)<<8) | lower);
+               uint8_t whichModDest = (uint8_t)( 0x07&(upper>>2) ); // whichModDest 0,1,2,3 mac1d1,mac1d2,mac2d1,mac2d2
+               modNode_setDestination(&macroModulators[whichModDest], value);
+               modNode_updateValue(&macroModulators[whichModDest],macroModulators[whichModDest].lastVal);
+            }
+         
+         }
+         break; // case FRONT_CC_LFO_TARGET
+      //SEQ MESSAGES
       case FRONT_SEQ_CC: // frontParser_midiMsg.status
          frontParser_handleSeqCC();
          break;
@@ -632,6 +709,14 @@ static void frontParser_handleMidiMessage()
                
                }
                break;
+            case FRONT_LED_ALL_SUBSTEP:
+               {
+                  uint8_t trackNr = frontParser_midiMsg.data2 >> 4;
+                  uint8_t patternNr = frontParser_midiMsg.data2 & 0x7;
+
+                  frontParser_updateSubStepLeds(trackNr, patternNr);               
+               }
+               break;
          
             default:
                break;
@@ -639,7 +724,6 @@ static void frontParser_handleMidiMessage()
          break;
    } // frontParser_midiMsg.status
 }
-
 //------------------------------------------------------
 // Sequencer message handler
 // This is called when we have received a message with status FRONT_SEQ_CC
@@ -795,6 +879,18 @@ static void frontParser_handleSeqCC()
             seq_copyTrackPattern(srcNr,dstPat,frontParser_shownPattern);
          }
          break;
+         
+      case FRONT_SEQ_COPY_SRC:
+         {
+            frontParser_stepCopySource = frontParser_midiMsg.data2;
+         }
+         break;
+      
+      case FRONT_SEQ_COPY_DST:
+         {
+            seq_copySubStep(frontParser_stepCopySource,frontParser_midiMsg.data2,frontParser_activeTrack);
+         }
+         break;
    
       case FRONT_SEQ_TRACK_LENGTH:
          seq_setTrackLength(frontParser_activeTrack,frontParser_midiMsg.data2);
@@ -853,6 +949,11 @@ static void frontParser_handleSeqCC()
          uart_sendFrontpanelByte(FRONT_SEQ_CC);
          uart_sendFrontpanelByte(FRONT_SEQ_TRACK_ROTATION);
          uart_sendFrontpanelByte(seq_getTrackRotation(frontParser_activeTrack));
+         
+         uart_sendFrontpanelByte(FRONT_SEQ_CC);
+         uart_sendFrontpanelByte(FRONT_SEQ_TRANSPOSE);
+         uart_sendFrontpanelByte(seq_transpose_voiceAmount[frontParser_activeTrack]);
+         
          break;
    
       case FRONT_SEQ_REQUEST_STEP_PARAMS:
@@ -924,6 +1025,21 @@ static void frontParser_handleSeqCC()
       case FRONT_SEQ_ROLL_RATE:
          seq_setRollRate(frontParser_midiMsg.data2);
          break;
+      case FRONT_SEQ_ROLL_NOTE:
+         seq_setRollNote(frontParser_midiMsg.data2);
+         break;
+      case FRONT_SEQ_ROLL_VELOCITY:
+         seq_setRollVelocity(frontParser_midiMsg.data2);
+         break;
+      case FRONT_SEQ_LOCK_NOTES:
+         seq_lockNotes = frontParser_midiMsg.data2;
+         break;
+      case FRONT_SEQ_TRANSPOSE:
+         seq_transpose_voiceAmount[frontParser_activeTrack]=frontParser_midiMsg.data2;
+      break;
+      case FRONT_SEQ_TRANSPOSE_ON_OFF:
+         seq_transposeOnOff = frontParser_midiMsg.data2;
+      break;
    
       case FRONT_SEQ_ROLL_ON_OFF:
          {

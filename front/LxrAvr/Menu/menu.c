@@ -202,6 +202,27 @@ const Name valueNames[NUM_NAMES] PROGMEM =
       {SHORT_SEQ_PC_TIME, CAT_SEQUENCER, LONG_SEQ_PC_TIME}, // TEXT_SEQ_PC_TIME
       {SHORT_BUT_SHIFT_MODE, CAT_GLOBAL, LONG_BUT_SHIFT_MODE}, // TEXT_BUT_SHIFT_MODE
       {SHORT_LOAD_PERF_ON_BANK, CAT_GLOBAL, LONG_LOAD_PERF_ON_BANK}, // TEXT_LOAD_PERF_ON_BANK
+      {SHORT_LOAD_FROM_KIT, CAT_LOADVOICE, LONG_LOAD_FROM_KIT}, // text for kit load on automation
+      
+      {SHORT_MAC1, CAT_MACRO1, LONG_MAC1}, // text for macro 1 send amount
+      {SHORT_MAC1, CAT_MACRO2, LONG_MAC1}, // text for macro 2 send amount
+      
+      {SHORT_MAC1_DST1, CAT_MAC1D1, LONG_MAC1_DST1}, // text for macro 1 destination 1 assign
+      {SHORT_MAC1_DST1_AMT, CAT_MACRO1, LONG_MAC1_DST1_AMT}, // text for macro 1 destination 1 mod amount
+      {SHORT_MAC1_DST2, CAT_MAC1D2, LONG_MAC1_DST2}, // text for macro 1 destination 2 assign
+      {SHORT_MAC1_DST2_AMT, CAT_MACRO1, LONG_MAC1_DST2_AMT}, // text for macro 1 destination 2 mod amount
+            
+      {SHORT_MAC2_DST1, CAT_MAC2D1, LONG_MAC2_DST1}, // text for macro 2 destination 1 assign
+      {SHORT_MAC2_DST1_AMT, CAT_MACRO2, LONG_MAC2_DST1_AMT}, // text for macro 2 destination 1 mod amount
+      {SHORT_MAC2_DST2, CAT_MAC2D2, LONG_MAC2_DST2}, // text for macro 2 destination 2 assign
+      {SHORT_MAC2_DST2_AMT, CAT_MACRO2, LONG_MAC2_DST2_AMT},  // text for macro 2 destination 2 mod amount
+      
+      {SHORT_ROLL_NOTE, CAT_PATTERN, LONG_ROLL_NOTE},  
+      {SHORT_ROLL_VELOCITY, CAT_PATTERN, LONG_ROLL_VELOCITY},  
+      {SHORT_RECORD_NOTES, CAT_SEQUENCER, LONG_RECORD_NOTES}, 
+      
+      {SHORT_TRANSPOSE, CAT_TRANSPOSE, LONG_TRANSPOSE},
+      {SHORT_TRANSPOSE_ON_OFF, CAT_TRANSPOSE, LONG_TRANSPOSE_ON_OFF},
 
 };
 
@@ -438,6 +459,24 @@ const enum Datatypes PROGMEM parameter_dtypes[NUM_PARAMS] = {
 	    /*PAR_MIDI_NOTE6*/		DTYPE_NOTE_NAME,
 	    /*PAR_MIDI_NOTE7*/		DTYPE_NOTE_NAME,
        /*PAR_KIT_VERSION*/    DTYPE_0B255,
+       
+       /*PAR_LOAD_DRUM1*/		DTYPE_0B127,
+	    /*PAR_LOAD_DRUM2*/		DTYPE_0B127,
+	    /*PAR_LOAD_DRUM3*/		DTYPE_0B127,
+	    /*PAR_LOAD_SNARE*/		DTYPE_0B127,
+	    /*PAR_LOAD_CYM*/		   DTYPE_0B127,
+	    /*PAR_LOAD_HIHAT*/		DTYPE_0B127,
+       
+       /*PAR_MAC1_DST1*/      DTYPE_AUTOM_TARGET,
+       /*PAR_MAC1_DST1_AMT*/  DTYPE_PM63, 
+       /*PAR_MAC1_DST2*/      DTYPE_AUTOM_TARGET,
+       /*PAR_MAC1_DST2_AMT*/  DTYPE_PM63,
+   
+       /*PAR_MAC2_DST1*/      DTYPE_AUTOM_TARGET,
+       /*PAR_MAC2_DST1_AMT*/  DTYPE_PM63,
+       /*PAR_MAC2_DST2*/      DTYPE_AUTOM_TARGET,
+       /*PAR_MAC2_DST2_AMT*/  DTYPE_PM63,
+
 	    /*PAR_ROLL*/ 			DTYPE_MENU | (MENU_ROLL_RATES<<4),
 	    /*PAR_MORPH*/ 			DTYPE_0B255,
 	    /*PAR_ACTIVE_STEP */ 	DTYPE_0B127,							//230
@@ -462,6 +501,17 @@ const enum Datatypes PROGMEM parameter_dtypes[NUM_PARAMS] = {
 	    /*PAR_FLUX*/ 			DTYPE_0B127,
 	    /*PAR_SOM_FREQ*/ 		DTYPE_0B127,
 	    /*PAR_TRACK_ROTATION*/  DTYPE_1B16,  //**PATROT this is not shown in menu, but if it were it would really be 0 to 15
+
+       /*PAR_MAC1*/        DTYPE_0B127,
+       /*PAR_MAC2*/        DTYPE_0B127,
+     
+      /*PAR_ROLL_NOTE*/ DTYPE_NOTE_NAME,
+      /*PAR_ROLL_VELOCITY*/ DTYPE_0B127,
+      /*PAR_RECORD_NOTES*/  DTYPE_ON_OFF,
+      
+      /*PAR_TRANSPOSE,*/      DTYPE_PM63,
+      /*PAR_TRANSPOSE_ON_OFF,*/DTYPE_ON_OFF,
+
 	    /*PAR_BPM*/ 			DTYPE_0B255,							//251
 	    /*PAR_MIDI_CHAN_1*/ 	DTYPE_0B16,
 	    /*PAR_MIDI_CHAN_2*/ 	DTYPE_0B16,
@@ -487,6 +537,7 @@ const enum Datatypes PROGMEM parameter_dtypes[NUM_PARAMS] = {
 	   /*PAR_SEQ_PC_TIME*/  DTYPE_ON_OFF, // -bc- change patterns on sub-step instead of bar
 	   /*PAR_BUT_SHIFT_MODE*/ DTYPE_ON_OFF, // -bc- make shift a toggle
       /*PAR_LOAD_PERF_ON_BANK*/  DTYPE_ON_OFF, // -bc- load perfs instead of kits on bank change cc
+
 };
 
 
@@ -570,9 +621,18 @@ void menu_init()
 	parameter_values[PAR_EUKLID_LENGTH] = 16;
 	parameter_values[PAR_EUKLID_STEPS] = 16;
 	parameter_values[PAR_EUKLID_ROTATION] = 0;
+   
+   parameter_values[PAR_MAC1] = 0;
+   parameter_values[PAR_MAC2] = 0;
 
 	//initialize the roll value
 	parameter_values[PAR_ROLL] = 8;
+   parameter_values[PAR_ROLL_NOTE] = 63;
+   parameter_values[PAR_ROLL_VELOCITY] = 100;
+   parameter_values[PAR_RECORD_NOTES] = 1;
+   parameter_values[PAR_TRANSPOSE] = 63;
+   parameter_values[PAR_TRANSPOSE_ON_OFF] = 0;
+   
 	//frontPanel_sendData(SEQ_CC,SEQ_ROLL_RATE,8); //value is initialized in cortex firmware
 
 	parameter_values[PAR_BPM] = 120;
@@ -897,14 +957,15 @@ static uint8_t checkScrollSign(uint8_t activePage, uint8_t activeParameter)
 
 	//**GMENU show '*' when both left and right movement are possible in the global settings menu
 	// show > or < as appropriate
-	if(menu_activePage==MENU_MIDI_PAGE) {
+	if(menu_activePage==MENU_MIDI_PAGE||menu_activePage==PERFORMANCE_PAGE) {
 		if(is2ndPage) {
 			//if we are on 2nd screen, and there are more sub-pages after this show "*" to signify both ways are available
-			if((activePage < NUM_SUB_PAGES-1) && (pgm_read_byte(&menuPages[MENU_MIDI_PAGE][activePage+1].top1) != TEXT_EMPTY))
+			if((activePage < NUM_SUB_PAGES-1) && (pgm_read_byte(&menuPages[menu_activePage][activePage+1].top1) != TEXT_EMPTY))
 				return '*';
 			else // on 2nd screen, no sub-pages after this
 				return '<';
-		} else { // on 1st screen
+		}
+      else { // on 1st screen
 			if(has2ndPage(activePage)) { // have a second screen
 				if(activePage > 0)  // on first screen and there are sub-pages before this and a second screen after
 					return '*';
@@ -994,7 +1055,7 @@ void menu_repaintGeneric()
 		//get address from top1-4 from activeParameter (base adress top1 + offset)
 		uint8_t parName = pgm_read_byte(&ap->top1 + activeParameter);
 		uint16_t parNr = pgm_read_word(&ap->bot1 + activeParameter);
-      if (shiftState)
+      if (shiftState&&menu_activePage<=VOICE7_PAGE)
          curParmVal = parameters2[parNr];
       else    
 		   curParmVal = parameter_values[parNr];
@@ -1007,9 +1068,16 @@ void menu_repaintGeneric()
 		{
 			//**AUTOM --AS this is an index into modTargets now
 			//Top row (which destination (1 or 2) and which voice it's targeting)
-			memcpy_P(&editDisplayBuffer[0][0],PSTR("AutDst"),6);
-			numtostru(&editDisplayBuffer[0][7],(uint8_t)( parNr - PAR_P1_DEST + 1));
+			if(menu_activePage==PERFORMANCE_PAGE){
+            //Top row left -> category
+			   strcpy_P(&editDisplayBuffer[0][0],
+				(const char PROGMEM *)(&catNames[pgm_read_byte(&valueNames[parName].category)]));
 
+         }
+         else {
+            memcpy_P(&editDisplayBuffer[0][0],PSTR("AutDst"),6);
+			   numtostru(&editDisplayBuffer[0][7],(uint8_t)( parNr - PAR_P1_DEST + 1));
+         }
 			// bottom row is the category and long name for the parameter being targeted
 			if( pgm_read_word(&modTargets[curParmVal].param)==PAR_NONE ) {
 				//  OFF
@@ -2091,15 +2159,20 @@ void menu_parseEncoder(int8_t inc, uint8_t button)
 	// handle the button being clicked or released
 	if(button != lastEncoderButton) { // was the button clicked?
 		btnClicked=button;
+      screensaver_touch();
 		if(btnClicked) // toggle edit mode
 			editModeActive = (uint8_t)(1-editModeActive);
 		lastEncoderButton = button;
 	} else if(inc==0)
 		return; // nothing has changed. do nothing
 
-	screensaver_touch();
+	
 
 	inc = (int8_t)(inc * -1);
+   if (inc != 0)
+   {
+      screensaver_touch();
+   }
 
 	if(menu_activePage == LOAD_PAGE)
    {
@@ -2147,6 +2220,7 @@ void menu_parseEncoder(int8_t inc, uint8_t button)
 // given a delta, will apply that to the current parameter
 static void menu_encoderChangeParameter(int8_t inc)
 {
+   screensaver_touch();
 	const uint8_t activeParameter	= menuIndex & MASK_PARAMETER;
 	const uint8_t activePage		= (menuIndex&MASK_PAGE)>>PAGE_SHIFT;
 
@@ -2155,7 +2229,7 @@ static void menu_encoderChangeParameter(int8_t inc)
 	uint8_t *paramValue = &parameter_values[paramNr];
    uint8_t isMorphParam = (paramNr<END_OF_SOUND_PARAMETERS&&buttonHandler_getShift());
    
-   if (isMorphParam)
+   if (isMorphParam&&(menu_activePage<=VOICE7_PAGE))
    {
       paramValue = &parameters2[paramNr];
    }
@@ -2265,12 +2339,25 @@ static void menu_encoderChangeParameter(int8_t inc)
 		break;
 
 	case DTYPE_AUTOM_TARGET: {//parameter_dtypes[paramNr] & 0x0F
-		const uint8_t nmt=getNumModTargets();
-		//**AUTOM - limit to valid range for encoder
-		if(*paramValue >= nmt)
-			*paramValue = (uint8_t)(nmt-1);
-		break;
+   
+    	const uint8_t nmt=getNumModTargets();
+   	//**AUTOM - limit to valid range for encoder
+   	if(*paramValue >= nmt)
+   		*paramValue = (uint8_t)(nmt-1);
+      if (menu_activePage == PERFORMANCE_PAGE)
+      {
+   		uint8_t value =  (uint8_t)pgm_read_word(&modTargets[*paramValue].param); // the value of the mod target
+         uint8_t lower = value&0x7f;
+         uint8_t upper = (uint8_t)
+                         ( ( ( (paramNr - PAR_MAC1_DST1) //  MAC1_DST1=0, M1D2=2, M2D1=4, M2D2=6
+                              >>1 )                      //  MAC1_DST1=0, M1D2=1, M2D1=2, M2D2=3
+                              <<2 )                      //  shift over 2 to make room for upper mod target bit
+                              |(value>>7) );
+                              
+         frontPanel_sendData(MACRO_CC,upper,lower);
+      }      
 	}
+   break;
 
 	case DTYPE_0B255:
 		//if(*paramValue > 255)
@@ -2348,10 +2435,11 @@ static void menu_encoderChangeParameter(int8_t inc)
 // -bc- called when edit mode is active
 // and shift is pressed - we can add some
 // special functions here, primarily
-// i wanted to add shift+encoder changes morph parameters
+// add shift+encoder changes morph parameters
 
 static void menu_encoderChangeShiftParameter(int8_t inc)
 {
+   screensaver_touch();
 	const uint8_t activeParameter	= menuIndex & MASK_PARAMETER;
 	const uint8_t activePage		= (menuIndex&MASK_PAGE)>>PAGE_SHIFT;
 
@@ -2372,10 +2460,26 @@ static void menu_encoderChangeShiftParameter(int8_t inc)
    {
       isMorphParam = 0;
    } 
+   else if ( (paramNr>=PAR_MIDI_NOTE1) && (paramNr <= PAR_MAC1_DST1) )
+   {
+      isMorphParam = 0;
+   }
+   else if (paramNr==PAR_MAC1_DST2)
+   {
+      isMorphParam = 0;
+   }
+   else if (paramNr==PAR_MAC2_DST1)
+   {
+      isMorphParam = 0;
+   }
+   else if (paramNr==PAR_MAC2_DST2)
+   {
+      isMorphParam = 0;
+   }		
    else if (paramNr>=END_OF_SOUND_PARAMETERS)
    {
       isMorphParam = 0;
-   }	
+   }
    else
    {
       isMorphParam = 1;
@@ -2505,9 +2609,8 @@ static void menu_encoderChangeShiftParameter(int8_t inc)
 		//**AUTOM - limit to valid range for encoder
 		if(*paramValue >= nmt)
 			*paramValue = (uint8_t)(nmt-1);
-		break;
 	}
-
+   break;
 	case DTYPE_0B255:
 		//if(*paramValue > 255)
 		//	*paramValue = 255;
@@ -2585,7 +2688,7 @@ static void menu_encoderChangeShiftParameter(int8_t inc)
 // or not change it if boundaries are reached
 static void menu_moveToMenuItem(int8_t inc)
 {
-
+   screensaver_touch();
 	int8_t activeParameter	= menuIndex & MASK_PARAMETER; // will be 0 to 7
 	int8_t activePage		= (int8_t)(menuIndex >> PAGE_SHIFT); // will be 0 to 31
 	uint8_t needLock=0;
@@ -2609,8 +2712,17 @@ checkvalid:
 				activePage++; // and change page
 				if(activePage >=NUM_SUB_PAGES)
 					activePage=0; // wrap around to 1st (would only happen if we fill all 8. unlikely)
-			} else
+         }
+         else if(menu_activePage==PERFORMANCE_PAGE) { // in perf menu, we can move to next sub-page
+				needLock=1;
+				activeParameter=0; // set to par 0 of next sub page
+				activePage++; // and change page
+				if(activePage >=NUM_SUB_PAGES)
+					activePage=0; // wrap around to 1st (would only happen if we fill all 8. unlikely)
+			} 
+         else{
 				return; // moved past last param on section 2. not allowed in most modes
+         }
 		}
 	} else { // inc == -1
 		if(activeParameter == 3) { // move to first section of sub-page
@@ -2622,8 +2734,19 @@ checkvalid:
 				activePage--; // and change page
 				if(activePage < 0)
 					activePage=NUM_SUB_PAGES-1; //wrap around to last page (would only happen if we fill all 8. unlikely)
-			} else
+         
+			} 
+         else if(menu_activePage==PERFORMANCE_PAGE) { // in global menu, we can move to previous sub-page
+				needLock=1;
+				activeParameter=7; // put us on the last param of the previous sub-page
+				activePage--; // and change page
+				if(activePage < 0)
+					activePage=NUM_SUB_PAGES-1; //wrap around to last page (would only happen if we fill all 8. unlikely)
+         
+			}
+         else{
 				return; // move past first param on section 1. not allowed in most modes
+         }
 		}
 	}
 
@@ -2669,6 +2792,11 @@ void menu_resetSaveParameters()
 
 }
 //-----------------------------------------------------------------
+void menu_resetSubPage() // forces menu to first sub-page, disregarding toggle
+{
+   menuIndex = 0;
+}
+//-----------------------------------------------------------------
 // switches us to a different menu sub page. If that page is already active
 // and has multiple screens, will toggle to the other screen
 // if its the global menu, and there are multiple pages will toggle to the next page
@@ -2707,7 +2835,9 @@ void menu_switchSubPage(uint8_t subPageNr)
 			}
 			activeParameter=0;
 		}
-	} else { // move to different sub page
+	} 
+   else 
+   { // move to different sub page
 		// we are moving to a different (specific) subpage
 		activePage=subPageNr;
 		if(activeParameter > 3 && has2ndPage(activePage))
@@ -2820,6 +2950,7 @@ void menu_switchPage(uint8_t pageNr)
 		uint8_t patternNr = menu_shownPattern; //max 7 => 0x07 = 0b111
 		uint8_t value = (uint8_t)((trackNr<<4) | (patternNr&0x7));
 		frontPanel_sendData(LED_CC,LED_QUERY_SEQ_TRACK,value);
+      
 		}
 		break;
 	}		
@@ -3010,25 +3141,54 @@ void menu_parseGlobalParam(uint16_t paramNr, uint8_t value)
 	case PAR_ROLL:
 	{
 		/*roll rates
+      
 			0 - one shot immediate trigger
-			1 - 1/1
-			2 - 1/2
-			3 - 1/3
-			4 - 1/4
-			5 - 1/6
-			6 - 1/8
-			7 - 1/12
-			8 - 1/16
-			9 - 1/24
-			10 - 1/32
-			11 - 1/48
-			12 - 1/64
-			13 - 1/96
-			14 - 1/128
+         1 - dotted bar (196 steps)
+			2 - 1/1
+         3 - dotted half (96 steps)
+			4 - 1/2
+         5 - dotted quarter (48 steps)
+			6 - 1/4
+			7 - dotted 8th (24 steps)
+			8 - 1/8
+			9 - dotted 16th (12 steps)
+			10 - 1/16
+			11 - dotted 32nd (6 steps)
+			12 - 1/32
+			13 - dotted 64th (3 steps)
+			14 - 1/64
+			15 - 1/128
+         
 		 */
 		frontPanel_sendData(SEQ_CC,SEQ_ROLL_RATE,value);
 	}
+   break;
+   case PAR_ROLL_NOTE:
+	{
+		frontPanel_sendData(SEQ_CC,SEQ_ROLL_NOTE,value);
+	}
+   break;
+   case PAR_ROLL_VELOCITY:
+	{
+		frontPanel_sendData(SEQ_CC,SEQ_ROLL_VELOCITY,value);
+	}
+   break;
+   case PAR_RECORD_NOTES:
+	{
+      // record notes if the sequencer note lock is 0
+		frontPanel_sendData(SEQ_CC,SEQ_LOCK_NOTES,(uint8_t)(1-value));
+	}
 	break;
+   case PAR_TRANSPOSE:
+   {
+      frontPanel_sendData(SEQ_CC,SEQ_TRANSPOSE,value);
+   }
+   break;
+   case PAR_TRANSPOSE_ON_OFF:
+   {
+      frontPanel_sendData(SEQ_CC,SEQ_TRANSPOSE_ON_OFF,value);
+   }
+   break;
 
 
 
@@ -3140,7 +3300,16 @@ void menu_parseGlobalParam(uint16_t paramNr, uint8_t value)
 //-----------------------------------------------------------------
 static void menu_processSpecialCaseValues(uint16_t paramNr/*, const uint8_t *value*/)
 {
-	if(paramNr == PAR_BPM)
+   
+   if(paramNr == PAR_MAC1)
+   {
+      frontPanel_sendMacro(1,parameter_values[PAR_MAC1]);
+   }
+   else if (paramNr == PAR_MAC2)
+   {
+      frontPanel_sendMacro(2,parameter_values[PAR_MAC2]);
+   }
+	else if(paramNr == PAR_BPM)
 	{
 		//*value *= 2;
 		//*value+=1;
@@ -3340,6 +3509,33 @@ void menu_parseKnobValue(uint8_t potNr, uint8_t potValue)
 		frontPanel_sendData(CC_LFO_TARGET,upper,lower);
 	}
 		break;
+   case DTYPE_AUTOM_TARGET:
+   {
+      if (menu_activePage == PERFORMANCE_PAGE)
+      {
+         // bc: these are only used in perf for macro automation targets
+   
+   		const uint8_t value = (uint8_t)pgm_read_word(&modTargets[dtypeValue].param); // the value of the mod target
+         uint8_t lower = value&0x7f;
+         uint8_t upper = (uint8_t)
+                         ( ( ( (paramNr - PAR_MAC1_DST1) //  MAC1_DST1=0, M1D2=2, M2D1=4, M2D2=6
+                              >>1 )                      //  MAC1_DST1=0, M1D2=1, M2D1=2, M2D2=3
+                              <<2 )                      //  shift over 2 to make room for upper mod target bit
+                              |(value>>7) );
+                              
+         frontPanel_sendData(MACRO_CC,upper,lower);
+      }
+      else
+      {
+         if(paramNr<128) // => Sound Parameter below 128
+   			frontPanel_sendData(MIDI_CC,(uint8_t)paramNr,dtypeValue);
+   		else if(paramNr>=128 && (paramNr < END_OF_SOUND_PARAMETERS)) // => Sound Parameter above 127
+   			frontPanel_sendData(CC_2,(uint8_t)(paramNr-128),dtypeValue);
+   		else
+   			menu_parseGlobalParam(paramNr,dtypeValue);
+      }
+   }
+   break;
 
 	default: // all other sound parameters are send as CC or CC2. anything else is handled specially
 		if(paramNr<128) // => Sound Parameter below 128

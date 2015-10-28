@@ -35,6 +35,20 @@ extern uint8_t frontPanel_longData;
 
 //control messages from cortex for leds
 //status, param changes
+
+#define VOICE_LOAD_KIT  0xab // message from seq automation node to change voice
+#define MACRO_CC        0xaa // message to send with macro changes
+/* MACRO_CC message structure
+byte1 - status byte 0xaa as above
+byte2, data1 byte: xttaaa-b : tt= top level macro value sent (2 macros exist now, we can do 2 more if we want)
+                              aaa= macro destination value sent (4 destinations exist now, can do 8)
+                              b=macro mod target value top bit
+                              I have left a blank bit above this to make it easier to make more than 255 kit parameters
+                              if we ever want to take on that can of worms
+                              
+byte3, data2 byte: xbbbbbbb : b=macro mod target value lower 7 bits or top level value full
+*/
+
 #define MORPH_CC        0xac
 #define BANK_CHANGE_CC  0xad
 #define PARAM_CC        0xae
@@ -70,12 +84,24 @@ extern uint8_t frontPanel_longData;
 #define PATTERN_LOAD			0x03
 
 
-//led_cc messages
+
+// end of 1st byte 'STATUS' byte messages
+//led_cc messages - if 1st byte is 'LED_CC'
 #define LED_CURRENT_STEP_NR 0x01
 #define LED_SEQ_BUTTON		0x02
 #define LED_QUERY_SEQ_TRACK 0x03
 #define LED_PULSE_BEAT		0x04	/**< pulse the beat indicator LED*/
 #define LED_SEQ_SUB_STEP	0x05
+#define LED_ALL_SUBSTEP        0x3f
+
+#define LED_SEQ_MAIN_ONE      0x40  // bc - send as 4-led sets to prevent message choke
+#define LED_SEQ_MAIN_TWO      0x41
+#define LED_SEQ_MAIN_THREE    0x42
+#define LED_SEQ_MAIN_FOUR     0x43
+
+#define LED_SEQ_SUB_STEP_LOWER 0x44
+#define LED_SEQ_SUB_STEP_UPPER 0x45
+
 //#define LED_TRIGGER_VOICE	0x05	/**< send by the sequencer whenever a voice is triggered*/
 
 
@@ -144,10 +170,19 @@ extern uint8_t frontPanel_longData;
 #define SEQ_TRIGGER_OUT1_PPQ  0x37
 #define SEQ_TRIGGER_OUT2_PPQ  0x38
 #define SEQ_TRIGGER_GATE_MODE 0x39
+#define SEQ_ROLL_NOTE       0x40
+#define SEQ_ROLL_VELOCITY       0x41
+#define SEQ_LOCK_NOTES          0x42
 
-#define SEQ_COPY_TRACK_PATTERN 0x3a
-#define SEQ_PC_TIME 0x3b
+#define SEQ_TRANSPOSE            0x43
+#define SEQ_TRANSPOSE_ON_OFF     0x44
 
+//bc adds
+
+#define SEQ_COPY_TRACK_PATTERN         0x3a
+#define SEQ_PC_TIME                    0x3b
+#define SEQ_COPY_STEP_SET_SRC          0x3d // added message for copy step
+#define SEQ_COPY_STEP_SET_DST          0x3e 
 
 //SysEx
 #define SYSEX_REQUEST_STEP_DATA			0x01
@@ -173,6 +208,9 @@ void frontPanel_parseData(uint8_t data);
 void frontPanel_sendMidiMsg(MidiMsg msg);
 void frontPanel_sendData(uint8_t status, uint8_t data1, uint8_t data2);
 void frontPanel_sendByte(uint8_t data);
+void frontPanel_updatePatternLeds();
+void frontPanel_updateSubstepLeds();
+void frontPanel_sendMacro(uint8_t whichMacro,uint8_t value);
 
 extern volatile MidiMsg frontParser_midiMsg;
 
