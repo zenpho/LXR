@@ -65,7 +65,7 @@ uint8_t seq_rollRate = 8;				// start with roll rate = 1/16
 uint8_t seq_rollNote = 63;             // note roll uses - start with Dsharp5
 uint8_t seq_rollVelocity = 100;
 uint8_t seq_rollState = 0;					/**< each bit represents a voice. if bit is set, roll is active*/
-uint8_t seq_lockNotes = 0;
+uint8_t seq_rollMode = ROLL_MODE_ALL;        //0=trig, 1=nte, 2=vel, 3=bth, 4=all
 
 static int8_t 	seq_stepIndex[NUM_TRACKS+1];	/**< we have 16 steps consisting of 8 sub steps = 128 steps.
 											     each track has its own counter to allow different pattern lengths */
@@ -677,22 +677,27 @@ static void seq_nextStep()
             {
                uint8_t vol;
                uint8_t note;
-               // rolling, not recording - use roll control when notes are not locked
-               // rolling, recording - use roll control for both if notes not locked, always record velocity
-               if (seq_lockNotes)
+               
+               switch(seq_rollMode)
                {
-                  note = seq_patternSet.seq_subStepPattern[seq_activePattern][i][seq_stepIndex[i]].note;
-                  if (seq_recordActive)
-                     vol = seq_rollVelocity;
-                  else
-                     vol =  seq_patternSet.seq_subStepPattern[seq_activePattern][i][seq_stepIndex[i]].volume&0x7f;
-               }
-               else
-               {
-                  note = seq_rollNote;
-                  vol  = seq_rollVelocity;
-               }
-               note = seq_getTransposedNote(i, seq_stepIndex[i], note);
+                  case ROLL_MODE_TRIG:
+                     break;
+                  case ROLL_MODE_NOTE:
+                     break;
+                  case ROLL_MODE_VELOCITY:
+                     break;
+                  case ROLL_MODE_BOTH:
+                     break;
+                  case ROLL_MODE_ALL:
+                     break;
+                  default:
+                     break;
+               }                  
+               
+               
+               note = seq_rollNote;
+               vol  = seq_rollVelocity;
+               
                seq_triggerVoice(i,vol,note);
                seq_addNote(i,vol,note);
                seq_rollCounter[i] = seq_rollRate;
@@ -1433,10 +1438,9 @@ void seq_addNote(uint8_t trackNr,uint8_t vel, uint8_t note)
       else
          stepPtr=&seq_patternSet.seq_subStepPattern[targetPattern][trackNr][quantizedStep];
       
-      if (seq_lockNotes!=1)
-      {
-         stepPtr->note 		= note;				// note (--AS was SEQ_DEFAULT_NOTE)
-      }
+
+      stepPtr->note 		= note;				// note (--AS was SEQ_DEFAULT_NOTE)
+
       stepPtr->volume		= vel;				// new velocity
       stepPtr->prob		= 127;				// 100% probability
       stepPtr->volume 	|= STEP_ACTIVE_MASK;

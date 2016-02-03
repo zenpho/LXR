@@ -1031,8 +1031,8 @@ static void frontParser_handleSeqCC()
       case FRONT_SEQ_ROLL_VELOCITY:
          seq_setRollVelocity(frontParser_midiMsg.data2);
          break;
-      case FRONT_SEQ_LOCK_NOTES:
-         seq_lockNotes = frontParser_midiMsg.data2;
+      case FRONT_SEQ_ROLL_MODE:
+         seq_rollMode = frontParser_midiMsg.data2;
          break;
       case FRONT_SEQ_TRANSPOSE:
          seq_transpose_voiceAmount[frontParser_activeTrack]=frontParser_midiMsg.data2;

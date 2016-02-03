@@ -219,7 +219,7 @@ const Name valueNames[NUM_NAMES] PROGMEM =
       
       {SHORT_ROLL_NOTE, CAT_PATTERN, LONG_ROLL_NOTE},  
       {SHORT_ROLL_VELOCITY, CAT_PATTERN, LONG_ROLL_VELOCITY},  
-      {SHORT_RECORD_NOTES, CAT_SEQUENCER, LONG_RECORD_NOTES}, 
+      {SHORT_ROLL_MODE, CAT_SEQUENCER, LONG_ROLL_MODE}, 
       
       {SHORT_TRANSPOSE, CAT_TRANSPOSE, LONG_TRANSPOSE},
       {SHORT_TRANSPOSE_ON_OFF, CAT_TRANSPOSE, LONG_TRANSPOSE_ON_OFF},
@@ -507,7 +507,7 @@ const enum Datatypes PROGMEM parameter_dtypes[NUM_PARAMS] = {
      
       /*PAR_ROLL_NOTE*/ DTYPE_NOTE_NAME,
       /*PAR_ROLL_VELOCITY*/ DTYPE_0B127,
-      /*PAR_RECORD_NOTES*/  DTYPE_ON_OFF,
+      /*PAR_ROLL_MODE*/  DTYPE_MENU | (MENU_MIDI<<4),
       
       /*PAR_TRANSPOSE,*/      DTYPE_PM63,
       /*PAR_TRANSPOSE_ON_OFF,*/DTYPE_ON_OFF,
@@ -629,7 +629,7 @@ void menu_init()
 	parameter_values[PAR_ROLL] = 8;
    parameter_values[PAR_ROLL_NOTE] = 63;
    parameter_values[PAR_ROLL_VELOCITY] = 100;
-   parameter_values[PAR_RECORD_NOTES] = 1;
+   parameter_values[PAR_ROLL_MODE] = 4; //0=trig, 1=nte, 2=vel, 3=bth, 4=all
    parameter_values[PAR_TRANSPOSE] = 63;
    parameter_values[PAR_TRANSPOSE_ON_OFF] = 0;
    
@@ -2060,8 +2060,8 @@ static uint8_t getMaxEntriesForMenu(uint8_t menuId)
 		return retriggerNames[0][0];
 	case MENU_SEQ_QUANT:
 		return quantisationNames[0][0];
-	case MENU_MIDI:
-		return midiModes[0][0];
+	/*case MENU_MIDI:
+		return 2;//midiModes[0][0]; - is overridden for adding roll menu*/
 	case MENU_NEXT_PATTERN:
 		return nextPatternNames[0][0];
 	case MENU_WAVEFORM:
@@ -2076,6 +2076,8 @@ static uint8_t getMaxEntriesForMenu(uint8_t menuId)
 		return ppqNames[0][0];
    case MENU_TRACK_SCALE:
       return trackScaleNames[0][0];
+   case MENU_MIDI:
+      return midiModes[0][0];
 	default:
 		return 0;
 	}
@@ -2120,9 +2122,12 @@ static void getMenuItemNameForValue(const uint8_t menuId, const uint8_t curParmV
 	case MENU_SEQ_QUANT:
 		p=quantisationNames[curParmVal+1];
 		break;
-	case MENU_MIDI:
+	/*case MENU_MIDI:
 		p=midiModes[curParmVal+1];
-		break;
+		break;*/
+   case MENU_MIDI:
+		p=midiModes[curParmVal+1];
+      break;
 	case MENU_NEXT_PATTERN:
 		p=nextPatternNames[curParmVal+1];
 		break;
@@ -3173,10 +3178,10 @@ void menu_parseGlobalParam(uint16_t paramNr, uint8_t value)
 		frontPanel_sendData(SEQ_CC,SEQ_ROLL_VELOCITY,value);
 	}
    break;
-   case PAR_RECORD_NOTES:
+   case PAR_ROLL_MODE:
 	{
       // record notes if the sequencer note lock is 0
-		frontPanel_sendData(SEQ_CC,SEQ_LOCK_NOTES,(uint8_t)(1-value));
+		frontPanel_sendData(SEQ_CC,SEQ_ROLL_MODE,(uint8_t)(value));
 	}
 	break;
    case PAR_TRANSPOSE:
