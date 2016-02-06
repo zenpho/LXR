@@ -626,7 +626,7 @@ void menu_init()
    parameter_values[PAR_MAC2] = 0;
 
 	//initialize the roll value
-	parameter_values[PAR_ROLL] = 8;
+	parameter_values[PAR_ROLL] = 10;
    parameter_values[PAR_ROLL_NOTE] = 63;
    parameter_values[PAR_ROLL_VELOCITY] = 100;
    parameter_values[PAR_ROLL_MODE] = 4; //0=trig, 1=nte, 2=vel, 3=bth, 4=all

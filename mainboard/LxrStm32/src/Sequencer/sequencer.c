@@ -64,14 +64,15 @@ uint8_t seq_masterStepCnt=0;				/** keeps track of the played steps between 0 an
 uint8_t seq_rollRate = 8;				// start with roll rate = 1/16
 uint8_t seq_rollNote = 63;             // note roll uses - start with Dsharp5
 uint8_t seq_rollVelocity = 100;
+uint8_t seq_rollTriggered = 0;         /**< eacn bit ... user has triggered a roll - process on step*/
 uint8_t seq_rollState = 0;					/**< each bit represents a voice. if bit is set, roll is active*/
-uint8_t seq_rollMode = ROLL_MODE_ALL;        //0=trig, 1=nte, 2=vel, 3=bth, 4=all
+uint8_t seq_rollMode = ROLL_MODE_ALL;        //0=trig, 1=nte, 2=vel, 3=bth, 4=all                                      
+uint8_t seq_rollCounter[NUM_TRACKS];       // runs a counter for every roll trigger
+
 
 static int8_t 	seq_stepIndex[NUM_TRACKS+1];	/**< we have 16 steps consisting of 8 sub steps = 128 steps.
 											     each track has its own counter to allow different pattern lengths */
                                       // -bc- +1 so we don't have to use DRUM1 as a reference
-                                      
-uint8_t seq_rollCounter[NUM_TRACKS];       // runs a counter for every roll trigger
 
 static uint16_t seq_tempo = 120;			/**< seq speed in bpm*/
 
@@ -593,11 +594,13 @@ static void seq_nextStep()
 	//--------- Time to process the single tracks -------------------------
    trigger_clockTick(seq_stepIndex[NUM_TRACKS]+1);
    
+   
    int i;
    for(i=0;i<NUM_TRACKS;i++)
    {
    
-            
+      uint8_t voiceTriggered = 0; // did we already trigger this voice?
+      
    	// --AS **PATROT we now use this for length
       seqlen=seq_patternSet.seq_patternLengthRotate[seq_activePattern][i].length;
       seqscale=seq_patternSet.seq_patternLengthRotate[seq_activePattern][i].scale;
@@ -617,13 +620,43 @@ static void seq_nextStep()
          seq_stepIndex[i] = 0;
       }
    
-   
+      //--------- Tracks @ proper stap positions, process roll -------------------------
+      if( !(seq_rollState & (1<<i))&&(seq_rollTriggered & (1<<i)) ) // start new roll command received
+      {
+         voiceTriggered = seq_setRoll(i,1);// deals with setting roll on/off, triggering 1-shot, 
+                                           // and quantizing and loading step countdown timer
+                                           // for 1-shot, voiceTriggered=1,rollState bit=0
+                                           // rollTriggered bit=0. All others, voiceTriggered
+                                           // depends on quantize, rollstate=1,rollTriggered=1
+                                           // when roll is released, rollTriggered=0 and handled
+      }
+      else if( (seq_rollState & (1<<i))&&!(seq_rollTriggered & (1<<i)) ) // stop roll command received
+      {
+         seq_setRoll(i,0); // turn off roll
+      }
+      
+      if(!voiceTriggered)
+      {
+         if(seq_rollState & (1<<i)) // roll is active
+         {
+            voiceTriggered = seq_checkRollStep(i);// will: 1. check if roll counter=0, if so...
+                                                  // 2. switch through different roll modes 3. load
+                                                  // appropriate note, velo values. 4. trigger voice,
+                                                  // add note as appropriate, set triggered. 5. reset                                                
+                                                  // roll counter to = roll rate. 
+                                                  // Then, decrement roll counter (always)
+                                                  // return triggered
+              
+         }
+      }
+      
       if(seq_SomModeActive)
       {
          som_tick(seq_stepIndex[NUM_TRACKS],seq_mutedTracks);
       
       } 
-      else {
+      else if (!voiceTriggered)
+      {
       	//if track is not muted
          if(!(seq_mutedTracks & (1<<i) ) )
          {
@@ -634,80 +667,36 @@ static void seq_nextStep()
             	// and this is the active track on the front, we erase the note value
             	// only do so if we are on a main step while erase is active. in this case, the main step and
             	// all it's substeps are erased.
-               if(seq_eraseActive && i==frontParser_activeTrack && seq_stepIndex[i]%8==0) {
+               if(seq_eraseActive && i==frontParser_activeTrack && seq_stepIndex[i]%8==0) 
+               {
                	// erase the main step and all substeps
                   seq_eraseStepAndSubSteps(frontParser_activeTrack,seq_stepIndex[i]/8);
                } 
-               else
-               // if sub-step is active
-                  if(seq_intIsStepActive(i,seq_stepIndex[i],seq_activePattern))
-                  {
+               else if((seq_intIsStepActive(i,seq_stepIndex[i],seq_activePattern))&&(activeScaledStep)&&(!voiceTriggered))
+               {
                   //PROBABILITY
                   //every 8th step a new random value is generated
                   //thus every sub step block has only one random value to compare against
                   //allows randomisation of rolls by chance
                   
-                     if((seq_stepIndex[i] & 0x07) == 0x00) //every 8th step
-                     {
-                        seq_rndValue[i] = GetRngValue()&0x7f;
-                     }
-                  
-                     if( (seq_rndValue[i]) <= seq_patternSet.seq_subStepPattern[seq_activePattern][i][seq_stepIndex[i]].prob )
-                     {
-                        uint8_t vol = seq_patternSet.seq_subStepPattern[seq_activePattern][i][seq_stepIndex[i]].volume&STEP_VOLUME_MASK;
-                        uint8_t note = seq_patternSet.seq_subStepPattern[seq_activePattern][i][seq_stepIndex[i]].note;
-                        note = seq_getTransposedNote(i, seq_stepIndex[i], note);
-                        if(activeScaledStep)
-                           seq_triggerVoice(i,vol,note);
-                     }
-                  } // if sub step is active
-            } // if main step is active
-         } // if this track is not muted
-      }
-   
-   	//---- check if the roll mode has to trigger the voice
-      if(seq_rollRate!=0xff) //not in oneshot mode
-      {
-         if(seq_rollState & (1<<i))
-         {
-         	//check if roll is active
-            
-            seq_rollCounter[i]--;
-            if(seq_rollCounter[i]==0||seq_rollCounter[i]>192)
-            {
-               uint8_t vol;
-               uint8_t note;
+                  if((seq_stepIndex[i] & 0x07) == 0x00) //every 8th step
+                  {
+                     seq_rndValue[i] = GetRngValue()&0x7f;
+                  }
                
-               switch(seq_rollMode)
-               {
-                  case ROLL_MODE_TRIG:
-                     break;
-                  case ROLL_MODE_NOTE:
-                     break;
-                  case ROLL_MODE_VELOCITY:
-                     break;
-                  case ROLL_MODE_BOTH:
-                     break;
-                  case ROLL_MODE_ALL:
-                     break;
-                  default:
-                     break;
-               }                  
-               
-               
-               note = seq_rollNote;
-               vol  = seq_rollVelocity;
-               
-               seq_triggerVoice(i,vol,note);
-               seq_addNote(i,vol,note);
-               seq_rollCounter[i] = seq_rollRate;
-            } // end if rollCounter
-            
-         }// end if seq_rollState
-         
-      }//end oneshot
-   
-   }
+                  if( (seq_rndValue[i]) <= seq_patternSet.seq_subStepPattern[seq_activePattern][i][seq_stepIndex[i]].prob )
+                  {
+                     uint8_t vol = seq_patternSet.seq_subStepPattern[seq_activePattern][i][seq_stepIndex[i]].volume&STEP_VOLUME_MASK;
+                     uint8_t note = seq_patternSet.seq_subStepPattern[seq_activePattern][i][seq_stepIndex[i]].note;
+                     note = seq_getTransposedNote(i, seq_stepIndex[i], note);
+                     seq_triggerVoice(i,vol,note);
+                     
+                  } // end if seq_rndValue
+               } // end else if stepactive
+            } // end if mainStepActive
+         } // end if not muted
+      } // end else if not triggered             
+   } // end for i=voice
    
    // increment the reference step index
    seq_stepIndex[NUM_TRACKS] = (seq_stepIndex[NUM_TRACKS]+1) & 0x7f;
@@ -1135,69 +1124,189 @@ void seq_sendStepInfoToFront(uint16_t stepNr)
       							);
 }
 //-------------------------------------------------------------------------------
-void seq_setRoll(uint8_t voice, uint8_t onOff)
-{  
+uint8_t seq_rollTrig(uint8_t voice) // called by all roll modes to trigger a voice
+{
+   uint8_t triggered = 0;
+
+   uint8_t vol = 
+      seq_patternSet.seq_subStepPattern[seq_activePattern][voice][seq_stepIndex[voice]].volume&0x7f;
+   uint8_t note = 
+      seq_patternSet.seq_subStepPattern[seq_activePattern][voice][seq_stepIndex[voice]].note&0x7f;
+      
+   uint8_t stepActive = seq_intIsMainStepActive(voice,(seq_stepIndex[voice]>>3),seq_activePattern) &
+      		seq_intIsStepActive(voice,seq_stepIndex[voice],seq_activePattern);
+   
+   switch(seq_rollMode)
+   {
+      case ROLL_MODE_TRIG:
+         seq_triggerVoice(voice,vol,note);
+         if(seq_recordActive)
+         {
+            seq_addNote(voice,vol,note);
+         }
+         triggered = 1;
+         break;
+      case ROLL_MODE_NOTE:
+         if(stepActive)
+         {
+            note = seq_rollNote;
+            seq_triggerVoice(voice,vol,note);
+            if(seq_recordActive)
+            {
+               seq_addNote(voice,vol,note);
+            }
+            triggered = 1;
+         }
+         break;
+      case ROLL_MODE_VELOCITY:
+         if(stepActive)
+         {
+            vol = seq_rollVelocity;
+            seq_triggerVoice(voice,vol,note);
+            if(seq_recordActive)
+            {
+               seq_addNote(voice,vol,note);
+            }
+            triggered = 1;
+         }
+         break;
+      case ROLL_MODE_BOTH:
+         if(stepActive)
+         {
+            vol = seq_rollVelocity;
+            note = seq_rollNote;
+            seq_triggerVoice(voice,vol,note);
+            if(seq_recordActive)
+            {
+               seq_addNote(voice,vol,note);
+            }
+            triggered = 1;
+         }
+         break;
+      case ROLL_MODE_ALL:
+         vol = seq_rollVelocity;
+         note = seq_rollNote;
+         seq_triggerVoice(voice,vol,note);
+         if(seq_recordActive)
+         {
+            seq_addNote(voice,vol,note);
+         }
+         triggered = 1;
+         break;
+      default:
+         break;
+   }                  
+   return triggered;
+}
+//-------------------------------------------------------------------------------
+void seq_rollChange(uint8_t voice, uint8_t onOff) // a message about changing roll state was received
+                                                  // note it and let the next step deal
+{
    if(voice >= 7) 
+   {
       return;
-      
-   uint8_t note = seq_getTransposedNote(voice, seq_stepIndex[voice], seq_rollNote);
-   
-   if(onOff) { // setting roll on for this voice
-      seq_rollState |= (1<<voice);
-      if(seq_rollRate == 0xff) {
-      
-      	//trigger one shot if that is the selected roll
-         seq_triggerVoice(voice,seq_rollVelocity,seq_rollNote);
-         
-      	//record roll notes
-         seq_addNote(voice,seq_rollVelocity,note);
-         return; // one-shot on is dealt with, we're done here.
-      }
-      
-      if (seq_quantisation) // quantization selected, roll start gets tricky
-      {
-         int8_t whereStep; // how many steps until the seqnencer reaches the quantized step?
-         int8_t quantStep = seq_quantize((int8_t)(seq_stepIndex[NUM_TRACKS]), voice); // what is the quantized step number?
-         whereStep = quantStep - seq_stepIndex[NUM_TRACKS]; // how many steps until the quantized step?
-         
-         if (whereStep<-32) // we've rolled over - the quantized step is on the next bar, load the counter only
-         {
-            seq_rollCounter[voice] = 128+whereStep;
-         }
-         else if (whereStep>32) // the quantized step is on the previous bar - trigger immediate and short-load counter
-         {
-            seq_rollCounter[voice] = ((uint8_t)(seq_rollRate+whereStep-128))&0x7f;
-            seq_triggerVoice(voice,seq_rollVelocity,seq_rollNote);
-      	   //record roll notes
-            seq_addNote(voice,seq_rollVelocity,note);
-         }
-         else if (whereStep<=0) // just missed the quantized division, trigger immediate and short-load 1st roll count
-         {
-            seq_rollCounter[voice] = seq_rollRate+whereStep;
-            seq_triggerVoice(voice,seq_rollVelocity,seq_rollNote);
-      	   //record roll notes
-            seq_addNote(voice,seq_rollVelocity,note);
-         }
-         else // triggered before the quantize division. short-load the first roll count and let counter deal with it
-         {
-            seq_rollCounter[voice] = whereStep;
-         }
-      }
-      
-      else // not quantized, trigger and start counter
-      {
-         seq_rollCounter[voice] = seq_rollRate;
-         seq_triggerVoice(voice,seq_rollVelocity,seq_rollNote);
-      	//record roll notes
-         seq_addNote(voice,seq_rollVelocity,note);
-      }
-   } 
-   
-   else { // onOff is zero, turn roll off for this voice
-      seq_rollState &= ~(1<<voice);
+   }
+   if(onOff) // setting roll on for this voice
+   {
+      seq_rollTriggered |= (1<<voice);
+   }
+   else 
+   { // onOff is zero, turn roll off for this voice
+      seq_rollTriggered &= ~(1<<voice);
       seq_rollCounter[voice] = seq_rollRate;
    }
-};
+}
+//-------------------------------------------------------------------------------
+uint8_t seq_setRoll(uint8_t voice, uint8_t onOff)// called processing step if roll changed since last step
+                                                 // deals with setting roll on/off, triggering 1-shot, 
+                                                 // and quantizing and loading step countdown timer
+                                                 // for 1-shot, voiceTriggered=1,rollState bit=0
+                                                 // rollTriggered bit=0. All others, voiceTriggered
+                                                 // depends on quantize, rollstate=1,rollTriggered=1
+                                                 // when roll is released, rollTriggered=0 and handled
+{  
+   uint8_t triggered = 0;
+   if(voice >= 7) 
+      return triggered;
+   if(onOff!=1)
+   {
+      seq_rollState &= ~(1<<voice);
+      return triggered;  
+   }
+   if(seq_rollRate == 0xff) // deal with one-shots
+   {
+      triggered = seq_rollTrig(voice); // trig the voice
+      seq_rollCounter[voice] = 15; // set this to default 1/16 so user can change roll OTF
+      seq_rollState |= (1<<voice); // we've dealt with this, let seq know we shouldn't repeat every step
+      return triggered;
+   }
+   
+   if(!seq_quantisation) // no quantization, deal with this immediately
+   {
+      triggered = seq_rollTrig(voice); // trig the voice
+      seq_rollCounter[voice] = seq_rollRate; // set counter
+      seq_rollState |= (1<<voice);
+      return triggered;
+   }
+   else // quantization is on. make sure roll uses it.
+   {  
+      uint8_t stepsPerQuant = 2;
+      switch(seq_quantisation)
+      {
+         case QUANT_8:
+            stepsPerQuant = 16;
+            break;
+      
+         case QUANT_16:
+            stepsPerQuant = 8;
+            break;
+      
+         case QUANT_32:
+            stepsPerQuant = 4;
+            break;
+      
+         case QUANT_64:
+            stepsPerQuant = 2;
+            break;
+         default:
+            break;
+      }
+      uint8_t quantPosition = seq_stepIndex[NUM_TRACKS]%stepsPerQuant;
+      if ( quantPosition>(stepsPerQuant/2) ) // more than halfway through quant step. just load counter to align with
+                                             // next quant
+      {
+         seq_rollCounter[voice] = stepsPerQuant-quantPosition;
+      }
+      else // less than halfway through the quant. trigger now and load counter as if triggered on last quant.
+      {
+         seq_rollCounter[voice] = seq_rollRate-quantPosition;
+         triggered = seq_rollTrig(voice);
+      }
+      seq_rollState |= (1<<voice);
+      return triggered;
+   } // end else - quantization ON case
+   return 0;
+}// end func
+//--------------------------------------------------------------------------------
+uint8_t seq_checkRollStep(uint8_t voice) // called every step if roll active for voice
+                                         // will: 1. check if roll counter=0, if so...
+                                         // 2. switch through different roll modes 3. load
+                                         // appropriate note, velo values. 4. trigger voice,
+                                         // add note as appropriate, set triggered. 5. reset                                                
+                                         // roll counter to = roll rate. 
+                                         // Then, decrement roll counter (always)
+                                         // return triggered
+{
+   uint8_t triggered = 0;
+   if(!seq_rollCounter[voice])
+   {
+      triggered = seq_rollTrig(voice);
+      seq_rollCounter[voice] = seq_rollRate;
+   }
+   if(seq_rollRate!=0xff)
+      seq_rollCounter[voice]--;
+   return triggered;
+}
 //--------------------------------------------------------------------------------
 void seq_setRollNote(uint8_t note)
 {  

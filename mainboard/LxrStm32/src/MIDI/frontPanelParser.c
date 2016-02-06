@@ -841,13 +841,13 @@ static void frontParser_handleSeqCC()
          }
          break;
    
-   // --AS not used anymore
-   //case FRONT_SEQ_MIDI_MODE:
-   //	midi_mode = frontParser_midiMsg.data2;
-   //	break;
-   
-   
-   //voice nr (0xf0) + autom track nr (0x0f)
+      // --AS not used anymore
+      //case FRONT_SEQ_MIDI_MODE:
+      //	midi_mode = frontParser_midiMsg.data2;
+      //	break;
+      
+      
+      //voice nr (0xf0) + autom track nr (0x0f)
       case FRONT_SEQ_CLEAR_AUTOM:
          {
             const uint8_t voice 		= frontParser_midiMsg.data2 >> 4;
@@ -945,6 +945,9 @@ static void frontParser_handleSeqCC()
             frontParser_shownPattern = frontParser_midiMsg.data2;
          break;   
       case FRONT_SEQ_SET_ACTIVE_TRACK:
+         if ( (frontParser_activeTrack==frontParser_midiMsg.data2)&&(!seq_isRunning()) )
+            seq_triggerVoice(frontParser_activeTrack, seq_rollVelocity, seq_rollNote);
+            
          frontParser_activeTrack = frontParser_midiMsg.data2;
          uart_sendFrontpanelByte(FRONT_SEQ_CC);
          uart_sendFrontpanelByte(FRONT_SEQ_TRACK_ROTATION);
@@ -1046,7 +1049,7 @@ static void frontParser_handleSeqCC()
          
             const uint8_t onOff = frontParser_midiMsg.data2 >> 4;
             const uint8_t voice = frontParser_midiMsg.data2 & 0xf;
-            seq_setRoll(voice,onOff);
+            seq_rollChange(voice,onOff);
          }
          break;
    
