@@ -1054,7 +1054,7 @@ static void frontParser_handleSeqCC()
          break;
    
       case FRONT_SEQ_CHANGE_PAT:
-      //switch to one of the 8 patterns on the next pattern start
+         //switch to one of the 8 patterns on the next pattern start
          seq_setNextPattern(frontParser_midiMsg.data2&0x7);
          break;
    

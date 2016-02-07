@@ -1471,11 +1471,6 @@ void midiParser_MIDIccHandler(MidiMsg msg, uint8_t updateOriginalValue)
       if (chanonly == midi_MidiChannels[0]) // DRUM1 voice is a target
       {
          switch(MIDIparamNr){
-            case BANK:
-               uart_sendFrontpanelByte(BANK_CHANGE_CC); 
-               uart_sendFrontpanelByte(0); // voice number
-               uart_sendFrontpanelByte(msg.data2);
-               break;
             case MOD_WHEEL:
                break; // -bc- todo: assignable mod wheel?
             case CHANNEL_VOL: // voice 1-6
@@ -1732,7 +1727,6 @@ void midiParser_MIDIccHandler(MidiMsg msg, uint8_t updateOriginalValue)
       if (chanonly == midi_MidiChannels[1]) // DRUM2 voice is a target
       {
          switch(MIDIparamNr){
-         
             case MOD_WHEEL:
                break; // -bc- todo: assignable mod wheel?
             case CHANNEL_VOL: // voice 1-6
@@ -2503,10 +2497,6 @@ void midiParser_MIDIccHandler(MidiMsg msg, uint8_t updateOriginalValue)
       if (chanonly == midi_MidiChannels[4]) // CYMBAL voice is a target
       {
          switch(MIDIparamNr){
-            case BANK:
-               uart_sendFrontpanelByte(BANK_CHANGE_CC); 
-               uart_sendFrontpanelByte(4); // voice number
-               uart_sendFrontpanelByte(msg.data2);
                break; 
             case MOD_WHEEL:
                break; // -bc- todo: assignable mod wheel?
@@ -3453,18 +3443,9 @@ void midiParser_MIDIccHandler(MidiMsg msg, uint8_t updateOriginalValue)
                   }
                }
             }
-         
          }
-      
-      
-      
       }
-   
-   
    }
-   
-  
-
 }
  
 

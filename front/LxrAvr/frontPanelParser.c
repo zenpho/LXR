@@ -526,8 +526,13 @@ void frontPanel_parseData(uint8_t data)
 							// re init the LEDs shwoing active/viewed pattern
 							led_initPerformanceLeds();
 							//led_setValue(1,LED_PART_SELECT1+frontParser_midiMsg.data2);
-						}			
-						
+						}
+                  // if a 'perf' or 'all' load locked the kit, un-lock and load
+						if(menu_kitLocked)
+                  {
+                     preset_loadAll(menu_kitLockPreset,menu_kitLockIsAll,1);
+                     menu_kitLocked = 0;
+                  }
 						
 						break;
 						case SEQ_RUN_STOP:
@@ -586,12 +591,7 @@ void frontPanel_parseData(uint8_t data)
                   {
                      // this is a time-consuming operation, cache it and deal
                      // with only one per loop of main()
-                     /*
-                     preset_loadDrumset(frontParser_midiMsg.data2,0);
-                     menu_repaint();
-                     frontPanel_longOp=NULL_OP;
-                     */
-                     
+                    
                      frontPanel_longOp=BANK_GLOBAL;
                      frontPanel_longData=frontParser_midiMsg.data2;
                      
@@ -766,7 +766,7 @@ void midiMsg_checkLongOps()
       if (frontPanel_longOp==BANK_GLOBAL)
       {
          if (parameter_values[PAR_LOAD_PERF_ON_BANK]){
-            preset_loadAll(frontPanel_longData,0);
+            preset_loadAll(frontPanel_longData,0,0); //last 0 is don't release kit lock
             menu_repaint();
             frontPanel_longOp=NULL_OP;            
          }

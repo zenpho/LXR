@@ -563,6 +563,10 @@ uint8_t menu_currentPresetNr[NUM_PRESET_LOCATIONS];
 uint8_t menu_shownPattern = 0;
 uint8_t menu_muteModeActive = 0;
 uint8_t morphValue=0;
+uint8_t menu_sequencerRunning = 0;
+uint8_t menu_kitLocked = 0;
+uint8_t menu_kitLockPreset = 0;
+uint8_t menu_kitLockIsAll = 0;
 
 /** buffer to minimize the display configuration.
 It holds a representation of the display content so only the changed cells have to be updated*/
@@ -1710,12 +1714,12 @@ void menu_handleLoadMenu(int8_t inc, uint8_t btnClicked)
                break;
             
             case SAVE_TYPE_PERFORMANCE:
-               preset_loadAll(menu_currentPresetNr[SAVE_TYPE_PERFORMANCE],0);
+               preset_loadAll(menu_currentPresetNr[SAVE_TYPE_PERFORMANCE],0,0);//last 0 is don't release kit lock
                menu_resetSaveParameters();
                break;
             
             case SAVE_TYPE_ALL:
-               preset_loadAll(menu_currentPresetNr[SAVE_TYPE_ALL],1);
+               preset_loadAll(menu_currentPresetNr[SAVE_TYPE_ALL],1,0);//last 0 is don't release kit lock
                menu_resetSaveParameters();
                break;
             

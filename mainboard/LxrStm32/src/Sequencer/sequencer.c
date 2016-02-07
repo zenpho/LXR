@@ -979,7 +979,9 @@ void seq_setRunning(uint8_t isRunning)
 	// set start points back to default (happens on start and stop. needs to happen on start
 	// in case the user has entered a rotate value while stopped)
    seq_setStepIndexToStart();
-
+   uart_sendFrontpanelByte(FRONT_SEQ_CC);
+   uart_sendFrontpanelByte(FRONT_SEQ_RUN_STOP);
+   uart_sendFrontpanelByte(isRunning);
 }
 //------------------------------------------------------------------------------
 static uint8_t seq_intIsStepActive(uint8_t voice, uint8_t stepNr, uint8_t patternNr)

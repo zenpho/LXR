@@ -33,6 +33,11 @@ extern uint8_t menu_shownPattern;
 extern uint8_t menu_muteModeActive;
 extern uint8_t editModeActive;
 extern uint8_t morphValue;
+extern uint8_t menu_sequencerRunning;
+extern uint8_t menu_kitLocked;
+extern uint8_t menu_kitLockPreset;
+extern uint8_t menu_kitLockIsAll;
+
 #define NUM_PRESET_LOCATIONS 11 
 //kit, drum1, drum2, drum3, snare, cym, hh, morph sound, pattern, performance, all
 extern uint8_t menu_currentPresetNr[NUM_PRESET_LOCATIONS];
