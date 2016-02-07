@@ -513,12 +513,12 @@ enum
    
    CC2_KIT_VERSION, // bc: this does nothing, it's only here to offset future params
    
-   CC2_LOAD_DRUM1,      // bc: these don't do anything here, just an offset
-   CC2_LOAD_DRUM2,
-   CC2_LOAD_DRUM3,
-   CC2_LOAD_SNARE,
-   CC2_LOAD_CYM,
-   CC2_LOAD_HIHAT,
+   CC2_MORPH_DRUM1,      // bc: these don't do anything here, just an offset
+   CC2_MORPH_DRUM2,
+   CC2_MORPH_DRUM3,
+   CC2_MORPH_SNARE,
+   CC2_MORPH_CYM,
+   CC2_MORPH_HIHAT,
    
    CC2_MAC1_DST1,       // bc: change perf macro destinations
    CC2_MAC1_DST1_AMT,
@@ -551,7 +551,7 @@ enum
 
 //control messages from cortex for leds
 //status
-#define FRONT_SEQ_VOICE_LOAD           0xab // automation load drum voice from kit
+#define FRONT_SEQ_VOICE_MORPH           0xab // automation morph drum voice
 #define FRONT_CC_MACRO_TARGET          0xaa // performance macro changes to destination or main macro control, not amount
 /* MACRO_CC message structure
 byte1 - status byte 0xaa as above

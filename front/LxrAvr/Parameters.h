@@ -299,12 +299,12 @@ enum ParamEnums
    
    PAR_KIT_VERSION,
    
-   PAR_LOAD_DRUM1,               // bc: adding these for kit load on automation step
-   PAR_LOAD_DRUM2,
-   PAR_LOAD_DRUM3,
-   PAR_LOAD_SNARE,
-   PAR_LOAD_CYM,
-   PAR_LOAD_HIHAT,
+   PAR_MORPH_DRUM1,               // bc: individ. morph per voice
+   PAR_MORPH_DRUM2,
+   PAR_MORPH_DRUM3,
+   PAR_MORPH_SNARE,
+   PAR_MORPH_CYM,
+   PAR_MORPH_HIHAT,
    
    PAR_MAC1_DST1,
    PAR_MAC1_DST1_AMT,

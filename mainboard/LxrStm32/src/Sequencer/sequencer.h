@@ -154,6 +154,7 @@ extern uint8_t switchOnNextStep;
 extern uint8_t seq_rollMode;
 extern uint8_t seq_rollNote;
 extern uint8_t seq_rollVelocity;
+extern uint8_t seq_kitResetFlag;
 
 //------------------------------------------------------------------------------
 void seq_triggerVoice(uint8_t voiceNr, uint8_t vol, uint8_t note);

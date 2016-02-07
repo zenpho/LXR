@@ -324,7 +324,11 @@ uint8_t preset_loadDrumset(uint8_t presetNr, uint8_t isMorph)
 
 	//then the data
    res=preset_readDrumsetData(isMorph);
-	
+   if(!isMorph)
+   {
+   	menu_kitLockPreset = presetNr;
+      menu_kitLockType = KITLOCK_DRUMKIT;
+   }
 closeFile:
 	//close the file handle
    f_close((FIL*)&preset_File);
@@ -1382,9 +1386,7 @@ void preset_loadAll(uint8_t presetNr, uint8_t isAll, uint8_t releaseLock)
    if(menu_sequencerRunning&&(!releaseLock) )
    {
       remain=512;
-      menu_kitLocked = 1;
-      menu_kitLockPreset = presetNr;
-      menu_kitLockIsAll = isAll;
+      menu_kitLocked = 1;  
    }
    else
    {
@@ -1440,14 +1442,14 @@ void preset_loadAll(uint8_t presetNr, uint8_t isAll, uint8_t releaseLock)
       }
    
    }
+   menu_kitLockPreset = presetNr;
+   menu_kitLockType = isAll;
    if(!releaseLock) // don't need to re-load patten if just a lock release command
    {
    	// read pattern data
       if(!preset_readPatternData())
          goto closeFile;
    }
-
-
 closeFile:
 	//close the file handle
    f_close((FIL*)&preset_File);

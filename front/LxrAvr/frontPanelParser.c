@@ -380,8 +380,8 @@ void frontPanel_parseData(uint8_t data)
 					parameter_values[PAR_P2_VAL] = (uint8_t)((frontParser_midiMsg.data1<<7) | frontParser_midiMsg.data2);
 					menu_repaintAll();
 				}
-				else if(frontParser_midiMsg.status == VOICE_LOAD_KIT)
-            {
+				else if(frontParser_midiMsg.status == VOICE_MORPH)
+            {/*
                uint8_t signum=0;
                switch(frontParser_midiMsg.data1)
                { // voice load - each voice has unique bits
@@ -405,8 +405,9 @@ void frontPanel_parseData(uint8_t data)
                   break;
                   default:
                   break;
-               }
-               preset_loadVoice(frontParser_midiMsg.data2, signum, 0);
+               }*/
+               /* INSERT MORPH CODE HERE */
+               //preset_loadVoice(frontParser_midiMsg.data2, signum, 0);
             }
 				else if(frontParser_midiMsg.status == SEQ_CC)
 				{
@@ -492,48 +493,56 @@ void frontPanel_parseData(uint8_t data)
 						*/
 						
 						case SEQ_CHANGE_PAT:
-						
-						if(frontParser_midiMsg.data2 > 7) return;
-						//ack message that the sequencer changed to the requested pattern
-						
-						//stop blinking pattern led
-						led_setBlinkLed((uint8_t)(LED_PART_SELECT1+frontParser_midiMsg.data2),0);
-						//clear last pattern led
-						
-						if( (parameter_values[PAR_FOLLOW]) ) {
-							
-							if( menu_activePage != PATTERN_SETTINGS_PAGE)
-							{
-								menu_setShownPattern(frontParser_midiMsg.data2);
-								led_clearSequencerLeds();
-								//query current sequencer step states and light up the corresponding leds 
-								frontPanel_updatePatternLeds();
-								frontPanel_sendData(SEQ_CC,SEQ_REQUEST_PATTERN_PARAMS,frontParser_midiMsg.data2);
-							} else {
-								//store the pending pattern update for shift button release handler
-								menu_shownPattern = frontParser_midiMsg.data2;
-							}								
-						}	
-						menu_playedPattern = frontParser_midiMsg.data2;						
-						
-						if( (buttonHandler_getMode() == SELECT_MODE_PERF) || (buttonHandler_getMode() == SELECT_MODE_PAT_GEN) )
-						{
-							//only show pattern changes when in performance mode
-								
-							//led_clearSequencerLeds9_16();
-							led_clearSelectLeds();
-							led_clearAllBlinkLeds();
-							// re init the LEDs shwoing active/viewed pattern
-							led_initPerformanceLeds();
-							//led_setValue(1,LED_PART_SELECT1+frontParser_midiMsg.data2);
-						}
-                  // if a 'perf' or 'all' load locked the kit, un-lock and load
-						if(menu_kitLocked)
-                  {
-                     preset_loadAll(menu_kitLockPreset,menu_kitLockIsAll,1);
-                     menu_kitLocked = 0;
-                  }
-						
+   						if(frontParser_midiMsg.data2 > 15) return;
+   						//ack message that the sequencer changed to the requested pattern
+                     uint8_t patMsg = frontParser_midiMsg.data2&0x07;
+                     uint8_t kitRst = frontParser_midiMsg.data2&0x08;
+  
+   						// if a 'perf' or 'all' load locked the kit, un-lock and load
+                     if(menu_kitLocked)
+                     {
+                        menu_kitLocked = 0;
+                        preset_loadAll(menu_kitLockPreset,menu_kitLockType,1);
+                     }
+                     else if(kitRst)
+                     {
+                        if (menu_kitLockType==KITLOCK_DRUMKIT)
+                           preset_loadDrumset(menu_kitLockPreset,0);
+                        else if (menu_kitLockType<KITLOCK_DRUMKIT)
+                           preset_loadAll(menu_kitLockPreset,menu_kitLockType,1);
+                     }                     
+   						//stop blinking pattern led
+   						led_setBlinkLed((uint8_t)(LED_PART_SELECT1+patMsg),0);
+   						//clear last pattern led
+   						
+   						if( (parameter_values[PAR_FOLLOW]) ) {
+   							
+   							if( menu_activePage != PATTERN_SETTINGS_PAGE)
+   							{
+   								menu_setShownPattern(patMsg);
+   								led_clearSequencerLeds();
+   								//query current sequencer step states and light up the corresponding leds 
+   								frontPanel_updatePatternLeds();
+   								frontPanel_sendData(SEQ_CC,SEQ_REQUEST_PATTERN_PARAMS,patMsg);
+   							} else {
+   								//store the pending pattern update for shift button release handler
+   								menu_shownPattern = frontParser_midiMsg.data2;
+   							}								
+   						}	
+   						menu_playedPattern = patMsg;						
+   						
+   						if( (buttonHandler_getMode() == SELECT_MODE_PERF) || (buttonHandler_getMode() == SELECT_MODE_PAT_GEN) )
+   						{
+   							//only show pattern changes when in performance mode
+   								
+   							//led_clearSequencerLeds9_16();
+   							led_clearSelectLeds();
+   							led_clearAllBlinkLeds();
+   							// re init the LEDs shwoing active/viewed pattern
+   							led_initPerformanceLeds();
+   							//led_setValue(1,LED_PART_SELECT1+frontParser_midiMsg.data2);
+   						}
+                     
 						break;
 						case SEQ_RUN_STOP:
 							// --AS This tells the front that the sequencer has started/stopped due to MTC msg
