@@ -403,8 +403,7 @@ static void buttonHandler_handleSelectButton(uint8_t buttonNr) {
             uint8_t value = (uint8_t) ((trackNr << 4) | (patternNr & 0x7));
             frontPanel_sendData(LED_CC, LED_QUERY_SEQ_TRACK, value);
             frontPanel_sendData(SEQ_CC, SEQ_REQUEST_PATTERN_PARAMS, patternNr);
-            frontPanel_sendData(SEQ_CC, SEQ_REQUEST_EUKLID_PARAMS,
-               menu_activePage);
+            frontPanel_sendData(SEQ_CC, SEQ_REQUEST_EUKLID_PARAMS, menu_activePage);
             break;
       }
    } 
@@ -1032,6 +1031,7 @@ void buttonHandler_buttonPressed(uint8_t buttonNr) {
       //send run/stop command to soundchip
          frontPanel_sendData(SEQ_CC, SEQ_RUN_STOP,
             buttonHandler_stateMemory.seqRunning);
+            menu_sequencerRunning=buttonHandler_stateMemory.seqRunning;
          break;
    
       case BUT_REC:
@@ -1299,6 +1299,8 @@ uint8_t buttonHandler_getMode() {
 void buttonHandler_setRunStopState(uint8_t running) {
 	// set the state
    buttonHandler_stateMemory.seqRunning = (uint8_t) (running & 0x01);
+   menu_sequencerRunning = (uint8_t)(running&0x01);
 	// set the led
    led_setValue(buttonHandler_stateMemory.seqRunning, LED_START_STOP);
+   menu_kitLocked=0;   
 }

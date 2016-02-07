@@ -664,7 +664,7 @@ byte3, data2 byte: xbbbbbbb : b=macro mod target value lower 7 bits or top level
 #define FRONT_SEQ_COPY_DST            0x3e 
 #define FRONT_SEQ_ROLL_NOTE            0x40
 #define FRONT_SEQ_ROLL_VELOCITY        0x41
-#define FRONT_SEQ_LOCK_NOTES           0x42
+#define FRONT_SEQ_ROLL_MODE            0x42
 #define FRONT_SEQ_TRANSPOSE            0x43
 #define FRONT_SEQ_TRANSPOSE_ON_OFF     0x44
 
