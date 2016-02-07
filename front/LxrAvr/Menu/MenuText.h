@@ -56,9 +56,12 @@ const char ppqNames[][4] PROGMEM  =
 // -bc- I don't think this menu gets used any more... possible to retcon for something else?
 const char midiModes[][4] PROGMEM  =
 {
-	{2},		//number of entries
+	{5},		//number of entries
 	{"trg"},
 	{"nte"},
+   {"vel"},
+   {"bth"},
+   {"all"},
 };
 //-----------------------------------------------------------------
 const char quantisationNames[][4] PROGMEM  = 
@@ -363,7 +366,7 @@ const char shortNames[][4] PROGMEM  =
    {"2a2"}, // TEXT_MAC2_DST2_AMT,
    {"rln"}, // TEXT_ROLL_NOTE,
    {"rlv"}, // TEXT_ROLL_VELOCITY
-   {"nte"}, // TEXT_RECORD_NOTES
+   {"rol"}, // TEXT_ROLL_MODE
    {"xps"}, // TEXT_TRANSPOSE,
    {"xps"}, // TEXT_TRANSPOSE_ON_OFF,
 };
@@ -504,7 +507,7 @@ const char longNames[][16] PROGMEM =
       
    {"RollNote" },  // TEXT_ROLL_NOTE,
    {"RollVelo" },  // TEXT_ROLL_VELOCITY,
-   {"NoteRec" },  // TEXT_RECORD_NOTES
+   {"RollMode" },  // TEXT_ROLL_MODE
    {"NoteAmt"},   // TEXT_TRANSPOSE
    {"Sequence"}, // TEXT_TRANSPOSE_ON_OFF,
 };

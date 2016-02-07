@@ -1196,8 +1196,12 @@ static void midiParser_noteOn(uint8_t voice, uint8_t note, uint8_t vel, uint8_t 
       else
          return; // note does not match. Do nothing
    }
-
-   voiceControl_noteOn(voice,note,vel);
+   
+   // -bc- don't respond to note-offs, only record
+   if (vel)
+   {
+      voiceControl_noteOn(voice,note,vel);
+   }
 
 //Recording Mode - record the note to sequencer and echo to channel of that voice
 // (we'd want to hear what's being recorded)
@@ -1208,7 +1212,8 @@ static void midiParser_noteOn(uint8_t voice, uint8_t note, uint8_t vel, uint8_t 
       seq_addNote(voice,vel, note);
    
    //if a note is on for that channel send note-off first
-      seq_midiNoteOff(chan);
+   // -bc- is that really necessary? I think seq can deal with overlapping notes
+   //seq_midiNoteOff(chan);
    //send the new note to midi/usb out
    // --AS todo a user played note will end up being turned off if a pattern switch happens.
    //           to fix this we'd have to differentiate between a user played note and a
@@ -1466,11 +1471,6 @@ void midiParser_MIDIccHandler(MidiMsg msg, uint8_t updateOriginalValue)
       if (chanonly == midi_MidiChannels[0]) // DRUM1 voice is a target
       {
          switch(MIDIparamNr){
-            case BANK:
-               uart_sendFrontpanelByte(BANK_CHANGE_CC); 
-               uart_sendFrontpanelByte(0); // voice number
-               uart_sendFrontpanelByte(msg.data2);
-               break;
             case MOD_WHEEL:
                break; // -bc- todo: assignable mod wheel?
             case CHANNEL_VOL: // voice 1-6
@@ -1727,7 +1727,6 @@ void midiParser_MIDIccHandler(MidiMsg msg, uint8_t updateOriginalValue)
       if (chanonly == midi_MidiChannels[1]) // DRUM2 voice is a target
       {
          switch(MIDIparamNr){
-         
             case MOD_WHEEL:
                break; // -bc- todo: assignable mod wheel?
             case CHANNEL_VOL: // voice 1-6
@@ -2498,10 +2497,6 @@ void midiParser_MIDIccHandler(MidiMsg msg, uint8_t updateOriginalValue)
       if (chanonly == midi_MidiChannels[4]) // CYMBAL voice is a target
       {
          switch(MIDIparamNr){
-            case BANK:
-               uart_sendFrontpanelByte(BANK_CHANGE_CC); 
-               uart_sendFrontpanelByte(4); // voice number
-               uart_sendFrontpanelByte(msg.data2);
                break; 
             case MOD_WHEEL:
                break; // -bc- todo: assignable mod wheel?
@@ -3448,18 +3443,9 @@ void midiParser_MIDIccHandler(MidiMsg msg, uint8_t updateOriginalValue)
                   }
                }
             }
-         
          }
-      
-      
-      
       }
-   
-   
    }
-   
-  
-
 }
  
 

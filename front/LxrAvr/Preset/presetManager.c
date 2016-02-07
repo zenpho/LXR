@@ -206,7 +206,7 @@ void preset_loadGlobals()
 
 static FRESULT preset_readDrumsetData(uint8_t isMorph)
 {
-	
+
 #if USE_SD_CARD		
 	//read the file content
    unsigned int bytesRead=1;
@@ -1306,9 +1306,8 @@ void preset_saveAll(uint8_t presetNr, uint8_t isAll)
 #else
 #endif
 }
-
 //----------------------------------------------------
-void preset_loadAll(uint8_t presetNr, uint8_t isAll)
+void preset_loadAll(uint8_t presetNr, uint8_t isAll, uint8_t releaseLock)
 {
 
 #if USE_SD_CARD
@@ -1379,16 +1378,24 @@ void preset_loadAll(uint8_t presetNr, uint8_t isAll)
       remain -=siz;
    }
 
-
-
 	// read kit data
-   res=preset_readDrumsetData(0);
-   if(res!=FR_OK)
-      goto closeFile;
+   if(menu_sequencerRunning&&(!releaseLock) )
+   {
+      remain=512;
+      menu_kitLocked = 1;
+      menu_kitLockPreset = presetNr;
+      menu_kitLockIsAll = isAll;
+   }
+   else
+   {
+      menu_kitLocked=0;
+      res=preset_readDrumsetData(0);
+      if(res!=FR_OK)
+         goto closeFile;
 
-	// padding amount for kit
-   remain = 512 - (END_OF_SOUND_PARAMETERS);
-   
+	   // padding amount for kit
+      remain = 512 - (END_OF_SOUND_PARAMETERS);
+   }
 
 // read padding
    while(remain){
@@ -1404,8 +1411,13 @@ void preset_loadAll(uint8_t presetNr, uint8_t isAll)
 
 
    if (version>=3) {
-   
    // read morph data
+   if(menu_sequencerRunning&&(!releaseLock) )
+   {
+      remain=512;
+   }
+   else
+   {
       res=preset_readDrumsetData(1);
       if(res!=FR_OK)
          goto closeFile;
@@ -1413,7 +1425,8 @@ void preset_loadAll(uint8_t presetNr, uint8_t isAll)
    // padding amount for kit
       remain = 512 - (END_OF_SOUND_PARAMETERS);
    
-   
+   }
+
    // read padding
       while(remain){
          if(remain < GEN_BUF_LEN)
@@ -1427,20 +1440,24 @@ void preset_loadAll(uint8_t presetNr, uint8_t isAll)
       }
    
    }
-
-	// read pattern data
-   if(!preset_readPatternData())
-      goto closeFile;
-
+   if(!releaseLock) // don't need to re-load patten if just a lock release command
+   {
+   	// read pattern data
+      if(!preset_readPatternData())
+         goto closeFile;
+   }
 
 
 closeFile:
 	//close the file handle
    f_close((FIL*)&preset_File);
-
-	// send drumset parameters to back
-   preset_sendDrumsetParameters();
-
+   
+   if(!menu_kitLocked)
+   {
+   	// send drumset parameters to back
+      preset_sendDrumsetParameters();
+   }
+   
 	// send global params
    menu_sendAllGlobals();
 

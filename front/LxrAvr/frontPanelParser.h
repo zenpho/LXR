@@ -172,7 +172,7 @@ byte3, data2 byte: xbbbbbbb : b=macro mod target value lower 7 bits or top level
 #define SEQ_TRIGGER_GATE_MODE 0x39
 #define SEQ_ROLL_NOTE       0x40
 #define SEQ_ROLL_VELOCITY       0x41
-#define SEQ_LOCK_NOTES          0x42
+#define SEQ_ROLL_MODE          0x42
 
 #define SEQ_TRANSPOSE            0x43
 #define SEQ_TRANSPOSE_ON_OFF     0x44

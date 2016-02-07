@@ -33,6 +33,11 @@ extern uint8_t menu_shownPattern;
 extern uint8_t menu_muteModeActive;
 extern uint8_t editModeActive;
 extern uint8_t morphValue;
+extern uint8_t menu_sequencerRunning;
+extern uint8_t menu_kitLocked;
+extern uint8_t menu_kitLockPreset;
+extern uint8_t menu_kitLockIsAll;
+
 #define NUM_PRESET_LOCATIONS 11 
 //kit, drum1, drum2, drum3, snare, cym, hh, morph sound, pattern, performance, all
 extern uint8_t menu_currentPresetNr[NUM_PRESET_LOCATIONS];
@@ -210,7 +215,7 @@ enum NamesEnum
    TEXT_MAC2_DST2_AMT,
    TEXT_ROLL_NOTE,
    TEXT_ROLL_VELOCITY,
-   TEXT_RECORD_NOTES,
+   TEXT_ROLL_MODE,
    TEXT_TRANSPOSE,
    TEXT_TRANSPOSE_ON_OFF,
 	NUM_NAMES
@@ -319,7 +324,7 @@ enum shortNamesEnum
    SHORT_MAC2_DST2_AMT,
    SHORT_ROLL_NOTE,
    SHORT_ROLL_VELOCITY,
-   SHORT_RECORD_NOTES,
+   SHORT_ROLL_MODE,
    
    SHORT_TRANSPOSE,
    SHORT_TRANSPOSE_ON_OFF,
@@ -459,7 +464,7 @@ enum longNamesEnum
    LONG_MAC2_DST2_AMT,
    LONG_ROLL_NOTE,
    LONG_ROLL_VELOCITY,
-   LONG_RECORD_NOTES,
+   LONG_ROLL_MODE,
    LONG_TRANSPOSE,
    LONG_TRANSPOSE_ON_OFF,
 	

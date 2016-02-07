@@ -68,6 +68,15 @@
 
 #define ROLL_VOLUME 100
 
+enum Seq_RollModeEnum //0=trig, 1=nte, 2=vel, 3=bth, 4=all
+{
+	ROLL_MODE_TRIG,
+   ROLL_MODE_NOTE,
+   ROLL_MODE_VELOCITY,
+   ROLL_MODE_BOTH,
+   ROLL_MODE_ALL,
+};
+
 enum Seq_QuantisationEnum
 {
 	NO_QUANTISATION,
@@ -142,7 +151,9 @@ extern uint8_t seq_resetBarOnPatternChange;
 
 extern uint8_t switchOnNextStep;
 
-extern uint8_t seq_lockNotes;
+extern uint8_t seq_rollMode;
+extern uint8_t seq_rollNote;
+extern uint8_t seq_rollVelocity;
 
 //------------------------------------------------------------------------------
 void seq_triggerVoice(uint8_t voiceNr, uint8_t vol, uint8_t note);
@@ -219,7 +230,13 @@ void seq_sendStepInfoToFront(uint16_t stepNr);
 //------------------------------------------------------------------------------
 void seq_sendMainStepInfoToFront(uint16_t stepNr);
 //------------------------------------------------------------------------------
-void seq_setRoll(uint8_t voice, uint8_t onOff);
+void seq_rollChange(uint8_t voice, uint8_t onOff);
+//------------------------------------------------------------------------------
+uint8_t seq_setRoll(uint8_t voice, uint8_t onOff);
+//------------------------------------------------------------------------------
+uint8_t seq_checkRollStep(uint8_t voice);
+//------------------------------------------------------------------------------
+uint8_t seq_rollTrig(uint8_t voice);
 //------------------------------------------------------------------------------
 void seq_setRollRate(uint8_t rate);
 //------------------------------------------------------------------------------
