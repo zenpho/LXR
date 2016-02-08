@@ -36,7 +36,7 @@ extern uint8_t frontPanel_longData;
 //control messages from cortex for leds
 //status, param changes
 
-#define VOICE_LOAD_KIT  0xab // message from seq automation node to change voice
+#define VOICE_MORPH     0xab // message from seq automation node to morph voice
 #define MACRO_CC        0xaa // message to send with macro changes
 /* MACRO_CC message structure
 byte1 - status byte 0xaa as above

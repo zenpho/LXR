@@ -327,12 +327,12 @@ enum ParamEnums
 	PAR_MIDI_NOTE7,      //110 - beware going over 127, can't fit into midi data, will need another msg
    PAR_KIT_VERSION,
    
-   PAR_LOAD_DRUM1,               // bc: adding these for kit load on automation step
-   PAR_LOAD_DRUM2,
-   PAR_LOAD_DRUM3,
-   PAR_LOAD_SNARE,
-   PAR_LOAD_CYM,
-   PAR_LOAD_HIHAT,
+   PAR_MORPH_DRUM1,               // bc: adding these for kit load on automation step
+   PAR_MORPH_DRUM2,
+   PAR_MORPH_DRUM3,
+   PAR_MORPH_SNARE,
+   PAR_MORPH_CYM,
+   PAR_MORPH_HIHAT,
    
    PAR_MAC1_DST1,
    PAR_MAC1_DST1_AMT,
@@ -379,12 +379,12 @@ enum ParamEnums
    PAR_TRACK_SCALE,
 
 
-   PAR_LOAD_DRUM1,               // bc: adding these for kit load on automation step
-   PAR_LOAD_DRUM2,
-   PAR_LOAD_DRUM3,
-   PAR_LOAD_SNARE,
-   PAR_LOAD_CYM,
-   PAR_LOAD_HIHAT,
+   PAR_MORPH_DRUM1,               // bc: individ. voice morph
+   PAR_MORPH_DRUM2,
+   PAR_MORPH_DRUM3,
+   PAR_MORPH_SNARE,
+   PAR_MORPH_CYM,
+   PAR_MORPH_HIHAT,
 
 	//#########################################
 	//######## Global Parameters ##############

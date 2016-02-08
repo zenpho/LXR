@@ -68,7 +68,7 @@ uint8_t seq_rollTriggered = 0;         /**< eacn bit ... user has triggered a ro
 uint8_t seq_rollState = 0;					/**< each bit represents a voice. if bit is set, roll is active*/
 uint8_t seq_rollMode = ROLL_MODE_ALL;        //0=trig, 1=nte, 2=vel, 3=bth, 4=all                                      
 uint8_t seq_rollCounter[NUM_TRACKS];       // runs a counter for every roll trigger
-
+uint8_t seq_kitResetFlag=0;
 
 static int8_t 	seq_stepIndex[NUM_TRACKS+1];	/**< we have 16 steps consisting of 8 sub steps = 128 steps.
 											     each track has its own counter to allow different pattern lengths */
@@ -362,19 +362,19 @@ static void seq_parseAutomationNodes(uint8_t track, Step* stepData)
    uint8_t val2 = stepData->param2Val;
    if(val1)
    {
-      if(param1>=PAR_LOAD_DRUM1&&param1<=PAR_LOAD_HIHAT)
+      if(param1>=PAR_MORPH_DRUM1&&param1<=PAR_MORPH_HIHAT)
       {
-            uart_sendFrontpanelByte(FRONT_SEQ_VOICE_LOAD);
-            uart_sendFrontpanelByte((uint8_t)(param1-PAR_LOAD_DRUM1));
+            uart_sendFrontpanelByte(FRONT_SEQ_VOICE_MORPH);
+            uart_sendFrontpanelByte((uint8_t)(param1-PAR_MORPH_DRUM1));
             uart_sendFrontpanelByte(val1);
       }
    }
    if(val2)
    {
-      if(param2>=PAR_LOAD_DRUM1&&param2<=PAR_LOAD_HIHAT)
+      if(param2>=PAR_MORPH_DRUM1&&param2<=PAR_MORPH_HIHAT)
       {
-            uart_sendFrontpanelByte(FRONT_SEQ_VOICE_LOAD);
-            uart_sendFrontpanelByte((uint8_t)(param2-PAR_LOAD_DRUM1));
+            uart_sendFrontpanelByte(FRONT_SEQ_VOICE_MORPH);
+            uart_sendFrontpanelByte((uint8_t)(param2-PAR_MORPH_DRUM1));
             uart_sendFrontpanelByte(val2);
       }
    }
@@ -485,8 +485,7 @@ static void seq_nextStep()
 
    seq_masterStepCnt++;
 
-	//---- calc master step position. max value is 127. also take in regard the pattern length -----
-	// track 0 determines the master step position
+	//---- calc master step position. max value is 127. also take in regard the pattern length ----//
    uint8_t masterStepPos;
    uint8_t seqlen;
    uint8_t seqscale;
@@ -508,36 +507,27 @@ static void seq_nextStep()
    {
       masterStepPos = seq_stepIndex[NUM_TRACKS]+1;
    }
-
-	//-------- check if a pattern switch is necessary --------
-   if(masterStepPos == 0||(switchOnNextStep && seq_loadSeqNow))
+   //-------- random pattern switch only gets calculated once per bar ------//
+   if( (!masterStepPos)&&(seq_activePattern == seq_pendingPattern) )
    {
-      if(seq_activePattern == seq_pendingPattern)
+   	//check pattern settings if we have to auto change patterns
+      seq_pendingPattern = seq_determineNextPattern();
+      if(seq_pendingPattern >= SEQ_NEXT_RANDOM)
       {
-      	//check pattern settings if we have to auto change patterns
-         seq_pendingPattern = seq_determineNextPattern();
-         if(seq_pendingPattern >= SEQ_NEXT_RANDOM)
-         {
-            uint8_t limit = seq_pendingPattern - SEQ_NEXT_RANDOM +2;
-            uint8_t rnd = GetRngValue() % limit;
-            seq_pendingPattern = rnd;
-         }
+         uint8_t limit = seq_pendingPattern - SEQ_NEXT_RANDOM +2;
+         uint8_t rnd = GetRngValue() % limit;
+         seq_pendingPattern = rnd;
       }
+   }
    
-   	// a new pattern is about to start
-   	// set pendingPattern active
+	//-------- check if a pattern switch is necessary --------//
+   if( (!masterStepPos)||(switchOnNextStep && seq_loadSeqNow))
+   {
       if((seq_activePattern != seq_pendingPattern) || seq_loadPendigFlag)
       {
-      	//--AS if this setting is active and the user has manually changed patterns,
-      	// reset the bar counter. uncommenting the below will cause it to only reset
-      	// when a manual pattern change is invoked. to me the whole auto pattern change modulo stuff
-      	// above is a bit broken.
-         if(/*seq_loadPendigFlag &&*/ seq_resetBarOnPatternChange)
+         if(seq_resetBarOnPatternChange)
             seq_barCounter=0;
-      	// --AS TODO we need to also reset barCounter to 0 when the end of a repetition set of a pattern plays
-      	// EVEN IF the pattern is set to play itself again, this will facilitate having the bits that play
-      	// certain steps only on certain intervals of bar counter
-      
+      	
          seq_loadPendigFlag = 0;
       	//first check if 2 new pattern is available
          if(seq_newPatternAvailable)
@@ -546,7 +536,7 @@ static void seq_nextStep()
             seq_activateTmpPattern();
          }
       
-         seq_activePattern = seq_pendingPattern;
+         seq_activePattern = seq_pendingPattern&0x07;
       
       	//reset pattern position to pattern rotate starting position for the active pattern --AS **PATROT
          if (masterStepPos == 0){
@@ -558,17 +548,17 @@ static void seq_nextStep()
                seq_barCounter = -1; // -bc- bar counter needs to be -1 to get set to 0 on first bar change
                                     // after 'instant' switch
          }
-      	//send the ack message to tell the front that a new pattern starts playing
-         uart_sendFrontpanelByte(FRONT_SEQ_CC);
-         uart_sendFrontpanelByte(FRONT_SEQ_CHANGE_PAT);
-         uart_sendFrontpanelByte(seq_activePattern);
-      
+         
       	// --AS send a pattern change message to midi/usb out
          seq_sendProgChg(seq_activePattern);
-      
-      
+         
       	// --AS all notes off here since we are switching patterns
          voiceControl_noteOff(0xFF);
+         
+         uart_sendFrontpanelByte(FRONT_SEQ_CC);
+         uart_sendFrontpanelByte(FRONT_SEQ_CHANGE_PAT);
+         uart_sendFrontpanelByte(seq_activePattern|(seq_kitResetFlag<<3));
+         seq_kitResetFlag=0;
       }
    }
 

@@ -36,7 +36,14 @@ extern uint8_t morphValue;
 extern uint8_t menu_sequencerRunning;
 extern uint8_t menu_kitLocked;
 extern uint8_t menu_kitLockPreset;
-extern uint8_t menu_kitLockIsAll;
+extern uint8_t menu_kitLockType;
+
+enum KitType
+{
+   KITLOCK_PERF,
+   KITLOCK_ALL,
+   KITLOCK_DRUMKIT,
+};   
 
 #define NUM_PRESET_LOCATIONS 11 
 //kit, drum1, drum2, drum3, snare, cym, hh, morph sound, pattern, performance, all
@@ -202,7 +209,7 @@ enum NamesEnum
 	TEXT_SEQ_PC_TIME,
 	TEXT_BUT_SHIFT_MODE,
    TEXT_LOAD_PERF_ON_BANK,
-   TEXT_LOAD_FROM_KIT,
+   TEXT_MORPH_VOICE,
    TEXT_MAC1,
    TEXT_MAC2,
    TEXT_MAC1_DST1,
@@ -311,7 +318,7 @@ enum shortNamesEnum
    SHORT_SEQ_PC_TIME,
    SHORT_BUT_SHIFT_MODE,
    SHORT_LOAD_PERF_ON_BANK,
-   SHORT_LOAD_FROM_KIT,
+   SHORT_MORPH_VOICE,
    SHORT_MAC1,
    SHORT_MAC2,
    SHORT_MAC1_DST1,
@@ -371,7 +378,7 @@ enum catNamesEnum
    CAT_MAC2D1,
    CAT_MAC2D2,
    CAT_TRANSPOSE,
-   CAT_LOADVOICE,
+   CAT_MORPH_VOICE,
 };
 //-----------------------------------------------------------------
 // these must correspond with longNames in MenuText.h
@@ -451,7 +458,7 @@ enum longNamesEnum
    LONG_SEQ_PC_TIME,
    LONG_BUT_SHIFT_MODE,
    LONG_LOAD_PERF_ON_BANK,
-   LONG_LOAD_FROM_KIT,
+   LONG_MORPH_VOICE,
    LONG_MAC1,
    LONG_MAC2,
    LONG_MAC1_DST1,

@@ -1399,8 +1399,20 @@ void midiParser_parseMidiMessage(MidiMsg msg)
       } 
       else if(msgonly==PROG_CHANGE) {
       // --AS respond to prog change and change patterns. This responds only when global channel matches the PC message's channel.
+         //send the ack message to tell the front that a new pattern starts playing
          if((midiParser_txRxFilter & 0x08) && (chanonly == midi_MidiChannels[7]))
-            seq_setNextPattern(msg.data1 & 0x07);
+         {
+            if(msg.data1<16)
+            {
+               uint8_t patMsg = (msg.data1&0x07);
+               seq_setNextPattern(patMsg);
+               seq_kitResetFlag=((msg.data1&0x08)>>3); //if PC with 8-15, reset kit
+               
+               //uart_sendFrontpanelByte(FRONT_SEQ_CC);
+               //uart_sendFrontpanelByte(FRONT_SEQ_CHANGE_PAT);
+               //uart_sendFrontpanelByte(patMsg|(seq_kitResetFlag<<3));
+            }   
+         }   
       
       } 
       else if(msgonly==MIDI_CC){

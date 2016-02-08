@@ -202,7 +202,7 @@ const Name valueNames[NUM_NAMES] PROGMEM =
       {SHORT_SEQ_PC_TIME, CAT_SEQUENCER, LONG_SEQ_PC_TIME}, // TEXT_SEQ_PC_TIME
       {SHORT_BUT_SHIFT_MODE, CAT_GLOBAL, LONG_BUT_SHIFT_MODE}, // TEXT_BUT_SHIFT_MODE
       {SHORT_LOAD_PERF_ON_BANK, CAT_GLOBAL, LONG_LOAD_PERF_ON_BANK}, // TEXT_LOAD_PERF_ON_BANK
-      {SHORT_LOAD_FROM_KIT, CAT_LOADVOICE, LONG_LOAD_FROM_KIT}, // text for kit load on automation
+      {SHORT_MORPH_VOICE, CAT_MORPH_VOICE, LONG_MORPH_VOICE}, // text for voice morph automation
       
       {SHORT_MAC1, CAT_MACRO1, LONG_MAC1}, // text for macro 1 send amount
       {SHORT_MAC1, CAT_MACRO2, LONG_MAC1}, // text for macro 2 send amount
@@ -460,12 +460,12 @@ const enum Datatypes PROGMEM parameter_dtypes[NUM_PARAMS] = {
 	    /*PAR_MIDI_NOTE7*/		DTYPE_NOTE_NAME,
        /*PAR_KIT_VERSION*/    DTYPE_0B255,
        
-       /*PAR_LOAD_DRUM1*/		DTYPE_0B127,
-	    /*PAR_LOAD_DRUM2*/		DTYPE_0B127,
-	    /*PAR_LOAD_DRUM3*/		DTYPE_0B127,
-	    /*PAR_LOAD_SNARE*/		DTYPE_0B127,
-	    /*PAR_LOAD_CYM*/		   DTYPE_0B127,
-	    /*PAR_LOAD_HIHAT*/		DTYPE_0B127,
+       /*PAR_MORPH_DRUM1*/		DTYPE_0B127,
+	    /*PAR_MORPH_DRUM2*/		DTYPE_0B127,
+	    /*PAR_MORPH_DRUM3*/		DTYPE_0B127,
+	    /*PAR_MORPH_SNARE*/		DTYPE_0B127,
+	    /*PAR_MORPH_CYM*/		DTYPE_0B127,
+	    /*PAR_MORPH_HIHAT*/		DTYPE_0B127,
        
        /*PAR_MAC1_DST1*/      DTYPE_AUTOM_TARGET,
        /*PAR_MAC1_DST1_AMT*/  DTYPE_PM63, 
@@ -566,7 +566,7 @@ uint8_t morphValue=0;
 uint8_t menu_sequencerRunning = 0;
 uint8_t menu_kitLocked = 0;
 uint8_t menu_kitLockPreset = 0;
-uint8_t menu_kitLockIsAll = 0;
+uint8_t menu_kitLockType = 0;
 
 /** buffer to minimize the display configuration.
 It holds a representation of the display content so only the changed cells have to be updated*/
