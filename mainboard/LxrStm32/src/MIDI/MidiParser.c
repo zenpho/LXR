@@ -1483,7 +1483,8 @@ void midiParser_MIDIccHandler(MidiMsg msg, uint8_t updateOriginalValue)
       {
          switch(MIDIparamNr){
             case MOD_WHEEL:
-               break; // -bc- todo: assignable mod wheel?
+               sequencer_sendVMorph(0, msg.data2);
+               break;
             case CHANNEL_VOL: // voice 1-6
                voiceArray[0].vol = msg.data2/127.f;
                LXRparamNr=VOL1;
@@ -1739,7 +1740,8 @@ void midiParser_MIDIccHandler(MidiMsg msg, uint8_t updateOriginalValue)
       {
          switch(MIDIparamNr){
             case MOD_WHEEL:
-               break; // -bc- todo: assignable mod wheel?
+                  sequencer_sendVMorph(1, msg.data2);
+               break; 
             case CHANNEL_VOL: // voice 1-6
                voiceArray[1].vol = msg.data2/127.f;
                LXRparamNr=VOL2;
@@ -1995,7 +1997,8 @@ void midiParser_MIDIccHandler(MidiMsg msg, uint8_t updateOriginalValue)
       {
          switch(MIDIparamNr){
             case MOD_WHEEL:
-               break; // -bc- todo: assignable mod wheel?
+                  sequencer_sendVMorph(2, msg.data2);
+               break;
             case CHANNEL_VOL: // voice 1-6
                voiceArray[2].vol = msg.data2/127.f;
                LXRparamNr=VOL3;
@@ -2251,7 +2254,8 @@ void midiParser_MIDIccHandler(MidiMsg msg, uint8_t updateOriginalValue)
       {
          switch(MIDIparamNr){
             case MOD_WHEEL:
-               break; // -bc- todo: assignable mod wheel?
+                  sequencer_sendVMorph(3, msg.data2);
+               break;
             case CHANNEL_VOL: // voice 1-6
                snareVoice.vol = msg.data2/127.f;
                LXRparamNr=VOL4;
@@ -2507,10 +2511,10 @@ void midiParser_MIDIccHandler(MidiMsg msg, uint8_t updateOriginalValue)
    
       if (chanonly == midi_MidiChannels[4]) // CYMBAL voice is a target
       {
-         switch(MIDIparamNr){
-               break; 
+         switch(MIDIparamNr){ 
             case MOD_WHEEL:
-               break; // -bc- todo: assignable mod wheel?
+                  sequencer_sendVMorph(4, msg.data2);
+               break;
             case CHANNEL_VOL: // voice 1-6
                cymbalVoice.vol = msg.data2/127.f;
                LXRparamNr=VOL5;
@@ -2769,7 +2773,8 @@ void midiParser_MIDIccHandler(MidiMsg msg, uint8_t updateOriginalValue)
       {
          switch(MIDIparamNr){
             case MOD_WHEEL:
-               break; // -bc- todo: assignable mod wheel?
+                  sequencer_sendVMorph(5, msg.data2);
+               break;
             case CHANNEL_VOL: // voice 1-6
                hatVoice.vol = msg.data2/127.f;
                LXRparamNr=VOL6;
@@ -3023,7 +3028,8 @@ void midiParser_MIDIccHandler(MidiMsg msg, uint8_t updateOriginalValue)
       {
          switch(MIDIparamNr){
             case MOD_WHEEL:
-               break; // -bc- todo: assignable mod wheel?
+                  sequencer_sendVMorph(6, msg.data2);
+               break;
             case CHANNEL_VOL: // voice 1-6
                hatVoice.vol = msg.data2/127.f;
                LXRparamNr=VOL6;
