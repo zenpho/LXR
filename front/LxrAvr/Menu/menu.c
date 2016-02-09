@@ -3672,15 +3672,25 @@ void menu_sendAllParameters()
 	}		
 }
 //----------------------------------------------------------------
+void menu_reloadKit()
+{
+   if (menu_kitLockType==KITLOCK_DRUMKIT)
+      preset_loadDrumset(menu_kitLockPreset,0);
+   else if (menu_kitLockType==KITLOCK_PERF)
+      preset_loadAll(menu_kitLockPreset,KITLOCK_PERF,1);
+   else if (menu_kitLockType==KITLOCK_ALL)
+      preset_loadAll(menu_kitLockPreset,KITLOCK_ALL,1);
+}
+//----------------------------------------------------------------
 uint8_t menu_getActivePage()
 {
 	return menu_activePage;
-};
+}
 //----------------------------------------------------------------
 uint8_t menu_getActiveVoice()
 {
 	return menu_activeVoice;
-};
+}
 //----------------------------------------------------------------
 void menu_setActiveVoice(uint8_t voiceNr)
 {
@@ -3688,7 +3698,7 @@ void menu_setActiveVoice(uint8_t voiceNr)
 	menu_TargetVoiceGapIndex = getModTargetGapIndex(parameter_values[PAR_TARGET_LFO1+voiceNr]);
 	menu_activeVoice = voiceNr;
    frontPanel_sendData(SEQ_CC, SEQ_REQUEST_EUKLID_PARAMS, voiceNr);
-};
+}
 //----------------------------------------------------------------
 uint8_t menu_areMuteLedsShown()
 {

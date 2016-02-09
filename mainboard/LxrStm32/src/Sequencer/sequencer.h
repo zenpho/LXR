@@ -209,7 +209,7 @@ void seq_setQuantisation(uint8_t value);
 void seq_setExtSync(uint8_t isExt);
 //------------------------------------------------------------------------------
 /** switch to pattern patNr after the current pattern has finished*/
-void seq_setNextPattern(const uint8_t patNr);
+void seq_setNextPattern(const uint8_t patNr, uint8_t voice);
 //------------------------------------------------------------------------------
 void seq_toggleStep(uint8_t voice, uint8_t stepNr, uint8_t patternNr);
 //------------------------------------------------------------------------------

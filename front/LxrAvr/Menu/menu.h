@@ -637,6 +637,8 @@ void menu_parseGlobalParam(uint16_t paramNr, uint8_t value);
 /** all parameters are send to the cortex soundchip. called after loading a preset into the avr ram*/
 void menu_sendAllParameters();
 //-----------------------------------------------------------------
+void menu_reloadKit();
+//-----------------------------------------------------------------
 /** get the currently active page nr*/
 uint8_t menu_getActivePage();
 //-----------------------------------------------------------------

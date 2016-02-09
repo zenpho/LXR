@@ -34,6 +34,8 @@ static int8_t buttonHandler_buttonTimerStepNr = NO_STEP_SELECTED;
 uint16_t buttonHandler_originalParameter = 0;//saves parameter number for step automation reset (stgep assign)
 uint8_t buttonHandler_originalValue = 0;//saves the parameter value for reset
 uint8_t buttonHandler_resetLock = 0;
+uint8_t buttonHandler_heldVoiceButtons = 0;
+uint8_t buttonHandler_muteTag=0;
 
 uint8_t shiftMode=0;
 uint8_t shiftState=0;
@@ -265,6 +267,8 @@ uint8_t buttonHandler_getShift() {
 }
 //--------------------------------------------------------
 static void buttonHandler_handleModeButtons(uint8_t mode) {
+   buttonHandler_heldVoiceButtons = 0;
+   buttonHandler_muteTag=0;
 	if (buttonHandler_getShift()) {
 		//set the new mode
 		buttonHandler_stateMemory.selectButtonMode = (uint8_t) ((mode + 4) & 0x07);
@@ -455,19 +459,32 @@ static void buttonHandler_handleSelectButton(uint8_t buttonNr) {
                if (buttonHandler_getShift()) {
                
                } 
-               else {
-               //pattern
-               
-               //tell sequencer to change pattern
-                  frontPanel_sendData(SEQ_CC, SEQ_CHANGE_PAT, buttonNr);
-               //flash corresponding LED until ACK (SEQ_CHANGE_PAT) received
-                  uint8_t ledNr = (uint8_t) (LED_PART_SELECT1 + buttonNr);
-                  led_clearAllBlinkLeds();
-               
-                  led_setBlinkLed(ledNr, 1);
-               
-               //request the pattern info for the selected pattern (bar cnt, next...)
-               //	frontPanel_sendData(SEQ_CC,SEQ_REQUEST_PATTERN_PARAMS,buttonNr);
+               else 
+               {
+               //individual pattern
+                  if(buttonHandler_heldVoiceButtons)
+                  {
+                     uint8_t i;
+                     for(i=0;i<7;i++)
+                     {
+                        if(buttonHandler_heldVoiceButtons&(0x01<<i))
+                           frontPanel_sendData(SEQ_CC, SEQ_CHANGE_PAT, (uint8_t)( (i<<3)|buttonNr) );
+                     }   
+                     buttonHandler_muteTag=0;
+                  }
+                  else
+                  {
+                     //tell sequencer to change pattern
+                     frontPanel_sendData(SEQ_CC, SEQ_CHANGE_PAT, (0x78|buttonNr) );
+                     //flash corresponding LED until ACK (SEQ_CHANGE_PAT) received
+                     uint8_t ledNr = (uint8_t) (LED_PART_SELECT1 + buttonNr);
+                     led_clearAllBlinkLeds();
+                  
+                     led_setBlinkLed(ledNr, 1);
+                  
+                     //request the pattern info for the selected pattern (bar cnt, next...)
+                     //	frontPanel_sendData(SEQ_CC,SEQ_REQUEST_PATTERN_PARAMS,buttonNr);
+                  }
                
                }
             
@@ -860,13 +877,44 @@ static void buttonHandler_partButtonReleased(uint8_t partNr)
       }
    }
 }
+static void buttonHandler_voiceButtonReleased(uint8_t voiceNr)
+{
+   if (buttonHandler_stateMemory.selectButtonMode == SELECT_MODE_PERF) 
+   {
 
+      if (buttonHandler_muteTag) 
+      {
+         //un/mute
+         if (buttonHandler_mutedVoices & (1 << voiceNr)) 
+         {
+         	//unmute tracks 0-7
+            buttonHandler_muteVoice(voiceNr, 0);
+            frontPanel_sendData(SEQ_CC, SEQ_UNMUTE_TRACK, voiceNr);
+         } 
+         else 
+         {
+         	//mute tracks 0-7
+            buttonHandler_muteVoice(voiceNr, 1);
+            frontPanel_sendData(SEQ_CC, SEQ_MUTE_TRACK, voiceNr);
+         }
+         
+      }
+      
+   }
+   buttonHandler_heldVoiceButtons &= (uint8_t)(~(0x01<<voiceNr));
+   if(!buttonHandler_heldVoiceButtons)
+   {
+      buttonHandler_muteTag=0;
+   }   
+
+}
 //--------------------------------------------------------
 // one of the 7 voice buttons pressed
 static void buttonHandler_voiceButtonPressed(uint8_t voiceNr)
 {
 
-   if (copyClear_Mode >= MODE_COPY_PATTERN) {
+   if (copyClear_Mode >= MODE_COPY_PATTERN) 
+   {
    	//copy mode -> voice buttons select track copy src/dst
       if (copyClear_srcSet()) {
       	//select dest
@@ -892,107 +940,67 @@ static void buttonHandler_voiceButtonPressed(uint8_t voiceNr)
    	// determine if we are in mute/unmute mode -
    	// in perf mode we are in mute mode unless shift is held
    	// in any other mode we are in mute mode when shift is held
-      uint8_t muteModeActive = buttonHandler_getShift();
-      if (buttonHandler_stateMemory.selectButtonMode == SELECT_MODE_PERF) {
-      	//invert mute functionality
-         muteModeActive = (uint8_t) (1 - muteModeActive);
-      }
-   
-      if (muteModeActive) {
-      	//un/mute
-         if (buttonHandler_mutedVoices & (1 << voiceNr)) {
-         	//unmute tracks 0-7
-            buttonHandler_muteVoice(voiceNr, 0);
-            frontPanel_sendData(SEQ_CC, SEQ_UNMUTE_TRACK, voiceNr);
-         } 
-         else {
-         	//mute tracks 0-7
-            buttonHandler_muteVoice(voiceNr, 1);
-            frontPanel_sendData(SEQ_CC, SEQ_MUTE_TRACK, voiceNr);
-         }
-      
-      } 
-      else { // mute mode is not active. regular handling
-         if (buttonHandler_stateMemory.selectButtonMode == SELECT_MODE_PERF) 
+      uint8_t muteModeActive=0;
+      uint8_t shiftMode=buttonHandler_getShift();
+      if(buttonHandler_stateMemory.selectButtonMode == SELECT_MODE_PERF)
+      {
+         if (shiftMode) 
          {
-         	// bc: shift-voice on already active voice - solo
-            if (menu_getActiveVoice()==voiceNr)
-            {
-               // solo set-unset code - doesn't work yet.
-               /*
-               if (buttonHandler_mutesFromSolo) // solo previously set -- un-solo
-               {  
-                  // get the previous mute states from temp
-                  
-                  
-                  // unmute voices
-                  for (uint8_t i = 0; i < 7; i++) 
-                  {
-                     if (buttonHandler_mutesFromSolo&(0x01<<i))
-                     {
-                        buttonHandler_muteVoice(i,1);
-                        frontPanel_sendData(SEQ_CC, SEQ_MUTE_TRACK, i);
-                     }
-                     else
-                     {
-                        buttonHandler_muteVoice(i,0);
-                        frontPanel_sendData(SEQ_CC, SEQ_UNMUTE_TRACK, i);
-                        led_setValue(1, (uint8_t)(LED_VOICE1+i) );
-                     }
-                  }
-                  buttonHandler_mutedVoices = buttonHandler_mutesFromSolo;
-                  buttonHandler_mutesFromSolo = 0;
-                
-               }
-               else{ // no solo set - make one
-                  buttonHandler_mutesFromSolo = buttonHandler_mutedVoices;
-
-                  for (uint8_t i = 0; i < 7; i++) {
-                     buttonHandler_muteVoice(i,1);
-                     frontPanel_sendData(SEQ_CC, SEQ_MUTE_TRACK, i);
-                  }
-                  // unmute soloed voice
-                  buttonHandler_muteVoice(voiceNr,0);
-                  frontPanel_sendData(SEQ_CC, SEQ_UNMUTE_TRACK, voiceNr);
-               }
-               */
-            }
-            // -bc: shift-voice in perf mode selects
             led_setBlinkLed((uint8_t)(LED_VOICE1+menu_getActiveVoice()),0);
             menu_setActiveVoice(voiceNr);
             frontPanel_sendData(SEQ_CC, SEQ_SET_ACTIVE_TRACK, voiceNr);
             buttonHandler_showMuteLEDs();
             led_setBlinkLed((uint8_t)(LED_VOICE1+voiceNr),1);
-         } 
-         else { //select active voice
+         }
+         else
+         {
+            buttonHandler_heldVoiceButtons|=(uint8_t)(0x01<<voiceNr);
+            buttonHandler_muteTag=1;
+         }
+      }
+      else // not PERF MODE
+      {
+         muteModeActive = shiftMode;
+   
+         if (muteModeActive) 
+         {
+         	//un/mute
+            if (buttonHandler_mutedVoices & (1 << voiceNr)) {
+            	//unmute tracks 0-7
+               buttonHandler_muteVoice(voiceNr, 0);
+               frontPanel_sendData(SEQ_CC, SEQ_UNMUTE_TRACK, voiceNr);
+            } 
+            else 
+            {
+            	//mute tracks 0-7
+               buttonHandler_muteVoice(voiceNr, 1);
+               frontPanel_sendData(SEQ_CC, SEQ_MUTE_TRACK, voiceNr);
+            }
+      
+         }   
+         else
+         {
+            //select active voice
          	//the currently active button is lit
             led_setActiveVoice(voiceNr);
          
          	//change voice page on display if in voice mode
-            if ((buttonHandler_stateMemory.selectButtonMode == SELECT_MODE_VOICE) /*|| (buttonHandler_stateMemory.selectButtonMode ==SELECT_MODE_STEP) */) {
+            if (buttonHandler_stateMemory.selectButtonMode == SELECT_MODE_VOICE) 
+            {
                menu_switchPage(voiceNr);
             }
             frontPanel_sendData(SEQ_CC, SEQ_SET_ACTIVE_TRACK, voiceNr);
          
             menu_setActiveVoice(voiceNr);
-         
-            
-         	//-bc- the request euklid params has been moved to within menu_setActiveVoice()
-            //request the pattern info for the selected pattern (bar cnt, next...)
-         	//frontPanel_sendData(SEQ_CC,SEQ_REQUEST_PATTERN_PARAMS,buttonNr);
-            
-         
-            if (buttonHandler_stateMemory.selectButtonMode == SELECT_MODE_STEP) {
+            if (buttonHandler_stateMemory.selectButtonMode == SELECT_MODE_STEP) 
+            {
             	//reactivate sequencer mode
                led_clearAllBlinkLeds();
                buttonHandler_enterSeqModeStepMode();
-            
             }
-         } // if buttonHandler_stateMemory.selectButtonMode == SELECT_MODE_PERF)
-      } // if (muteModeActive)
-   } // if (copyClear_Mode >= MODE_COPY_PATTERN)
-
-
+         }
+      } // not PERF MODE      
+   } // not copyclear mode
 }
 
 //--------------------------------------------------------
@@ -1028,12 +1036,7 @@ void buttonHandler_buttonPressed(uint8_t buttonNr) {
       //toggle the state and update led
          if (buttonHandler_getShift())
          {
-            if (menu_kitLockType==KITLOCK_DRUMKIT)
-               preset_loadDrumset(menu_kitLockPreset,0);
-            else if (menu_kitLockType==KITLOCK_PERF)
-               preset_loadAll(menu_kitLockPreset,KITLOCK_PERF,1);
-            else if (menu_kitLockType==KITLOCK_ALL)
-               preset_loadAll(menu_kitLockPreset,KITLOCK_ALL,1);   
+               
          }
          else
          {
@@ -1188,6 +1191,10 @@ void buttonHandler_buttonReleased(uint8_t buttonNr) {
    } 
    else if(buttonNr < BUT_VOICE_1) { // BUT_SELECT* buttons
       buttonHandler_partButtonReleased((uint8_t)(buttonNr - BUT_SELECT1));
+      return;
+   }
+   else if(buttonNr < BUT_COPY) { // BUT_VOICE_* buttons
+      buttonHandler_voiceButtonReleased((uint8_t)(buttonNr-BUT_VOICE_1));
       return;
    }
 
