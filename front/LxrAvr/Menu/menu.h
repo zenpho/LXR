@@ -647,6 +647,8 @@ uint8_t menu_getActiveVoice();
 //-----------------------------------------------------------------
 void menu_setActiveVoice(uint8_t voiceNr);
 //-----------------------------------------------------------------
+void menu_vMorph(uint8_t dest, uint8_t val, uint8_t amt);
+//-----------------------------------------------------------------
 /** used to upodate all global parameters that need processing after a preset is loaded*/
 void menu_sendAllGlobals();
 

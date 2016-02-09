@@ -38,11 +38,12 @@
 #define PARAMETERARRAY_H_
 
 #define TYPE_UINT8 				0	// byte
-#define TYPE_FLT 				1	// float
+#define TYPE_FLT 				   1	// float
 #define TYPE_SPECIAL_F			2	// float value targeting modNodeValue (as opposed to actual parameter)
 #define TYPE_UINT32				3	// 32 bit int
 #define TYPE_SPECIAL_P			4	// pan
 #define TYPE_SPECIAL_FILTER_F	5	// not used apparently
+#define TYPE_UINT8_VMORPH     6  // individual voice morph - change and queue to send to front
 
 // --AS **PATROT this list needs to correspond exactly with the sound parameters in the AVR side because
 // modulation targets are sent across and they have to match in this list
@@ -324,10 +325,10 @@ enum ParamEnums
 	PAR_MIDI_NOTE4,
 	PAR_MIDI_NOTE5,
 	PAR_MIDI_NOTE6,
-	PAR_MIDI_NOTE7,      //110 - beware going over 127, can't fit into midi data, will need another msg
+	PAR_MIDI_NOTE7,      // 110 - beware going over 127, can't fit into midi data, will need another msg
    PAR_KIT_VERSION,
    
-   PAR_MORPH_DRUM1,               // bc: adding these for kit load on automation step
+   PAR_MORPH_DRUM1,     // bc: adding these for individual voice morph
    PAR_MORPH_DRUM2,
    PAR_MORPH_DRUM3,
    PAR_MORPH_SNARE,

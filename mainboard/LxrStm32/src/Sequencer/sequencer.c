@@ -70,6 +70,9 @@ uint8_t seq_rollMode = ROLL_MODE_ALL;        //0=trig, 1=nte, 2=vel, 3=bth, 4=al
 uint8_t seq_rollCounter[NUM_TRACKS];       // runs a counter for every roll trigger
 uint8_t seq_kitResetFlag=0;
 
+uint8_t seq_vMorphFlag=0;
+uint8_t seq_vMorphAmount[6];
+
 static int8_t 	seq_stepIndex[NUM_TRACKS+1];	/**< we have 16 steps consisting of 8 sub steps = 128 steps.
 											     each track has its own counter to allow different pattern lengths */
                                       // -bc- +1 so we don't have to use DRUM1 as a reference
@@ -360,22 +363,18 @@ static void seq_parseAutomationNodes(uint8_t track, Step* stepData)
    uint8_t param2 = stepData->param2Nr;
    uint8_t val1 = stepData->param1Val;
    uint8_t val2 = stepData->param2Val;
-   if(val1)
+   if(param1)
    {
       if(param1>=PAR_MORPH_DRUM1&&param1<=PAR_MORPH_HIHAT)
       {
-            uart_sendFrontpanelByte(FRONT_SEQ_VOICE_MORPH);
-            uart_sendFrontpanelByte((uint8_t)(param1-PAR_MORPH_DRUM1));
-            uart_sendFrontpanelByte(val1);
+         sequencer_sendVMorph(((uint8_t)(param1-PAR_MORPH_DRUM1)), val1);
       }
    }
-   if(val2)
+   if(param2)
    {
       if(param2>=PAR_MORPH_DRUM1&&param2<=PAR_MORPH_HIHAT)
       {
-            uart_sendFrontpanelByte(FRONT_SEQ_VOICE_MORPH);
-            uart_sendFrontpanelByte((uint8_t)(param2-PAR_MORPH_DRUM1));
-            uart_sendFrontpanelByte(val2);
+         sequencer_sendVMorph(((uint8_t)(param1-PAR_MORPH_DRUM1)), val2);
       }
    }
 
@@ -479,10 +478,27 @@ static uint8_t seq_determineNextPattern()
 //------------------------------------------------------------------------------
 static void seq_nextStep()
 {
-
+   
    if(!seq_running)
       return;
-
+   
+   //---- do we need to do a voice morph
+   if(!(seq_stepIndex[NUM_TRACKS]%4))
+   {
+      if(seq_vMorphFlag)
+      {
+         uint8_t i;
+         for (i=0;i<6;i++)
+         {
+            if ( seq_vMorphFlag&(0x01<<i) )
+            {
+               sequencer_sendVMorph(i, seq_vMorphAmount[i]);
+            }
+         }
+         seq_vMorphFlag=0x00;
+      }
+   }
+   
    seq_masterStepCnt++;
 
 	//---- calc master step position. max value is 127. also take in regard the pattern length ----//
@@ -1969,4 +1985,12 @@ void seq_realign()
    uart_sendFrontpanelByte(0);
    
    seq_midiNoteOff(0xff);
+}
+
+void sequencer_sendVMorph(uint8_t voice, uint8_t morphAmount)
+{
+   uart_sendFrontpanelByte(FRONT_SEQ_VOICE_MORPH);
+   uart_sendFrontpanelByte(voice);
+   uart_sendFrontpanelByte(morphAmount);
+
 }

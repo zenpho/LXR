@@ -142,7 +142,6 @@ uint8_t midi_MidiChannels[8];	// the currently selected midi channel for each vo
 
 //--AS note overrides for each voice
 uint8_t midi_NoteOverride[7];
-uint8_t midi_KitChange[6];
 //uint8_t midi_mode; //--AS not used anymore
 MidiMsg midiMsg_tmp;				// buffer message where the incoming data is stored
 // these two are used only when building up a midi message

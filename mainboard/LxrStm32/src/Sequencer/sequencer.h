@@ -156,6 +156,10 @@ extern uint8_t seq_rollNote;
 extern uint8_t seq_rollVelocity;
 extern uint8_t seq_kitResetFlag;
 
+extern uint8_t seq_vMorphAmount[6];
+extern uint8_t seq_vMorphFlag;
+
+void sequencer_sendVMorph(uint8_t voice, uint8_t morphAmount);
 //------------------------------------------------------------------------------
 void seq_triggerVoice(uint8_t voiceNr, uint8_t vol, uint8_t note);
 //------------------------------------------------------------------------------

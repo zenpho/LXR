@@ -453,7 +453,7 @@ static void frontParser_handleMidiMessage()
             
             uint8_t upper = frontParser_midiMsg.data1;
             uint8_t lower = frontParser_midiMsg.data2;
-           
+            //sequencer_sendVMorph(0,(uint8_t)(lower*macroModulators[0].amount));
             if (upper&0x20)
             {
                float value = ((float)(lower))/127.f;

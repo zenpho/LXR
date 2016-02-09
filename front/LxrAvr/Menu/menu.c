@@ -24,6 +24,13 @@
 #include <ctype.h>
 #include "../front.h"
 
+#define MACRO_VMORPH_DRUM1 36
+#define MACRO_VMORPH_DRUM2 71
+#define MACRO_VMORPH_DRUM3 106
+#define MACRO_VMORPH_SNARE 140
+#define MACRO_VMORPH_CYM   175
+#define MACRO_VMORPH_HIHAT 210
+
 // uppercase 3 letters in buf
 static void upr_three(char *buf);
 // given a menuid and a param value fill buf with the short menu item value. will not exceed 3 chars
@@ -2354,7 +2361,7 @@ static void menu_encoderChangeParameter(int8_t inc)
    	if(*paramValue >= nmt)
    		*paramValue = (uint8_t)(nmt-1);
       if (menu_activePage == PERFORMANCE_PAGE)
-      {
+      { // the only time you get a dtype autom target on the PERF page is when assigning macros
    		uint8_t value =  (uint8_t)pgm_read_word(&modTargets[*paramValue].param); // the value of the mod target
          uint8_t lower = value&0x7f;
          uint8_t upper = (uint8_t)
@@ -2363,6 +2370,7 @@ static void menu_encoderChangeParameter(int8_t inc)
                               <<2 )                      //  shift over 2 to make room for upper mod target bit
                               |(value>>7) );
                               
+         
          frontPanel_sendData(MACRO_CC,upper,lower);
       }      
 	}
@@ -3307,15 +3315,94 @@ void menu_parseGlobalParam(uint16_t paramNr, uint8_t value)
 	}
 }
 //-----------------------------------------------------------------
+void menu_vMorph(uint8_t dest, uint8_t val, uint8_t amt)
+{
+   switch(dest)
+   {
+      case MACRO_VMORPH_DRUM1:
+      {
+         float morphValue;
+         morphValue = ((float)amt/64)-1;
+         if(morphValue>0)
+            morphValue = val*morphValue;
+         else
+            morphValue = 127+(val*morphValue);  
+         preset_voiceMorph(0,(uint8_t)morphValue);
+         break;
+      }
+      case MACRO_VMORPH_DRUM2:
+      {
+         float morphValue;
+         morphValue = ((float)amt/64)-1;
+         if(morphValue>0)
+            morphValue = val*morphValue;
+         else
+            morphValue = 127+(val*morphValue);  
+         preset_voiceMorph(1,(uint8_t)morphValue);
+         break;
+      }
+      case MACRO_VMORPH_DRUM3:
+      {
+         float morphValue;
+         morphValue = ((float)amt/64)-1;
+         if(morphValue>0)
+            morphValue = val*morphValue;
+         else
+            morphValue = 127+(val*morphValue);  
+         preset_voiceMorph(2,(uint8_t)morphValue);
+         break;
+      }
+      case MACRO_VMORPH_SNARE:
+      {
+         float morphValue;
+         morphValue = ((float)amt/64)-1;
+         if(morphValue>0)
+            morphValue = val*morphValue;
+         else
+            morphValue = 127+(val*morphValue);  
+         preset_voiceMorph(3,(uint8_t)morphValue);
+         break;
+      }   
+      case MACRO_VMORPH_CYM:
+      {
+         float morphValue;
+         morphValue = ((float)amt/64)-1;
+         if(morphValue>0)
+            morphValue = val*morphValue;
+         else
+            morphValue = 127+(val*morphValue);  
+         preset_voiceMorph(4,(uint8_t)morphValue);
+         break;
+      }
+      case MACRO_VMORPH_HIHAT:
+      {
+         float morphValue;
+         morphValue = ((float)amt/64)-1;
+         if(morphValue>0)
+            morphValue = val*morphValue;
+         else
+            morphValue = 127+(val*morphValue);  
+         preset_voiceMorph(5,(uint8_t)morphValue);
+         break;
+      }
+      default:
+         break;               
+   }   
+}
+//-----------------------------------------------------------------
 static void menu_processSpecialCaseValues(uint16_t paramNr/*, const uint8_t *value*/)
 {
-   
    if(paramNr == PAR_MAC1)
    {
+      
+      menu_vMorph(parameter_values[PAR_MAC1_DST1],parameter_values[PAR_MAC1],parameter_values[PAR_MAC1_DST1_AMT]);
+      menu_vMorph(parameter_values[PAR_MAC1_DST2],parameter_values[PAR_MAC1],parameter_values[PAR_MAC1_DST2_AMT]);
       frontPanel_sendMacro(1,parameter_values[PAR_MAC1]);
    }
    else if (paramNr == PAR_MAC2)
    {
+      menu_vMorph(parameter_values[PAR_MAC2_DST1],parameter_values[PAR_MAC2],parameter_values[PAR_MAC2_DST1_AMT]);
+      menu_vMorph(parameter_values[PAR_MAC2_DST2],parameter_values[PAR_MAC2],parameter_values[PAR_MAC2_DST2_AMT]);
       frontPanel_sendMacro(2,parameter_values[PAR_MAC2]);
    }
 	else if(paramNr == PAR_BPM)
