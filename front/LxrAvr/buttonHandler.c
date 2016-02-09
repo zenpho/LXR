@@ -1026,12 +1026,22 @@ void buttonHandler_buttonPressed(uint8_t buttonNr) {
       //Sequencer Start Stop button
       //because the output shift registers are full, this buttons LED is on a single uC pin
       //toggle the state and update led
-         buttonHandler_setRunStopState(
-            (uint8_t) (1 - buttonHandler_stateMemory.seqRunning));
-      //send run/stop command to soundchip
-         frontPanel_sendData(SEQ_CC, SEQ_RUN_STOP,
-            buttonHandler_stateMemory.seqRunning);
+         if (buttonHandler_getShift())
+         {
+            if (menu_kitLockType==KITLOCK_DRUMKIT)
+               preset_loadDrumset(menu_kitLockPreset,0);
+            else if (menu_kitLockType==KITLOCK_PERF)
+               preset_loadAll(menu_kitLockPreset,KITLOCK_PERF,1);
+            else if (menu_kitLockType==KITLOCK_ALL)
+               preset_loadAll(menu_kitLockPreset,KITLOCK_ALL,1);   
+         }
+         else
+         {
+            buttonHandler_setRunStopState( (uint8_t) (1 - buttonHandler_stateMemory.seqRunning));
+            //send run/stop command to soundchip
+            frontPanel_sendData(SEQ_CC, SEQ_RUN_STOP, buttonHandler_stateMemory.seqRunning);
             menu_sequencerRunning=buttonHandler_stateMemory.seqRunning;
+         }      
          break;
    
       case BUT_REC:
