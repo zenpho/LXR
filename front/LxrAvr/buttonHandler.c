@@ -665,10 +665,10 @@ static void buttonHandler_seqButtonPressed(uint8_t seqButtonPressed)
             led_setBlinkLed(LED_PART_SELECT1, 1);
             break;
          case SELECT_MODE_PERF: //--- buttons 1-8 initiate a manual roll
-            if (seqButtonPressed < 8) {
+            if (seqButtonPressed < 8) 
+            {
             //turn roll on
-               frontPanel_sendData(SEQ_CC, SEQ_ROLL_ON_OFF,
-                  (uint8_t) ((seqButtonPressed & 0xf) + 0x10));
+               frontPanel_sendData(SEQ_CC, SEQ_ROLL_ON_OFF,(uint8_t) ((seqButtonPressed & 0xf) + 0x10));
             //turn button led on
                led_setValue(1, ledNr);
             } 
