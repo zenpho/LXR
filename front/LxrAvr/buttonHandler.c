@@ -36,6 +36,8 @@ uint8_t buttonHandler_originalValue = 0;//saves the parameter value for reset
 uint8_t buttonHandler_resetLock = 0;
 uint8_t buttonHandler_heldVoiceButtons = 0;
 uint8_t buttonHandler_muteTag=0;
+uint8_t buttonHandler_heldSeqLoopButton = 0;
+uint8_t buttonHandler_seqLoopLength=0;
 
 uint8_t shiftMode=0;
 uint8_t shiftState=0;
@@ -672,19 +674,43 @@ static void buttonHandler_seqButtonPressed(uint8_t seqButtonPressed)
             //turn button led on
                led_setValue(1, ledNr);
             } 
-            else {
-            /*
-             //moved pattern select to select buttons
-             //pattern
-            
-             //tell sequencer to change pattern
-             frontPanel_sendData(SEQ_CC,SEQ_CHANGE_PAT,seqButtonPressed-8);
-             //flash corresponding LED until ACK (SEQ_CHANGE_PAT) received
-             led_setBlinkLed(ledNr,1);
-            
-             //request the pattern info for the selected pattern (bar cnt, next...)
-             frontPanel_sendData(SEQ_CC,SEQ_REQUEST_PATTERN_PARAMS,seqButtonPressed-8);
-             */
+            else 
+            {
+               buttonHandler_heldSeqLoopButton |= (uint8_t)(0x01<<(seqButtonPressed-8));
+               switch(seqButtonPressed)
+               {
+                  case 9:
+                     buttonHandler_seqLoopLength=64;
+                  break;
+                  case 10:
+                     buttonHandler_seqLoopLength=32;
+                  break;
+                  case 11:
+                     buttonHandler_seqLoopLength=16;
+                  break;
+                  case 12:
+                     buttonHandler_seqLoopLength=8;
+                  break;
+                  case 13:
+                     buttonHandler_seqLoopLength=4;
+                  break;
+                  case 14:
+                     buttonHandler_seqLoopLength=2;
+                  break;
+                  case 15:
+                     buttonHandler_seqLoopLength=1;
+                  break;
+                  default:
+                  break;
+               }   
+
+               if(buttonHandler_heldSeqLoopButton&0x01)
+               {
+                  buttonHandler_seqLoopLength=(uint8_t)
+                     (buttonHandler_seqLoopLength+(buttonHandler_seqLoopLength>>1)); // dot the length of loop
+               }
+               if(buttonHandler_seqLoopLength)
+                  frontPanel_sendData(SEQ_CC, SEQ_SET_LOOP,(uint8_t) (buttonHandler_seqLoopLength));
             }
             break;
       
@@ -764,11 +790,26 @@ static void buttonHandler_seqButtonReleased(uint8_t seqButtonPressed)
       
          break;
       case SELECT_MODE_PERF:
-         if (seqButtonPressed < 8) {
+         if (seqButtonPressed < 8) 
+         {
          //turn roll off
             frontPanel_sendData(SEQ_CC, SEQ_ROLL_ON_OFF, (seqButtonPressed & 0xf));
          //turn button led off
             led_setValue(0, ledNr);
+         }
+         else
+         {
+            buttonHandler_heldSeqLoopButton &= (uint8_t)~(0x01<<(seqButtonPressed-8));
+            if(seqButtonPressed==8)
+            {
+               buttonHandler_seqLoopLength=(uint8_t)(buttonHandler_seqLoopLength-(buttonHandler_seqLoopLength/3));
+               frontPanel_sendData(SEQ_CC, SEQ_SET_LOOP,buttonHandler_seqLoopLength);
+            }
+            if (!buttonHandler_heldSeqLoopButton)
+            {
+               buttonHandler_seqLoopLength=0;
+               frontPanel_sendData(SEQ_CC, SEQ_SET_LOOP,0);
+            }   
          }
          break;
    

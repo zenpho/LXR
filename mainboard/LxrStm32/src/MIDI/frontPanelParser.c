@@ -1163,6 +1163,9 @@ static void frontParser_handleSeqCC()
       case FRONT_SEQ_TRIGGER_GATE_MODE:
          trigger_setGatemode(frontParser_midiMsg.data2);
          break;
+         
+      case FRONT_SEQ_SET_LOOP:
+         seq_setLoop(frontParser_midiMsg.data2);   
    
       default:
          break;

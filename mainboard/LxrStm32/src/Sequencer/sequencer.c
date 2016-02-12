@@ -71,9 +71,14 @@ uint8_t seq_rollCounter[NUM_TRACKS];       // runs a counter for every roll trig
 uint8_t seq_kitResetFlag=0;
 
 uint8_t seq_loopLength=0;
-uint8_t seq_loopPosition=0;
-int8_t seq_loopStartPosition[NUM_TRACKS+1];
-int8_t seq_loopActivePosition[NUM_TRACKS+1];
+uint8_t seq_pendingLoopLength=0;
+
+uint8_t seq_loopMasterStart=0;
+int8_t seq_loopCurrentPosition=0;
+
+int8_t seq_loopStartStepPosition[NUM_TRACKS+1];
+int8_t seq_loopActiveStepPosition[NUM_TRACKS+1];
+
 uint8_t seq_loopUpdateFlag=0;
 
 uint8_t seq_vMorphFlag=0;
@@ -500,11 +505,52 @@ static uint8_t seq_determineNextPattern()
       return seq_activePattern;
 }
 //------------------------------------------------------------------------------
+void seq_setLoop(uint8_t length)
+{
+   if(!length) // length received is zero - turn off looping
+   {
+      seq_loopLength=0;
+      seq_pendingLoopLength=0;
+      seq_loopCurrentPosition=0;
+   }   
+   else if(seq_loopLength) // a new length is received - change length when this loop ends
+   {
+      seq_pendingLoopLength=length;
+   }   
+   else // a new loop starting - set the start point.
+   {
+      seq_loopLength=length;
+      seq_pendingLoopLength=length;
+      seq_loopUpdateFlag=1;
+   }      
+}
+//------------------------------------------------------------------------------
+void seq_startLoop()
+{
+   uint8_t i;
+   
+   seq_loopMasterStart = seq_masterStepCnt;
+   seq_loopCurrentPosition = 0;
+   
+   for(i=0;i<NUM_TRACKS+1;i++)
+   {
+      seq_loopStartStepPosition[i] = seq_quantize(seq_stepIndex[i],i)-1;
+      seq_loopActiveStepPosition[i] = seq_stepIndex[i];
+   }
+   seq_loopCurrentPosition=(seq_stepIndex[NUM_TRACKS]-seq_loopStartStepPosition[NUM_TRACKS]);
+}
+//------------------------------------------------------------------------------
 static void seq_nextStep()
 {
    int i;
    if(!seq_running)
       return;
+      
+   if(seq_loopUpdateFlag)
+   {
+      seq_startLoop();
+      seq_loopUpdateFlag=0;
+   }   
    
    //---- do we need to do a voice morph
    if(!(seq_stepIndex[NUM_TRACKS]%4))
@@ -523,18 +569,23 @@ static void seq_nextStep()
    }
    
    seq_masterStepCnt++;
-
+   
 	//---- calc master step position. max value is 127. also take in regard the pattern length ----//
    uint8_t masterStepPos;
-   uint8_t masterLoopPos=0;
+   uint8_t loopMasterStepPos=0;
+   
    uint8_t seqlen;
    uint8_t seqscale;
+   
    uint8_t activeScaledStep;
-   int8_t *stepAcPtr;
+   uint8_t loopActiveScaledStep;
+   
+   int8_t *stepAcPtr = seq_stepIndex;
+   
+   uint8_t voiceTriggered=0; // did we already trigger this voice?
+   
 	//if( (((seq_stepIndex[0]+1) &0x7f) == 0) ||
 	//    (((seq_patternSet.seq_subStepPattern[seq_activePattern][0][seq_stepIndex[0]+1]).note & PATTERN_END_MASK)>=PATTERN_END_MASK) )
-
-
    if ( ( (seq_stepIndex[NUM_TRACKS]+1) & 0x7f) == 0)
    {
       masterStepPos = 0;
@@ -551,14 +602,31 @@ static void seq_nextStep()
    
    if(seq_loopLength)
    {
-      if(seq_loopUpdateFlag)
-         seq_loopUpdateFlag--;
-      else
-      {   
-         seq_loopPosition=(seq_loopPosition+1)%seq_loopLength;
-         masterLoopPos=seq_loopStartPosition[NUM_TRACKS]+seq_loopPosition;
-      }   
-   }
+      stepAcPtr = seq_loopActiveStepPosition;
+         
+      seq_loopCurrentPosition++;
+      if (seq_loopCurrentPosition>=seq_loopLength)
+         seq_loopCurrentPosition-=seq_loopLength;
+      
+      if(seq_loopCurrentPosition)
+      {
+         if ( ( (seq_loopActiveStepPosition[NUM_TRACKS]+1) & 0x7f) )
+            loopMasterStepPos = seq_loopActiveStepPosition[NUM_TRACKS]+1;
+         else
+            loopMasterStepPos = 0;
+      }
+      else // loop reached end, reset
+      {
+         loopMasterStepPos = seq_loopMasterStart;
+         for(i=0;i<NUM_TRACKS+1;i++)
+         {
+            seq_loopActiveStepPosition[i] = seq_loopStartStepPosition[i];
+         }   
+      }  
+   }   
+   
+   
+   
    //-------- random pattern switch only gets calculated once per bar ------//
    if( (!masterStepPos)&&(seq_activePattern == seq_pendingPattern) )
    {
@@ -643,10 +711,7 @@ static void seq_nextStep()
    
    for(i=0;i<NUM_TRACKS;i++)
    {
-   
-      uint8_t voiceTriggered = 0; // did we already trigger this voice?
-      uint8_t voiceLoopActiveScaledStep=0;
-      
+    
    	// --AS **PATROT we now use this for length
       seqlen=seq_patternSet.seq_patternLengthRotate[seq_perTrackActivePattern[i]][i].length;
       seqscale=seq_patternSet.seq_patternLengthRotate[seq_perTrackActivePattern[i]][i].scale;
@@ -669,19 +734,16 @@ static void seq_nextStep()
       
       if(seq_loopLength)
       {
-         voiceLoopActiveScaledStep = !(masterLoopPos & (0xff >> (8-seqscale) ));
-         if (voiceLoopActiveScaledStep)
-            seq_loopActivePosition[i]++;
-         if((seq_loopActivePosition[i] / 8) == seqlen || (seq_loopActivePosition[i] & 0x7f) == 0)
+         loopActiveScaledStep = !(loopMasterStepPos & (0xff >> (8-seqscale) ));
+         if (loopActiveScaledStep)
+            seq_loopActiveStepPosition[i]++;
+            
+         if((seq_loopActiveStepPosition[i] / 8) == seqlen || (seq_loopActiveStepPosition[i] & 0x7f) == 0)
          {
          	//if end is reached reset track to step 0
-            seq_loopActivePosition[i] = 0;
+            seq_loopActiveStepPosition[i] = 0;
          }
-         stepAcPtr = seq_loopActivePosition;
       }
-      else
-         stepAcPtr = seq_stepIndex;
-   
       //--------- Tracks @ proper stap positions, process roll -------------------------
       if( !(seq_rollState & (1<<i))&&(seq_rollTriggered & (1<<i)) ) // start new roll command received
       {
@@ -711,7 +773,6 @@ static void seq_nextStep()
               
          }
       }
-      
       if(seq_SomModeActive)
       {
          som_tick(seq_stepIndex[NUM_TRACKS],seq_mutedTracks);
@@ -741,7 +802,7 @@ static void seq_nextStep()
                   //thus every sub step block has only one random value to compare against
                   //allows randomisation of rolls by chance
                   
-                  if((seq_stepIndex[NUM_TRACKS] & 0x07) == 0x00) //every 8th step
+                  if((stepAcPtr[NUM_TRACKS] & 0x07) == 0x00) //every 8th step
                   {
                      seq_rndValue[i] = GetRngValue()&0x7f;
                   }
@@ -752,6 +813,8 @@ static void seq_nextStep()
                      uint8_t note = seq_patternSet.seq_subStepPattern[seq_perTrackActivePattern[i]][i][stepAcPtr[i]].note;
                      note = seq_getTransposedNote(i, stepAcPtr[i], note);
                      seq_triggerVoice(i,vol,note);
+                     if(seq_loopLength&&seq_recordActive)
+                        seq_addNote(i,vol,note);
                      
                   } // end if seq_rndValue
                } // end else if stepactive
@@ -765,20 +828,16 @@ static void seq_nextStep()
    
    if(seq_loopLength)
    {
-      if(!seq_loopPosition)
-         for (i=0;i<NUM_TRACKS+1;i++)
-         {
-            seq_loopActivePosition[i]=seq_loopStartPosition[i];
-         }
-      else   
-         seq_stepIndex[NUM_TRACKS] = (seq_stepIndex[NUM_TRACKS]+1) & 0x7f;
+      seq_loopActiveStepPosition[NUM_TRACKS] = (seq_loopActiveStepPosition[NUM_TRACKS]+1) & 0x7f;
+      if(!seq_loopCurrentPosition) // if the loop reset, see if a length change required
+         seq_loopLength=seq_pendingLoopLength;           
    }
 
 	//send message to frontpanel
 	//to display the current step
    uart_sendFrontpanelByte(FRONT_STEP_LED_STATUS_BYTE);
    uart_sendFrontpanelByte(FRONT_CURRENT_STEP_NUMBER_CC);
-   uart_sendFrontpanelByte(seq_stepIndex[frontParser_activeTrack]);
+   uart_sendFrontpanelByte(stepAcPtr[frontParser_activeTrack]);
 
 	// --AS check mtc, which might stop the sequencer if we haven't seen one in a while
    midiParser_checkMtc();

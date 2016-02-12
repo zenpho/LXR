@@ -176,6 +176,7 @@ byte3, data2 byte: xbbbbbbb : b=macro mod target value lower 7 bits or top level
 
 #define SEQ_TRANSPOSE            0x43
 #define SEQ_TRANSPOSE_ON_OFF     0x44
+#define SEQ_SET_LOOP             0x45
 
 //bc adds
 
