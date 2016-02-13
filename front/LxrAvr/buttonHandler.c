@@ -1077,7 +1077,7 @@ void buttonHandler_buttonPressed(uint8_t buttonNr) {
       //toggle the state and update led
          if (buttonHandler_getShift())
          {
-               
+            menu_reloadKit();
          }
          else
          {
