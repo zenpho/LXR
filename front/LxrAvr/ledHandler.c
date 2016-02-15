@@ -293,7 +293,7 @@ void led_setMode2(uint8_t status)
 		break;
 		
 		case 4:
-			led_setValue(1,LED_MODE4);	
+		   led_setValue(1,LED_MODE1);
 		break;
 		
 		case 5:
@@ -301,7 +301,7 @@ void led_setMode2(uint8_t status)
 		break;
 		
 		case 6:
-			
+			led_setValue(1,LED_MODE3);
 		break;
 		
 		case 7:

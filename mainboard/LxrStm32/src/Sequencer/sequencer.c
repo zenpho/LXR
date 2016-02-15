@@ -458,7 +458,7 @@ void seq_triggerVoice(uint8_t voiceNr, uint8_t vol, uint8_t note)
       	seq_patternSet.seq_subStepPattern[seq_perTrackActivePattern[voiceNr]][voiceNr][seq_stepIndex[voiceNr]].volume&STEP_VOLUME_MASK);
 }
 //------------------------------------------------------------------------------
-uint8_t seq_getTransposedNote(uint8_t voice, uint8_t step, uint8_t note)
+uint8_t seq_getTransposedNote(uint8_t voice, uint8_t note)
 {
    uint8_t retNote = note;
    uint8_t transpose = 63;
@@ -466,33 +466,24 @@ uint8_t seq_getTransposedNote(uint8_t voice, uint8_t step, uint8_t note)
    {
       // transpose is on - use track value
       transpose = seq_transpose_voiceAmount[voice];
-      if (seq_recordActive)
-      {
-         // set the step's transpose amount to the current voice transpose value
-         seq_patternSet.seq_subStepPattern[seq_perTrackActivePattern[voice]][voice][step].transpose=seq_transpose_voiceAmount[voice];  
-      }
-   }
-   else if (seq_recordActive) // transpose is off, but record is active - transpose based on step value
-   {
-      transpose = seq_patternSet.seq_subStepPattern[seq_perTrackActivePattern[voice]][voice][step].transpose;
-   }
    
-   if (transpose!=63)
-   { // legitimate transpose value - do the transpose
-      if (note<(63-transpose)) // transposing would result in a note less than zero!
-      {
-         retNote = 0;
+      
+      if (transpose!=63)
+      { // legitimate transpose value - do the transpose
+         if (note<(63-transpose)) // transposing would result in a note less than zero!
+         {
+            retNote = 0;
+         }
+         else
+         {
+            retNote = (uint8_t)(note+(transpose-63));
+         }
+         if (retNote>127)
+         {
+            retNote=127;
+         }
       }
-      else
-      {
-         retNote = (uint8_t)(note+(transpose-63));
-      }
-      if (retNote>127)
-      {
-         retNote=127;
-      }
-   }
-   
+   }   
    return retNote;
 }
 //------------------------------------------------------------------------------
@@ -711,7 +702,7 @@ static void seq_nextStep()
    
    for(i=0;i<NUM_TRACKS;i++)
    {
-    
+      voiceTriggered=0;
    	// --AS **PATROT we now use this for length
       seqlen=seq_patternSet.seq_patternLengthRotate[seq_perTrackActivePattern[i]][i].length;
       seqscale=seq_patternSet.seq_patternLengthRotate[seq_perTrackActivePattern[i]][i].scale;
@@ -811,7 +802,7 @@ static void seq_nextStep()
                   {
                      uint8_t vol = seq_patternSet.seq_subStepPattern[seq_perTrackActivePattern[i]][i][stepAcPtr[i]].volume&STEP_VOLUME_MASK;
                      uint8_t note = seq_patternSet.seq_subStepPattern[seq_perTrackActivePattern[i]][i][stepAcPtr[i]].note;
-                     note = seq_getTransposedNote(i, stepAcPtr[i], note);
+                     note = seq_getTransposedNote(i, note);
                      seq_triggerVoice(i,vol,note);
                      if(seq_loopLength&&seq_recordActive)
                         seq_addNote(i,vol,note);
@@ -820,7 +811,11 @@ static void seq_nextStep()
                } // end else if stepactive
             } // end if mainStepActive
          } // end if not muted
-      } // end else if not triggered             
+      } // end else if not triggered     
+      if(seq_rollState&0x01<<i)
+         seq_rollCounter[i]--;
+      //else
+        // seq_rollCounter[i]=seq_rollRate;       
    } // end for i=voice
    
    // increment the reference step index
@@ -1409,11 +1404,11 @@ uint8_t seq_setRoll(uint8_t voice, uint8_t onOff)// called processing step if ro
       if ( quantPosition>(stepsPerQuant/2) ) // more than halfway through quant step. just load counter to align with
                                              // next quant
       {
-         seq_rollCounter[voice] = stepsPerQuant-quantPosition;
+         seq_rollCounter[voice] = stepsPerQuant-quantPosition-1;
       }
       else // less than halfway through the quant. trigger now and load counter as if triggered on last quant.
       {
-         seq_rollCounter[voice] = seq_rollRate-quantPosition;
+         seq_rollCounter[voice] = seq_rollRate-quantPosition-1;
          triggered = seq_rollTrig(voice);
       }
       seq_rollState |= (1<<voice);
@@ -1437,8 +1432,6 @@ uint8_t seq_checkRollStep(uint8_t voice) // called every step if roll active for
       triggered = seq_rollTrig(voice);
       seq_rollCounter[voice] = seq_rollRate;
    }
-   if(seq_rollRate!=0xff)
-      seq_rollCounter[voice]--;
    return triggered;
 }
 //--------------------------------------------------------------------------------
@@ -1729,21 +1722,19 @@ static void seq_eraseStepAndSubSteps(const uint8_t voice, const uint8_t mainStep
 	//}
 
 }
-
-//------------------------------------------------------------------------
-void seq_setRecordingMode(uint8_t active)
+void seq_writeTranspose()
 {
-   
    uint8_t i,k,transposeAmt,trnNote;
-   if (seq_recordActive&&!active) // switching from recording to not recording
+   if (seq_transposeOnOff)
    {
-      for (i=0;i<128;i++) // merge transpose into notes
+      for (k=0;k<NUM_TRACKS;k++)
       {
-         for (k=0;k<NUM_TRACKS;k++)
+         transposeAmt = seq_transpose_voiceAmount[k];
+         if (transposeAmt!=63)
          {
-            transposeAmt = seq_patternSet.seq_subStepPattern[seq_perTrackActivePattern[k]][k][i].transpose;
-            if (transposeAmt!=63)
-            { // legitimate transpose value - do the transpose
+            for (i=0;i<128;i++) // for all steps
+            {
+               // legitimate transpose value - do the transpose
                trnNote = seq_patternSet.seq_subStepPattern[seq_perTrackActivePattern[k]][k][i].note;
                if (trnNote<(63-transposeAmt)) // transposing would result in a note less than zero!
                {
@@ -1757,11 +1748,17 @@ void seq_setRecordingMode(uint8_t active)
                {
                   trnNote=127;
                }
-               seq_patternSet.seq_subStepPattern[seq_perTrackActivePattern[k]][k][i].note = trnNote;
+               seq_patternSet.seq_subStepPattern[seq_perTrackActivePattern[k]][k][i].note = trnNote;  
             }
-         }
+         }   
+         seq_transpose_voiceAmount[k]=63;
       }
-   }
+   }   
+}   
+
+//------------------------------------------------------------------------
+void seq_setRecordingMode(uint8_t active)
+{
    seq_recordActive = active;
 }
 

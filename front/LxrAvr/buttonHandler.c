@@ -25,7 +25,6 @@ static uint8_t lastActivePage = 0;
 static uint8_t lastActiveSubPage = 0;
 /** selected step for sequencer mode*/
 uint8_t buttonHandler_selectedStep = 0; //TODO ist das gleiche wie der parameter PAR_ACTIVE_STEP
-static uint8_t selectedStepLed = LED_STEP1;
 
 static uint16_t buttonHandler_buttonTimer = 0;
 
@@ -38,6 +37,9 @@ uint8_t buttonHandler_heldVoiceButtons = 0;
 uint8_t buttonHandler_muteTag=0;
 uint8_t buttonHandler_heldSeqLoopButton = 0;
 uint8_t buttonHandler_seqLoopLength=0;
+
+uint8_t buttonHandler_recDown=0;
+uint8_t buttonHandler_recArmed=0;
 
 uint8_t shiftMode=0;
 uint8_t shiftState=0;
@@ -60,6 +62,7 @@ void buttonHandler_copySubStep(uint8_t selectButtonPressed);
 void buttonHandler_copyStep(uint8_t seqButtonPressed);
 void buttonHandler_enterSeqMode();
 void buttonHandler_leaveSeqMode();
+void buttonHandler_handleShift(uint8_t shift);
 
 #define ARM_AUTOMATION		0x40
 #define DISARM_AUTOMATION	0x00
@@ -119,6 +122,8 @@ void buttonHandler_copyStep(uint8_t seqButtonPressed)
 //--------------------------------------------------------
 static void buttonHandler_armTimerActionStep(int8_t stepNr) {
 	//check if sub or main step
+   if (buttonHandler_buttonTimerStepNr == BUT_REC)
+      return;
 	const uint8_t isMainStep = ((stepNr % 8) == 0);
 	buttonHandler_armedAutomationStep = stepNr;
 
@@ -135,8 +140,16 @@ static void buttonHandler_armTimerActionStep(int8_t stepNr) {
 
 }
 //--------------------------------------------------------
-static void buttonHandler_disarmTimerActionStep() {
-	if (buttonHandler_armedAutomationStep != NO_STEP_SELECTED) {
+static void buttonHandler_disarmTimerActionStep() 
+{
+   if (buttonHandler_buttonTimerStepNr == BUT_REC)
+   {
+      buttonHandler_armedAutomationStep = NO_STEP_SELECTED;
+      buttonHandler_buttonTimerStepNr = NO_STEP_SELECTED;
+   }
+	else if (buttonHandler_armedAutomationStep != NO_STEP_SELECTED) 
+   {  
+      
 		const uint8_t isMainStep =
 				((buttonHandler_armedAutomationStep % 8) == 0);
 		if (isMainStep) {
@@ -181,7 +194,8 @@ static void buttonHandler_disarmTimerActionStep() {
 			menu_repaintAll();
 		}
 		return;
-	}
+     
+	}// end if no step selected
 
 	buttonHandler_armedAutomationStep = NO_STEP_SELECTED;
 	frontPanel_sendData(ARM_AUTOMATION_STEP, 0, DISARM_AUTOMATION);
@@ -204,6 +218,7 @@ static uint8_t buttonHandler_TimerActionOccured() {
 	buttonHandler_buttonTimerStepNr = NO_STEP_SELECTED;
 	return 0;
 }
+//--------------------------------------------------------
 static void buttonHandler_setTimeraction(uint8_t buttonNr) {
 	buttonHandler_buttonTimer = time_sysTick + BUTTON_TIMEOUT;
 	buttonHandler_buttonTimerStepNr = (int8_t) buttonNr;
@@ -227,10 +242,16 @@ static void buttonHandler_setTimeraction(uint8_t buttonNr) {
 //--------------------------------------------------------
 //periodically called handler for timed actions
 //-> hold a step button for a long time to select/rec automation
-void buttonHandler_tick() {
+void buttonHandler_tick() 
+{
 	if ((time_sysTick > buttonHandler_buttonTimer)) {
-		if (buttonHandler_buttonTimerStepNr >= 0) //!=NO_STEP_SELECTED)
-				{
+      if (buttonHandler_buttonTimerStepNr == BUT_REC&&buttonHandler_recDown)
+      {
+         buttonHandler_recArmed=1;
+         led_setBlinkLed(LED_REC, 1);
+      }
+		else if (buttonHandler_buttonTimerStepNr >= 0) //!=NO_STEP_SELECTED)
+      {
 			//select step
 			buttonHandler_armTimerActionStep(buttonHandler_buttonTimerStepNr);
 			//reset
@@ -238,24 +259,6 @@ void buttonHandler_tick() {
 		}
 	}
 }
-//--------------------------------------------------------
-/*
- -> change display to show selected step options (volume, probability, note etc...)
- -> seq buttons select step
- -> selected step is illuminated on the seq buttons
- -> select buttons show 8 sub steps for the selected step
- */
-static void buttonHandler_enterSeqModeStepMode() {
-//	lastActivePage = menu_activePage;
-//	lastActiveSubPage = menu_getSubPage();
-	menu_switchSubPage(0);
-	menu_switchPage(SEQ_PAGE);
-
-	frontPanel_updatePatternLeds();
-
-	led_setBlinkLed(selectedStepLed, 1);
-}
-
 //--------------------------------------------------------
 /**returns 1 is the shift button is pressed*/
 uint8_t buttonHandler_getShift() {
@@ -269,9 +272,11 @@ uint8_t buttonHandler_getShift() {
 }
 //--------------------------------------------------------
 static void buttonHandler_handleModeButtons(uint8_t mode) {
-   buttonHandler_heldVoiceButtons = 0;
-   buttonHandler_muteTag=0;
-	if (buttonHandler_getShift()) {
+   buttonHandler_heldVoiceButtons = 0;// this is here for individ. pattern switch - if the mode
+   buttonHandler_muteTag=0;           // is changed, clear any held buttons
+   
+	if (buttonHandler_getShift()) 
+   {
 		//set the new mode
 		buttonHandler_stateMemory.selectButtonMode = (uint8_t) ((mode + 4) & 0x07);
 	} else {
@@ -284,63 +289,45 @@ static void buttonHandler_handleModeButtons(uint8_t mode) {
 	//update the status LED
 	led_setMode2(buttonHandler_stateMemory.selectButtonMode);
 
-	switch (buttonHandler_stateMemory.selectButtonMode) {
-	case SELECT_MODE_PERF: {
-		led_clearSequencerLeds();
-		led_clearSelectLeds();
-		led_initPerformanceLeds();
-
-		//set menu to perf page
-		lastActiveSubPage = menu_getSubPage();
-		
-      if (menu_activePage==PERFORMANCE_PAGE)
-		   menu_switchSubPage(0);
-      else
-      {
-         menu_switchPage(PERFORMANCE_PAGE);
-         menu_resetSubPage();
-      }
+	switch (buttonHandler_stateMemory.selectButtonMode) 
+   {
+      case SELECT_MODE_VOICE:
+      case SELECT_MODE_VOICE2:
+   		menu_enterVoiceMode();
+   		break;
          
-		menu_repaintAll();
-
-	}
-		break;
-
-	case SELECT_MODE_STEP:
-		//menu_switchPage(menu_getActiveVoice());
-		led_setActiveSelectButton(menu_getSubPage());
-		buttonHandler_enterSeqModeStepMode();
-		break;
-	case SELECT_MODE_VOICE:
-		//set menu to voice page mode
-		menu_switchPage(menu_getActiveVoice());
-		led_setActiveSelectButton(menu_getSubPage());
-		menu_resetActiveParameter();
-		break;
-
-	case SELECT_MODE_LOAD_SAVE:
-		menu_switchPage(LOAD_PAGE);
-		break;
-
-	case SELECT_MODE_MENU:
-		menu_switchPage(MENU_MIDI_PAGE);
-		break;
-
-	case SELECT_MODE_SOM_GEN:
-#if USE_DRUM_MAP_GENERATOR
-		menu_switchPage(SOM_PAGE);
-#endif
-		break;
-
-	case SELECT_MODE_PAT_GEN:
-		frontPanel_sendData(SEQ_CC, SEQ_REQUEST_EUKLID_PARAMS,
-				menu_getActiveVoice());
-		menu_switchPage(EUKLID_PAGE);
-
-		break;
-
-	default:
-		break;
+   	case SELECT_MODE_PERF: 
+         if (menu_activePage==PERFORMANCE_PAGE)
+         {
+		      menu_switchSubPage(0);
+            menu_repaint();
+         }   
+         else
+            menu_enterPerfMode();   
+   		break;
+   
+   	case SELECT_MODE_STEP:
+      case SELECT_MODE_STEP2:
+         menu_enterStepMode();
+   		break;
+         
+   	case SELECT_MODE_LOAD_SAVE:
+   		menu_switchPage(LOAD_PAGE);
+   		break;
+   
+   	case SELECT_MODE_MENU:
+   		menu_switchPage(MENU_MIDI_PAGE);
+   		break;
+         
+   	case SELECT_MODE_PAT_GEN:
+   		frontPanel_sendData(SEQ_CC, SEQ_REQUEST_EUKLID_PARAMS,
+   				menu_getActiveVoice());
+   		menu_switchPage(EUKLID_PAGE);
+   
+   		break;
+   
+   	default:
+   		break;
 	}
 }
 //--------------------------------------------------------
@@ -516,18 +503,7 @@ static void buttonHandler_handleSelectButton(uint8_t buttonNr) {
    }
 
 }
-//--------------------------------------------------------
-static void buttonHandler_leaveSeqModeStepMode() {
-	//stop blinking active step led
-   led_setBlinkLed(selectedStepLed, 0);
-   led_setValue(0, selectedStepLed);
 
-	//reset select leds
-	//led_clearSelectLeds();
-
-//	menu_switchSubPage(lastActiveSubPage);
-//	menu_switchPage(lastActivePage);
-}
 //--------------------------------------------------------
 // when in voice mode you press shift, you enter sequencer mode
 void buttonHandler_enterSeqMode() {
@@ -538,13 +514,13 @@ void buttonHandler_enterSeqMode() {
 
    frontPanel_updatePatternLeds();
 
-   led_setBlinkLed(selectedStepLed, 1);
+   led_setBlinkLed(menu_selectedStepLed, 1);
 }
 //--------------------------------------------------------
 void buttonHandler_leaveSeqMode() {
 	//stop blinking active step led
-   led_setBlinkLed(selectedStepLed, 0);
-   led_setValue(0, selectedStepLed);
+   led_setBlinkLed(menu_selectedStepLed, 0);
+   led_setValue(0, menu_selectedStepLed);
 
 	//reset select leds
    led_clearSelectLeds();
@@ -560,8 +536,8 @@ void buttonHandler_leaveSeqMode() {
 //--------------------------------------------------------
 static void buttonHandler_selectActiveStep(uint8_t ledNr, uint8_t seqButtonPressed) {
 
-   led_setBlinkLed(selectedStepLed, 0);
-   led_setValue(0, selectedStepLed);
+   led_setBlinkLed(menu_selectedStepLed, 0);
+   led_setValue(0, menu_selectedStepLed);
 
    if (buttonHandler_selectedStep == (seqButtonPressed * 8)) {
       menu_switchSubPage(menu_getSubPage()); //to enable toggle
@@ -569,7 +545,7 @@ static void buttonHandler_selectActiveStep(uint8_t ledNr, uint8_t seqButtonPress
 
 	//update active step
    buttonHandler_selectedStep = (uint8_t) (seqButtonPressed * 8);
-   selectedStepLed = ledNr;
+   menu_selectedStepLed = ledNr;
 
    parameter_values[PAR_ACTIVE_STEP] = buttonHandler_selectedStep;
 
@@ -595,7 +571,7 @@ static void buttonHandler_setRemoveStep(uint8_t ledNr, uint8_t seqButtonPressed)
    //update active step (so that seq mode always shows the last set step)
    buttonHandler_selectedStep = seqButtonPressed;
    parameter_values[PAR_ACTIVE_STEP] = buttonHandler_selectedStep;
-   selectedStepLed = ledNr;
+   menu_selectedStepLed = ledNr;
 
 	//request step parameters from sequencer
    frontPanel_sendData(SEQ_CC, SEQ_REQUEST_STEP_PARAMS, seqButtonPressed);
@@ -1037,7 +1013,12 @@ static void buttonHandler_voiceButtonPressed(uint8_t voiceNr)
             {
             	//reactivate sequencer mode
                led_clearAllBlinkLeds();
-               buttonHandler_enterSeqModeStepMode();
+               menu_switchPage(SEQ_PAGE);   
+            	led_setBlinkLed(menu_selectedStepLed, 1);
+               frontPanel_sendData(SEQ_CC, SEQ_REQUEST_STEP_PARAMS,(uint8_t) ((menu_selectedStepLed-LED_STEP1) * 8));
+               frontPanel_updatePatternLeds();
+               
+               menu_repaintAll();
             }
          }
       } // not PERF MODE      
@@ -1098,9 +1079,11 @@ void buttonHandler_buttonPressed(uint8_t buttonNr) {
                - buttonHandler_stateMemory.seqRecording) & 0x01);
             led_setValue(buttonHandler_stateMemory.seqRecording, LED_REC);
          //send run/stop command sequencer
-            frontPanel_sendData(SEQ_CC, SEQ_REC_ON_OFF,
-               buttonHandler_stateMemory.seqRecording);
+            frontPanel_sendData(SEQ_CC, SEQ_REC_ON_OFF,buttonHandler_stateMemory.seqRecording);
          }
+         buttonHandler_setTimeraction(BUT_REC);
+         buttonHandler_recDown=1;
+         buttonHandler_recArmed=0;
          break;
    
       case BUT_COPY:
@@ -1143,85 +1126,111 @@ void buttonHandler_buttonPressed(uint8_t buttonNr) {
    
    	//the mode selection for the 16 seq buttons
       case BUT_SHIFT:
-      /* while this button is pressed, the SEQUENCER mode is activated
-       -> change display to show selected step options (volume, probability, note etc...)
-       -> seq buttons select step
-       -> selected step is illuminated on the seq buttons
-       -> select buttons show 8 sub steps for the selected step
-      
-       ->shows muted steps on voice leds while pressed
-       */
-         shiftState=!(shiftMode&shiftState);
-         if (shiftState)
-         {
-            led_setValue(1, LED_SHIFT);
-            switch(buttonHandler_stateMemory.selectButtonMode) {
-            case SELECT_MODE_VOICE:
-               if ((menu_activePage<=VOICE7_PAGE)&&(editModeActive))
-                  menu_repaintAll();
-               else
-                  buttonHandler_enterSeqMode(); // display step params and substeps while shift held
-               break;
-            case SELECT_MODE_PERF:
-            {
-               //blink selected pattern LED
-               menu_switchPage(PATTERN_SETTINGS_PAGE);
-               led_clearSelectLeds();
-               led_clearAllBlinkLeds();
-               //**PATROT The step led's are repurposed here to have the current track rotation
-               // represented by a blinking led. The leftmost LED blinking means rotation is off (0)
-               // and each one represents a different rotation
-               led_setBlinkLed((uint8_t) (LED_STEP1 + parameter_values[PAR_TRACK_ROTATION]), 1);
-               led_setBlinkLed((uint8_t) (LED_PART_SELECT1 + menu_getViewedPattern()),	1);
-               led_setBlinkLed((uint8_t)(LED_VOICE1 + menu_getActiveVoice()) ,1);
-            }
-            break;
-               
-            case SELECT_MODE_PAT_GEN:
-            {
-               //blink selected pattern LED
-               menu_switchPage(PATTERN_SETTINGS_PAGE);
-               led_clearSelectLeds();
-               led_clearAllBlinkLeds();
-               led_setBlinkLed(LED_MODE2, 1);
-               // --AS todo taking the below out while in perf mode so I can see if the above works. Not sure if the below is needed, since
-               // at this stage the shift button is held
-               //the pattern change update for the follow mode is not made immediately when the pattern options are active
-               //so we have to do it here
-               if (parameter_values[PAR_FOLLOW]) {
-                  menu_setShownPattern(menu_shownPattern);
-                  led_clearSequencerLeds();
-                  //query current sequencer step states and light up the corresponding leds
-                  uint8_t trackNr = menu_getActiveVoice(); //max 6 => 0x6 = 0b110
-                  uint8_t patternNr = menu_getViewedPattern(); //max 7 => 0x07 = 0b111
-                  uint8_t value = (uint8_t) ((trackNr << 4) | (patternNr & 0x7));
-                  frontPanel_sendData(LED_CC, LED_QUERY_SEQ_TRACK, value);
-                  frontPanel_sendData(SEQ_CC, SEQ_REQUEST_PATTERN_PARAMS,
-                  frontParser_midiMsg.data2);
-
-               }
-            
-               led_setBlinkLed((uint8_t) (LED_PART_SELECT1 + menu_getViewedPattern()),	1);
-            }
-            break;
-         
-            case SELECT_MODE_STEP:
-               buttonHandler_leaveSeqModeStepMode();
-               led_clearAllBlinkLeds();
-               frontPanel_updatePatternLeds();
-               break;
-            default:
-               break;
-         }
-      
-         //show muted voices if pressed
-         buttonHandler_showMuteLEDs();
-         }
-      
+         buttonHandler_handleShift(1);
          break;
       default:
          break;
    }
+}
+//--------------------------------------------------------
+void buttonHandler_handleShift(uint8_t isDown)
+{
+   if(isDown)
+   {
+   
+   /* while this button is pressed, the SEQUENCER mode is activated
+    -> change display to show selected step options (volume, probability, note etc...)
+    -> seq buttons select step
+    -> selected step is illuminated on the seq buttons
+    -> select buttons show 8 sub steps for the selected step
+   
+    ->shows muted steps on voice leds while pressed
+    */
+      shiftState=!(shiftMode&shiftState);
+      if (shiftState)
+      {
+         led_setValue(1, LED_SHIFT);
+         switch(buttonHandler_stateMemory.selectButtonMode) {
+         case SELECT_MODE_VOICE:
+            if ((menu_activePage<=VOICE7_PAGE)&&(editModeActive))
+               menu_repaintAll();
+            else
+               menu_shiftVoice(1); // display step params and substeps while shift held
+            break;
+         case SELECT_MODE_PERF:
+         {
+            menu_shiftPerf(1);
+         }
+         break;
+            
+         case SELECT_MODE_PAT_GEN:
+            menu_shiftPatgen(1);
+         break;
+      
+         case SELECT_MODE_STEP:
+            menu_shiftStep(1);
+            break;
+         default:
+            break;
+      }
+   
+      //show muted voices if pressed
+      buttonHandler_showMuteLEDs();
+      }
+   } // end if isDown
+   else
+   { // button release actions
+      shiftState=(shiftMode&shiftState);
+      if (!shiftState)
+      {
+         if(buttonHandler_stateMemory.seqErasing) 
+         {
+         // --AS **RECORD if we are in erase mode, exit that mode
+            buttonHandler_stateMemory.seqErasing=0;
+            frontPanel_sendData(SEQ_CC, SEQ_ERASE_ON_OFF,
+               	buttonHandler_stateMemory.seqErasing);
+         }
+         
+         if (copyClear_Mode == MODE_CLEAR) 
+         {
+            copyClear_armClearMenu(0);
+            copyClear_Mode = MODE_NONE;
+         }
+         led_setValue(0, LED_SHIFT);
+         
+         switch(buttonHandler_stateMemory.selectButtonMode) 
+         {
+            case SELECT_MODE_VOICE:
+               if ((menu_activePage<=VOICE7_PAGE)&&(editModeActive))
+                  menu_repaintAll();
+               else
+                  menu_shiftVoice(0);
+               break;
+            case SELECT_MODE_PERF:
+               menu_shiftPerf(0);
+               break;
+            case SELECT_MODE_PAT_GEN:
+               menu_shiftPatgen(0);
+               break;
+            case SELECT_MODE_STEP:
+               menu_shiftStep(0);
+               break;
+            default:
+               break;
+         }
+         
+         //show active voice if released
+         if (buttonHandler_stateMemory.selectButtonMode != SELECT_MODE_PERF) 
+         {
+            led_setActiveVoice(menu_getActiveVoice());
+         } 
+         else 
+         {
+         // --AS TODO this code is never reached (see return above) ???
+            buttonHandler_showMuteLEDs();
+         }
+      } // if !shiftstate
+   } // end button up actions
 }
 //--------------------------------------------------------
 void buttonHandler_buttonReleased(uint8_t buttonNr) {
@@ -1260,7 +1269,7 @@ void buttonHandler_buttonReleased(uint8_t buttonNr) {
                      if ((menu_activePage<=VOICE7_PAGE)&&(editModeActive))
                         menu_repaintAll();
                      else
-                        buttonHandler_leaveSeqMode();
+                        menu_enterVoiceMode();
                      break;
                   case SELECT_MODE_PAT_GEN:
                   //led_clearAllBlinkLeds();
@@ -1269,7 +1278,7 @@ void buttonHandler_buttonReleased(uint8_t buttonNr) {
                      menu_switchPage(EUKLID_PAGE);
                      break;
                   case SELECT_MODE_STEP:
-                     buttonHandler_enterSeqModeStepMode();
+                     menu_enterStepMode();
                      break;
                   default:
                      break;
@@ -1279,58 +1288,23 @@ void buttonHandler_buttonReleased(uint8_t buttonNr) {
          break;
    
       case BUT_SHIFT: // when this button is released, revert back to normal operating mode
-        shiftState=(shiftMode&shiftState);
-        if (!shiftState)
-        {
-         if(buttonHandler_stateMemory.seqErasing) {
-         // --AS **RECORD if we are in erase mode, exit that mode
-            buttonHandler_stateMemory.seqErasing=0;
-            frontPanel_sendData(SEQ_CC, SEQ_ERASE_ON_OFF,
-               	buttonHandler_stateMemory.seqErasing);
-         }
-      
-         if (copyClear_Mode == MODE_CLEAR) {
-            copyClear_armClearMenu(0);
-            copyClear_Mode = MODE_NONE;
-         }
-         led_setValue(0, LED_SHIFT);
-      
-         switch(buttonHandler_stateMemory.selectButtonMode) {
-            case SELECT_MODE_VOICE:
-               if ((menu_activePage<=VOICE7_PAGE)&&(editModeActive))
-                  menu_repaintAll();
-               else
-                  buttonHandler_leaveSeqMode();
-               break;
-            case SELECT_MODE_PERF:
-               led_clearAllBlinkLeds();
-               led_clearSelectLeds();
-               menu_switchPage(PERFORMANCE_PAGE);
-               led_initPerformanceLeds();
-               return;
-            case SELECT_MODE_PAT_GEN:
-            //led_clearAllBlinkLeds();
-               led_clearSelectLeds();
-               led_setValue(1,	(uint8_t) (menu_getViewedPattern() + LED_PART_SELECT1));
-               menu_switchPage(EUKLID_PAGE);
-               break;
-            case SELECT_MODE_STEP:
-               buttonHandler_enterSeqModeStepMode();
-               break;
-            default:
-               break;
-         }
-      
-      //show active voice if released
-         if (buttonHandler_stateMemory.selectButtonMode != SELECT_MODE_PERF) {
-            led_setActiveVoice(menu_getActiveVoice());
-         } 
-         else {
-         // --AS TODO this code is never reached (see return above) ???
-            buttonHandler_showMuteLEDs();
-         }
-      }
+         buttonHandler_handleShift(0);
          break;
+      case BUT_REC:
+         if(buttonHandler_recArmed)
+         {
+            // record held - write transpose action
+            led_setBlinkLed(LED_REC, 0);
+            frontPanel_sendData(SEQ_CC, SEQ_TRANSPOSE_ON_OFF,0x0f);    
+            
+            // reset the record button
+            buttonHandler_stateMemory.seqRecording = 0;
+            led_setValue(0, LED_REC);
+            //send run/stop command sequencer
+            frontPanel_sendData(SEQ_CC, SEQ_REC_ON_OFF,0);  
+         }
+         buttonHandler_recDown=0;  
+         buttonHandler_recArmed=0; 
       default:
          break;
    }

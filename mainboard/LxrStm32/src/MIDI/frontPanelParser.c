@@ -1041,7 +1041,10 @@ static void frontParser_handleSeqCC()
          seq_transpose_voiceAmount[frontParser_activeTrack]=frontParser_midiMsg.data2;
       break;
       case FRONT_SEQ_TRANSPOSE_ON_OFF:
-         seq_transposeOnOff = frontParser_midiMsg.data2;
+         if (frontParser_midiMsg.data2==0x0f)
+            seq_writeTranspose();
+         else if (frontParser_midiMsg.data2<=1)
+            seq_transposeOnOff = frontParser_midiMsg.data2;
       break;
    
       case FRONT_SEQ_ROLL_ON_OFF:
@@ -1165,7 +1168,8 @@ static void frontParser_handleSeqCC()
          break;
          
       case FRONT_SEQ_SET_LOOP:
-         seq_setLoop(frontParser_midiMsg.data2);   
+         seq_setLoop(frontParser_midiMsg.data2);
+         break;
    
       default:
          break;

@@ -50,6 +50,7 @@ enum KitType
 extern uint8_t menu_currentPresetNr[NUM_PRESET_LOCATIONS];
 void menu_setShownPattern(uint8_t patternNr);
 void menu_resetSubPage();
+void menu_gotoSubPage(uint8_t subPage);
 uint8_t menu_getViewedPattern();
 
 
@@ -604,6 +605,8 @@ extern const ModTargetVoiceOffset PROGMEM modTargetVoiceOffsets[6];
 // It is calculated at runtime TODO move this to progmem sometime
 extern uint8_t paramToModTarget[END_OF_SOUND_PARAMETERS];
 
+extern uint8_t menu_selectedStepLed;
+
 //-----------------------------------------------------------------
 /** forces a complete repaint of the display*/
 void menu_repaintAll();
@@ -613,6 +616,22 @@ void menu_repaint();
 //-----------------------------------------------------------------
 //number of user samples in flash
 void menu_setNumSamples(uint8_t num);
+//-----------------------------------------------------------------
+void menu_enterVoiceMode();
+//-----------------------------------------------------------------
+void menu_enterPerfMode();
+//-----------------------------------------------------------------
+void menu_enterStepMode();
+//-----------------------------------------------------------------
+void menu_enterPatgenMode();
+//-----------------------------------------------------------------
+void menu_shiftVoice(uint8_t shift);
+//-----------------------------------------------------------------
+void menu_shiftPerf(uint8_t shift);
+//-----------------------------------------------------------------
+void menu_shiftStep(uint8_t shift);
+//-----------------------------------------------------------------
+void menu_shiftPatgen(uint8_t shift);
 //-----------------------------------------------------------------
 /**set all save state parameters to 0*/
 void menu_resetSaveParameters();

@@ -277,6 +277,8 @@ void seq_setActiveAutomationTrack(uint8_t trackNr);
 //------------------------------------------------------------------------------
 void seq_recordAutomation(uint8_t voice, uint8_t dest, uint8_t value);
 //------------------------------------------------------------------------------
+void seq_writeTranspose();
+//------------------------------------------------------------------------------
 int8_t seq_quantize(int8_t step, uint8_t track);
 //------------------------------------------------------------------------------
 //uint8_t seq_isNextStepSyncStep();

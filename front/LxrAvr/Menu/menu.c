@@ -594,29 +594,12 @@ static uint8_t parameterFetch = 0b00011111;	/**< the lower 4 bits define a lock 
 uint8_t parameter_values[NUM_PARAMS];
 uint8_t parameter_values_temp[END_OF_SOUND_PARAMETERS];
 uint8_t parameters2[END_OF_SOUND_PARAMETERS];/**< a second array for sound x-fade to another preset*/
-//-----------------------------------------------------------------
 
-void menu_setShownPattern(uint8_t patternNr)
-{
-	menu_shownPattern = patternNr;
-	frontPanel_sendData(SEQ_CC,SEQ_SET_SHOWN_PATTERN,menu_shownPattern);
-}
+uint8_t menu_lastVoiceIndex=0;
+uint8_t menu_lastPerfIndex=0;
 
-uint8_t menu_getViewedPattern()
-{
-	return menu_shownPattern;
-}
-
-
-//lock all 4 potentiometer values
-void lockPotentiometerFetch()
-{
-	if(parameterFetch & PARAMETER_LOCK_ACTIVE)
-	{
-		//all 4 parameters locked
-		parameterFetch |= 0x0F;
-	}	
-}
+uint8_t menu_lastStepSubPage=0;
+uint8_t menu_selectedStepLed=LED_STEP1;
 
 //-----------------------------------------------------------------
 void menu_init()
@@ -653,14 +636,17 @@ void menu_init()
 	// but then the global data loaded from glo.cfg seemed like it was not being sent to the back.
 	// need to figure out why as it's likely to crop up again at some point.
 
-	//set voice 1 active
-	menu_switchPage(0);
+
 	frontPanel_sendData(SEQ_CC,SEQ_SET_ACTIVE_TRACK,0);
 	//the currently active button is lit
 	led_setActiveVoice(0);
 
 	//display start menu page
 	menu_repaintAll();
+   //set voice 1 active
+	menu_switchPage(0);
+   menu_switchSubPage(0);
+   led_setActiveSelectButton(0);
 }
 //-----------------------------------------------------------------
 /** compare the currentDisplayBuffer with the editDisplayBuffer and send all differences to the display*/
@@ -698,6 +684,175 @@ void sendDisplayBuffer()
 	lcd_setcursor((uint8_t)(visibleCursor >> 2), (uint8_t)(((visibleCursor & 2) >> 1)+1));
 	lcd_turnOn(1,(visibleCursor & 1));
 
+}
+//-----------------------------------------------------------------
+void menu_enterVoiceMode()
+{
+   //set menu to voice page mode
+   //uint8_t pageNr=menu_getActiveVoice();
+	//uint8_t paramNr=menu_lastVoiceParameter;
+   //menu_switchSubPage(menu_lastVoiceSubPage);
+   menuIndex = menu_lastVoiceIndex;
+   menu_switchPage(menu_getActiveVoice());
+	led_setActiveSelectButton(menu_getSubPage());
+	//menu_resetActiveParameter();
+   if(shiftState)
+      menu_shiftVoice(1);
+   
+}
+//-----------------------------------------------------------------
+void menu_enterPerfMode()
+{
+	led_clearSequencerLeds();
+	led_clearSelectLeds();
+	led_initPerformanceLeds();
+
+	//set menu to perf page
+   menuIndex=menu_lastPerfIndex;   
+   menu_switchPage(PERFORMANCE_PAGE);
+	menu_repaintAll();   
+}
+//-----------------------------------------------------------------
+void menu_enterStepMode()
+{
+	menu_switchPage(SEQ_PAGE);   
+   menu_resetSubPage();
+	frontPanel_updatePatternLeds();
+	led_setBlinkLed(menu_selectedStepLed, 1);
+   menu_repaint();
+   if(shiftState)
+      menu_shiftStep(1);
+}
+//-----------------------------------------------------------------
+void menu_enterPatgenMode()
+{
+   // bc todo - disonnect this action from button handlers
+}
+//-----------------------------------------------------------------
+void menu_shiftVoice(uint8_t shift)
+{
+   if(shift)
+   {
+      
+      menu_switchPage(SEQ_PAGE);
+      menu_switchSubPage(0);
+      
+      frontPanel_updatePatternLeds();
+   
+      led_setBlinkLed(menu_selectedStepLed, 1);
+   }
+   else
+   {
+      menu_enterVoiceMode();
+   }
+}
+//-----------------------------------------------------------------
+void menu_shiftPerf(uint8_t shift)
+{
+   if(shift)
+   {
+      //blink selected pattern LED
+      menu_switchPage(PATTERN_SETTINGS_PAGE);
+      led_clearSelectLeds();
+      led_clearAllBlinkLeds();
+      //**PATROT The step led's are repurposed here to have the current track rotation
+      // represented by a blinking led. The leftmost LED blinking means rotation is off (0)
+      // and each one represents a different rotation
+      led_setBlinkLed((uint8_t) (LED_STEP1 + parameter_values[PAR_TRACK_ROTATION]), 1);
+      led_setBlinkLed((uint8_t) (LED_PART_SELECT1 + menu_getViewedPattern()),	1);
+      led_setBlinkLed((uint8_t)(LED_VOICE1 + menu_getActiveVoice()) ,1);
+   }
+   else
+   {
+      led_clearAllBlinkLeds();
+      led_clearSelectLeds();
+      menu_switchPage(PERFORMANCE_PAGE);
+      led_initPerformanceLeds();
+   }
+}
+//-----------------------------------------------------------------
+void menu_shiftStep(uint8_t shift)
+{
+   if(shift)
+   {
+      led_setBlinkLed(menu_selectedStepLed, 0);
+      led_setValue(0, menu_selectedStepLed);
+      
+      led_clearAllBlinkLeds();
+      frontPanel_updatePatternLeds();
+   }
+   else
+   {
+   
+      //menu_switchSubPage(0);
+	   menu_switchPage(SEQ_PAGE);
+
+	   frontPanel_updatePatternLeds();
+
+	   led_setBlinkLed(menu_selectedStepLed, 1);
+   
+   }
+   
+}
+//-----------------------------------------------------------------
+void menu_shiftPatgen(uint8_t shift)
+{
+   if(shift)
+   {
+      //blink selected pattern LED
+      menu_switchPage(PATTERN_SETTINGS_PAGE);
+      led_clearSelectLeds();
+      led_clearAllBlinkLeds();
+      led_setBlinkLed(LED_MODE2, 1);
+      // --AS todo taking the below out while in perf mode so I can see if the above works. Not sure if the below is needed, since
+      // at this stage the shift button is held
+      //the pattern change update for the follow mode is not made immediately when the pattern options are active
+      //so we have to do it here
+      if (parameter_values[PAR_FOLLOW]) 
+      {
+         menu_setShownPattern(menu_shownPattern);
+         led_clearSequencerLeds();
+         //query current sequencer step states and light up the corresponding leds
+         uint8_t trackNr = menu_getActiveVoice(); //max 6 => 0x6 = 0b110
+         uint8_t patternNr = menu_getViewedPattern(); //max 7 => 0x07 = 0b111
+         uint8_t value = (uint8_t) ((trackNr << 4) | (patternNr & 0x7));
+         frontPanel_sendData(LED_CC, LED_QUERY_SEQ_TRACK, value);
+         frontPanel_sendData(SEQ_CC, SEQ_REQUEST_PATTERN_PARAMS,
+         frontParser_midiMsg.data2);
+   
+      }
+   
+      led_setBlinkLed((uint8_t) (LED_PART_SELECT1 + menu_getViewedPattern()),	1);
+   }
+   else
+   {
+      led_clearSelectLeds();
+      menu_switchPage(EUKLID_PAGE);
+      led_initPerformanceLeds();
+      led_setValue(1,	(uint8_t) (menu_getViewedPattern() + LED_PART_SELECT1));
+   }
+}
+//-----------------------------------------------------------------
+void menu_setShownPattern(uint8_t patternNr)
+{
+	menu_shownPattern = patternNr;
+	frontPanel_sendData(SEQ_CC,SEQ_SET_SHOWN_PATTERN,menu_shownPattern);
+}
+//-----------------------------------------------------------------
+uint8_t menu_getViewedPattern()
+{
+	return menu_shownPattern;
+}
+//-----------------------------------------------------------------
+
+//lock all 4 potentiometer values
+void lockPotentiometerFetch()
+{
+	if(parameterFetch & PARAMETER_LOCK_ACTIVE)
+	{
+		//all 4 parameters locked
+		parameterFetch |= 0x0F;
+	}	
 }
 //-----------------------------------------------------------------
 void menu_repaintAll()
@@ -2443,7 +2598,6 @@ static void menu_encoderChangeParameter(int8_t inc)
    }
 	else // non sound parameters (ie current step data, etc)
 		menu_parseGlobalParam(paramNr,parameter_values[paramNr]);
-
 	//frontPanel_sendData(0xb0,paramNr,*paramValue);
 }
 
@@ -2783,6 +2937,12 @@ checkvalid:
 	menuIndex = (uint8_t)( (activePage << PAGE_SHIFT) | activeParameter);
 	if(needLock)
 		lockPotentiometerFetch();
+      
+   if(menu_activePage<=VOICE7_PAGE)
+      menu_lastVoiceIndex=menuIndex;
+   else if(menu_activePage==PERFORMANCE_PAGE)
+      menu_lastPerfIndex=menuIndex;
+  
 }
 
 //-----------------------------------------------------------------
@@ -2814,6 +2974,13 @@ void menu_resetSubPage() // forces menu to first sub-page, disregarding toggle
    menuIndex = 0;
 }
 //-----------------------------------------------------------------
+void menu_gotoSubPage(uint8_t subPage) // forces menu to first sub-page, disregarding toggle
+{
+   uint8_t activeParameter	= menuIndex & MASK_PARAMETER;
+	uint8_t activePage = subPage;
+   menuIndex = (uint8_t)( (activePage << PAGE_SHIFT) | activeParameter);
+}
+//-----------------------------------------------------------------
 // switches us to a different menu sub page. If that page is already active
 // and has multiple screens, will toggle to the other screen
 // if its the global menu, and there are multiple pages will toggle to the next page
@@ -2828,42 +2995,93 @@ void menu_switchSubPage(uint8_t subPageNr)
 	//get current position
 	uint8_t activeParameter	= menuIndex & MASK_PARAMETER;
 	uint8_t activePage		= (menuIndex&MASK_PAGE)>>PAGE_SHIFT;
+   
+   if (menu_activePage<=VOICE7_PAGE) // on a voice menu page
+   {
+      if(subPageNr == activePage)
+      {
+         if(activeParameter < 4) 
+         {
+   			// toggle to next if possible
+   			if(has2ndPage(activePage))
+   				activeParameter=4;
+         }
+         else
+            activeParameter=0;
+      }
+      else
+      {
+         activePage=subPageNr;
+         activeParameter=0;
+      }  
 
-	if(subPageNr == activePage) { // toggle only
-		// we are toggling to next screen, or back to first
-		if(activeParameter < 4) {
-			// toggle to next if possible
-			if(has2ndPage(activePage))
-				activeParameter=4;
-			else if(menu_activePage==MENU_MIDI_PAGE) { // special case for global - wrap around to first
-				activePage=0;
-				activeParameter=0;
-			}
-		} else { // we are on 2nd screen
+      menuIndex = (uint8_t)( (activePage << PAGE_SHIFT) | activeParameter);
+      menu_lastVoiceIndex=menuIndex;
+   }
+   else if (menu_activePage==MENU_MIDI_PAGE)
+   {
+      if(subPageNr == activePage) 
+      { // in global mode, we move to next page if possible (or wrap to first)
+         if(activeParameter<4)
+         {
+            if(pgm_read_byte(&menuPages[menu_activePage][activePage].top5) != TEXT_EMPTY) 
+               activeParameter=4;
+            else
+               activePage=0;   
+         }   
+         else
+         {  
+   		   if(pgm_read_byte(&menuPages[menu_activePage][activePage].top1) != TEXT_EMPTY) 
+            {
+   				activePage=(uint8_t)((activePage+1)%8);
+   			} 
+            else 
+            {
+   				activePage=0;
+   			}
+            activeParameter=0;
+         }
+      }
+      menuIndex = (uint8_t)( (activePage << PAGE_SHIFT) | activeParameter);
+   }
+   else if (menu_activePage==PERFORMANCE_PAGE)
+   {
+      if(subPageNr == activePage)
+      {
+         if(activeParameter < 4)
+            activeParameter=4;
+         else
+            activeParameter=0;
+      }
+      else
+      {
+         activePage=subPageNr;
+         activeParameter=0;
+      }   
+         
+      menuIndex = (uint8_t)( (activePage << PAGE_SHIFT) | activeParameter);
+      menu_lastPerfIndex=menuIndex;
+   }
+   else if (menu_activePage==SEQ_PAGE)
+   {
+      if(subPageNr == activePage)
+      {
+         if(activeParameter < 4)
+            activeParameter=4;
+         else
+            activeParameter=0;
+      }
+      else
+      {
+         activePage=subPageNr;
+         activeParameter=0;
+      }   
+         
+      menuIndex = (uint8_t)( (activePage << PAGE_SHIFT) | activeParameter);
+   }
+   
+   
 
-			if(menu_activePage==MENU_MIDI_PAGE){
-				// in global mode, we move to next page if possible (or wrap to first)
-				if(activePage < NUM_SUB_PAGES-1 &&
-				   pgm_read_byte(&menuPages[menu_activePage][activePage+1].top1) != TEXT_EMPTY) {
-					activePage++;
-				} else {
-					activePage=0;
-				}
-			}
-			activeParameter=0;
-		}
-	} 
-   else 
-   { // move to different sub page
-		// we are moving to a different (specific) subpage
-		activePage=subPageNr;
-		if(activeParameter > 3 && has2ndPage(activePage))
-			activeParameter = 4;
-		else
-			activeParameter = 0;
-	}
-
-	menuIndex = (uint8_t)( (activePage << PAGE_SHIFT) | activeParameter);
 }
 
 //-----------------------------------------------------------------
