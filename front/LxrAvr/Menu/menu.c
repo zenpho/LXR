@@ -626,6 +626,7 @@ void menu_init()
    parameter_values[PAR_ROLL_MODE] = 4; //0=trig, 1=nte, 2=vel, 3=bth, 4=all
    parameter_values[PAR_TRANSPOSE] = 63;
    parameter_values[PAR_TRANSPOSE_ON_OFF] = 0;
+   parameter_values[PAR_ACTIVE_STEP] = 0;
    
 	//frontPanel_sendData(SEQ_CC,SEQ_ROLL_RATE,8); //value is initialized in cortex firmware
 
@@ -692,6 +693,7 @@ void menu_enterVoiceMode()
    //uint8_t pageNr=menu_getActiveVoice();
 	//uint8_t paramNr=menu_lastVoiceParameter;
    //menu_switchSubPage(menu_lastVoiceSubPage);
+   led_clearAllBlinkLeds();
    menuIndex = menu_lastVoiceIndex;
    menu_switchPage(menu_getActiveVoice());
 	led_setActiveSelectButton(menu_getSubPage());
@@ -735,11 +737,12 @@ void menu_shiftVoice(uint8_t shift)
    {
       
       menu_switchPage(SEQ_PAGE);
-      menu_switchSubPage(0);
+      menu_resetSubPage(0);
       
       frontPanel_updatePatternLeds();
    
       led_setBlinkLed(menu_selectedStepLed, 1);
+      menu_repaint();
    }
    else
    {

@@ -291,8 +291,9 @@ static void buttonHandler_handleModeButtons(uint8_t mode) {
 
 	switch (buttonHandler_stateMemory.selectButtonMode) 
    {
-      case SELECT_MODE_VOICE:
       case SELECT_MODE_VOICE2:
+         buttonHandler_stateMemory.selectButtonMode = (uint8_t) (mode & 0x07); // no voice2 mode yet
+      case SELECT_MODE_VOICE:
    		menu_enterVoiceMode();
    		break;
          
@@ -305,9 +306,10 @@ static void buttonHandler_handleModeButtons(uint8_t mode) {
          else
             menu_enterPerfMode();   
    		break;
-   
-   	case SELECT_MODE_STEP:
+      
       case SELECT_MODE_STEP2:
+         buttonHandler_stateMemory.selectButtonMode = (uint8_t) (mode & 0x07); // no step2 mode yet
+   	case SELECT_MODE_STEP:
          menu_enterStepMode();
    		break;
          
@@ -1137,21 +1139,14 @@ void buttonHandler_handleShift(uint8_t isDown)
 {
    if(isDown)
    {
-   
-   /* while this button is pressed, the SEQUENCER mode is activated
-    -> change display to show selected step options (volume, probability, note etc...)
-    -> seq buttons select step
-    -> selected step is illuminated on the seq buttons
-    -> select buttons show 8 sub steps for the selected step
-   
-    ->shows muted steps on voice leds while pressed
-    */
       shiftState=!(shiftMode&shiftState);
       if (shiftState)
       {
          led_setValue(1, LED_SHIFT);
-         switch(buttonHandler_stateMemory.selectButtonMode) {
+         switch(buttonHandler_stateMemory.selectButtonMode) 
+         {
          case SELECT_MODE_VOICE:
+         case SELECT_MODE_VOICE2:
             if ((menu_activePage<=VOICE7_PAGE)&&(editModeActive))
                menu_repaintAll();
             else
@@ -1168,6 +1163,7 @@ void buttonHandler_handleShift(uint8_t isDown)
          break;
       
          case SELECT_MODE_STEP:
+         case SELECT_MODE_STEP2:
             menu_shiftStep(1);
             break;
          default:
@@ -1201,6 +1197,7 @@ void buttonHandler_handleShift(uint8_t isDown)
          switch(buttonHandler_stateMemory.selectButtonMode) 
          {
             case SELECT_MODE_VOICE:
+            case SELECT_MODE_VOICE2:
                if ((menu_activePage<=VOICE7_PAGE)&&(editModeActive))
                   menu_repaintAll();
                else
@@ -1213,6 +1210,7 @@ void buttonHandler_handleShift(uint8_t isDown)
                menu_shiftPatgen(0);
                break;
             case SELECT_MODE_STEP:
+            case SELECT_MODE_STEP2:
                menu_shiftStep(0);
                break;
             default:
