@@ -793,7 +793,7 @@ static void seq_nextStep()
                   //thus every sub step block has only one random value to compare against
                   //allows randomisation of rolls by chance
                   
-                  if((stepAcPtr[NUM_TRACKS] & 0x07) == 0x00) //every 8th step
+                  if((stepAcPtr[i] & 0x07) == 0x00) //every 8th step
                   {
                      seq_rndValue[i] = GetRngValue()&0x7f;
                   }
