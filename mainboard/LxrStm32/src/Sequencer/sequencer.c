@@ -1635,19 +1635,13 @@ void seq_addNote(uint8_t trackNr,uint8_t vel, uint8_t note)
 	//only record notes when seq is running and recording
    if(seq_running && seq_recordActive)
    {
-      const int8_t unquantizedStep = seq_stepIndex[trackNr];
-      int8_t quantizedStep;
-      if (vel)
-      {
-         quantizedStep = seq_quantize(unquantizedStep, trackNr);
-      }
-      else
-      {
-         quantizedStep = unquantizedStep;
-      }
+      int8_t unquantizedStep = seq_stepIndex[trackNr];
+      int8_t quantizedStep = seq_quantize(unquantizedStep, trackNr);
+
    
    	// --AS **RECORD fix for recording across patterns
-      if(quantizedStep==0 && seq_stepIndex[trackNr] > (NUM_STEPS/2)) {
+      if(quantizedStep==0 && seq_stepIndex[trackNr] > (NUM_STEPS/2)) 
+      {
       	// this means that we hit a note in 2nd half of the bar and quantization pushed
       	// the note to position 0 of the next bar.
       	// need to see if there is about to be a pattern change so that the note
@@ -1669,15 +1663,15 @@ void seq_addNote(uint8_t trackNr,uint8_t vel, uint8_t note)
       }
    
    	//set the current step in the requested track active
-      if (vel)
-         stepPtr=&seq_patternSet.seq_subStepPattern[targetPattern][trackNr][quantizedStep];
+      if (vel==0)
+         stepPtr=&seq_patternSet.seq_subStepPattern[targetPattern][trackNr][unquantizedStep];
       else
          stepPtr=&seq_patternSet.seq_subStepPattern[targetPattern][trackNr][quantizedStep];
       
 
       stepPtr->note 		= note;				// note (--AS was SEQ_DEFAULT_NOTE)
 
-      stepPtr->volume		= vel;				// new velocity
+      stepPtr->volume	= vel;				// new velocity
       stepPtr->prob		= 127;				// 100% probability
       stepPtr->volume 	|= STEP_ACTIVE_MASK;
    
