@@ -69,6 +69,7 @@ uint8_t seq_rollState = 0;					/**< each bit represents a voice. if bit is set, 
 uint8_t seq_rollMode = ROLL_MODE_ALL;        //0=trig, 1=nte, 2=vel, 3=bth, 4=all                                      
 uint8_t seq_rollCounter[NUM_TRACKS];       // runs a counter for every roll trigger
 uint8_t seq_kitResetFlag=0;
+uint8_t seq_skipFirstRoll=0;
 
 uint8_t seq_loopLength=0;
 uint8_t seq_pendingLoopLength=0;
@@ -1409,7 +1410,8 @@ uint8_t seq_setRoll(uint8_t voice, uint8_t onOff)// called processing step if ro
       else // less than halfway through the quant. trigger now and load counter as if triggered on last quant.
       {
          seq_rollCounter[voice] = seq_rollRate-quantPosition-1;
-         triggered = seq_rollTrig(voice);
+         if(!seq_skipFirstRoll)
+            triggered = seq_rollTrig(voice);
       }
       seq_rollState |= (1<<voice);
       return triggered;

@@ -350,6 +350,7 @@ const char shortNames[][4] PROGMEM  =
    {"pci"}, // pattern change time is bar or step
    {"stg"}, // shift is toggle instead of momentary
    {"b2p"}, // bank changes change perfs
+   {"sfr"}, // skip first roll
    {"mrv"}, // morph individual voice
 
    {"mac"}, // TEXT_MAC1,
@@ -491,6 +492,7 @@ const char longNames[][16] PROGMEM =
    {"PCInstnt" }, // pattern change occurs on bar or step
    {"ShiftTog" }, // shift is toggle instead of momentary
    {"BnkToPrf" }, // Bank changes change perfs
+   {"Skp1Roll"}, // skip first roll
    {"MrphVoice" }, // individual voice morph
    {"Amount"  }, // TEXT_MAC1,
    {"Amount"  }, // TEXT_MAC2,

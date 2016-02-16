@@ -75,6 +75,8 @@ enum Seq_RollModeEnum //0=trig, 1=nte, 2=vel, 3=bth, 4=all
    ROLL_MODE_VELOCITY,
    ROLL_MODE_BOTH,
    ROLL_MODE_ALL,
+   ROLL_MODE_FIRST_ON,
+   ROLL_MODE_FIRST_OFF,
 };
 
 enum Seq_QuantisationEnum
@@ -155,6 +157,7 @@ extern uint8_t seq_rollMode;
 extern uint8_t seq_rollNote;
 extern uint8_t seq_rollVelocity;
 extern uint8_t seq_kitResetFlag;
+extern uint8_t seq_skipFirstRoll;
 
 extern uint8_t seq_vMorphAmount[6];
 extern uint8_t seq_vMorphFlag;
