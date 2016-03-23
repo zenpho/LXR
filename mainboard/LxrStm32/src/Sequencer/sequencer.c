@@ -639,20 +639,33 @@ static void seq_nextStep()
       {
          if(seq_resetBarOnPatternChange)
             seq_barCounter=0;
-      	
-         seq_loadPendigFlag = 0;
+
       	//first check if 2 new pattern is available
          if(seq_newPatternAvailable)
          {
             seq_newPatternAvailable = 0;
             seq_activateTmpPattern();
          }
-      
+         
          seq_activePattern = seq_pendingPattern&0x07;
-         uint8_t i;
-         for (i=0;i<NUM_TRACKS;i++)
+         if (seq_loadPendigFlag)
          {
-            seq_perTrackActivePattern[i]=seq_perTrackPendingPattern[i]&0x07;
+            // manual switching - button switch sets all per track pending
+            for (i=0;i<NUM_TRACKS;i++)
+            {
+   
+               seq_perTrackActivePattern[i]=seq_perTrackPendingPattern[i]&0x07;
+            }
+         }
+         else
+         {
+            // next pat switching - load pending pattern to per tracks
+            for (i=0;i<NUM_TRACKS;i++)
+            {
+   
+               seq_perTrackActivePattern[i]=seq_pendingPattern&0x07;
+            }
+         
          }
       
       	//reset pattern position to pattern rotate starting position for the active pattern --AS **PATROT
@@ -676,6 +689,8 @@ static void seq_nextStep()
          uart_sendFrontpanelByte(FRONT_SEQ_CHANGE_PAT);
          uart_sendFrontpanelByte(seq_activePattern|(seq_kitResetFlag<<3));
          seq_kitResetFlag=0;
+         
+         seq_loadPendigFlag = 0;
       }
    }
 

@@ -690,6 +690,7 @@ static void buttonHandler_seqButtonPressed(uint8_t seqButtonPressed)
                if(buttonHandler_seqLoopLength)
                   frontPanel_sendData(SEQ_CC, SEQ_SET_LOOP,(uint8_t) (buttonHandler_seqLoopLength));
             }
+            led_setValue(1, ledNr);
             break;
       
       	//--- unused (maybe lfo clock sync? ---
@@ -788,6 +789,7 @@ static void buttonHandler_seqButtonReleased(uint8_t seqButtonPressed)
                buttonHandler_seqLoopLength=0;
                frontPanel_sendData(SEQ_CC, SEQ_SET_LOOP,0);
             }   
+            led_setValue(0, ledNr);
          }
          break;
    

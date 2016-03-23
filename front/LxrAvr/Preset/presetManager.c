@@ -513,6 +513,22 @@ void preset_sendDrumsetParameters()
    }
 	// --AS todo will this morph (and fuck up) our modulation targets?
 	// send parameters (possibly combined with morph parameters) to back
+   
+   // bc: output dests aren't morphed anymore - they are need to be a special case
+   for(i=PAR_AUDIO_OUT1;i<PAR_KIT_VERSION;i++)
+   {
+
+      frontPanel_sendData(CC_2,(uint8_t)(i-128),parameter_values[i]);
+
+   }
+   
+   // send morph amounts as special cases
+   frontPanel_sendData(CC_2,(uint8_t)(PAR_MAC1_DST1_AMT-128),parameter_values[PAR_MAC1_DST1_AMT]);
+   frontPanel_sendData(CC_2,(uint8_t)(PAR_MAC1_DST2_AMT-128),parameter_values[PAR_MAC1_DST2_AMT]);
+   frontPanel_sendData(CC_2,(uint8_t)(PAR_MAC2_DST1_AMT-128),parameter_values[PAR_MAC2_DST1_AMT]);
+   frontPanel_sendData(CC_2,(uint8_t)(PAR_MAC2_DST2_AMT-128),parameter_values[PAR_MAC2_DST2_AMT]);
+
+   
    preset_morph(parameter_values[PAR_MORPH]);
 
 
