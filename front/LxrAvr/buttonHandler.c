@@ -1196,38 +1196,41 @@ void buttonHandler_handleShift(uint8_t isDown)
          }
          led_setValue(0, LED_SHIFT);
          
-         switch(buttonHandler_stateMemory.selectButtonMode) 
+         if (menu_activePage!=RECORDING_PAGE)
          {
-            case SELECT_MODE_VOICE:
-            case SELECT_MODE_VOICE2:
-               if ((menu_activePage<=VOICE7_PAGE)&&(editModeActive))
-                  menu_repaintAll();
-               else
-                  menu_shiftVoice(0);
-               break;
-            case SELECT_MODE_PERF:
-               menu_shiftPerf(0);
-               break;
-            case SELECT_MODE_PAT_GEN:
-               menu_shiftPatgen(0);
-               break;
-            case SELECT_MODE_STEP:
-            case SELECT_MODE_STEP2:
-               menu_shiftStep(0);
-               break;
-            default:
-               break;
-         }
-         
-         //show active voice if released
-         if (buttonHandler_stateMemory.selectButtonMode != SELECT_MODE_PERF) 
-         {
-            led_setActiveVoice(menu_getActiveVoice());
-         } 
-         else 
-         {
-         // --AS TODO this code is never reached (see return above) ???
-            buttonHandler_showMuteLEDs();
+            switch(buttonHandler_stateMemory.selectButtonMode) 
+            {
+               case SELECT_MODE_VOICE:
+               case SELECT_MODE_VOICE2:
+                  if ((menu_activePage<=VOICE7_PAGE)&&(editModeActive))
+                     menu_repaintAll();
+                  else
+                     menu_shiftVoice(0);
+                  break;
+               case SELECT_MODE_PERF:
+                  menu_shiftPerf(0);
+                  break;
+               case SELECT_MODE_PAT_GEN:
+                  menu_shiftPatgen(0);
+                  break;
+               case SELECT_MODE_STEP:
+               case SELECT_MODE_STEP2:
+                  menu_shiftStep(0);
+                  break;
+               default:
+                  break;
+            }
+            
+            //show active voice if released
+            if (buttonHandler_stateMemory.selectButtonMode != SELECT_MODE_PERF) 
+            {
+               led_setActiveVoice(menu_getActiveVoice());
+            } 
+            else 
+            {
+            // --AS TODO this code is never reached (see return above) ???
+               buttonHandler_showMuteLEDs();
+            }
          }
       } // if !shiftstate
    } // end button up actions

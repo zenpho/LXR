@@ -62,9 +62,11 @@ static uint8_t seq_prescaleCounter = 0;
 
 uint8_t seq_masterStepCnt=0;				/** keeps track of the played steps between 0 and 127 independent from the track counters*/
 uint8_t seq_rollRate = 8;				// start with roll rate = 1/16
+uint8_t seq_tempRate = 8;           // change roll on quant step, if avail
 uint8_t seq_rollNote = 63;             // note roll uses - start with Dsharp5
 uint8_t seq_rollVelocity = 100;
 uint8_t seq_rollTriggered = 0;         /**< eacn bit ... user has triggered a roll - process on step*/
+uint8_t seq_rollPlayedEarly = 0;       // roll triggered just after quant - play and note
 uint8_t seq_rollState = 0;					/**< each bit represents a voice. if bit is set, roll is active*/
 uint8_t seq_rollMode = ROLL_MODE_ALL;        //0=trig, 1=nte, 2=vel, 3=bth, 4=all                                      
 uint8_t seq_rollCounter[NUM_TRACKS];       // runs a counter for every roll trigger
@@ -80,7 +82,7 @@ int8_t seq_loopCurrentPosition=0;
 int8_t seq_loopStartStepPosition[NUM_TRACKS+1];
 int8_t seq_loopActiveStepPosition[NUM_TRACKS+1];
 
-uint8_t seq_loopUpdateFlag=0;
+int8_t seq_loopUpdateFlag=0;
 
 uint8_t seq_vMorphFlag=0;
 uint8_t seq_vMorphAmount[6];
@@ -125,6 +127,7 @@ uint8_t seq_selectedStep = 0;
 uint8_t seq_eraseActive=0;					/**RECORD will be 1 if live erasing the active voice  */
 
 uint8_t seq_quantisation = QUANT_16;
+uint8_t seq_stepsPerQuant = 8;
 
 
 
@@ -189,6 +192,7 @@ static uint8_t seq_intIsStepActive(uint8_t voice, uint8_t stepNr, uint8_t patter
 static uint8_t seq_intIsMainStepActive(uint8_t voice, uint8_t mainStepNr, uint8_t pattern);
 static void seq_resetNote(Step *step);
 static void seq_setStepIndexToStart();
+
 //------------------------------------------------------------------------------
 void seq_init()
 {
@@ -526,10 +530,10 @@ void seq_startLoop()
    
    for(i=0;i<NUM_TRACKS+1;i++)
    {
-      seq_loopStartStepPosition[i] = seq_quantize(seq_stepIndex[i],i)-1;
+      seq_loopStartStepPosition[i] = seq_stepIndex[i];
       seq_loopActiveStepPosition[i] = seq_stepIndex[i];
    }
-   seq_loopCurrentPosition=(seq_stepIndex[NUM_TRACKS]-seq_loopStartStepPosition[NUM_TRACKS]);
+   seq_loopCurrentPosition=0;
 }
 //------------------------------------------------------------------------------
 static void seq_nextStep()
@@ -537,8 +541,10 @@ static void seq_nextStep()
    int i;
    if(!seq_running)
       return;
-      
-   if(seq_loopUpdateFlag)
+   if(
+      seq_loopUpdateFlag==1 && // flag to loop - must also have either no quant or this is quant step 
+      ( !( (seq_stepIndex[NUM_TRACKS]+1)%seq_stepsPerQuant)  )
+      )
    {
       seq_startLoop();
       seq_loopUpdateFlag=0;
@@ -712,6 +718,22 @@ static void seq_nextStep()
       uart_sendFrontpanelByte(FRONT_LED_PULSE_BEAT);
       uart_sendFrontpanelByte(0);
    }
+
+   //---------- now check if this is a quantize step ---------------------------------------------------------
+   if (!(seq_stepIndex[NUM_TRACKS]%seq_stepsPerQuant))
+   {
+      if (seq_rollRate != seq_tempRate) // roll rate change - queue all rolls on quant step and update
+      {
+         for(i=0;i<NUM_TRACKS;i++)
+         {
+            if (seq_rollState & (1<<i))
+               seq_rollCounter[i] = 0;      
+         }
+         seq_rollRate = seq_tempRate;
+      }
+   
+   }
+   
 
 	//--------- Time to process the single tracks -------------------------
    trigger_clockTick(seq_stepIndex[NUM_TRACKS]+1);
@@ -1030,6 +1052,27 @@ void seq_tick()
 void seq_setQuantisation(uint8_t value)
 {
    seq_quantisation = value;
+   switch(seq_quantisation)
+   {
+      case QUANT_8:
+         seq_stepsPerQuant = 16;
+         break;
+   
+      case QUANT_16:
+         seq_stepsPerQuant = 8;
+         break;
+   
+      case QUANT_32:
+         seq_stepsPerQuant = 4;
+         break;
+   
+      case QUANT_64:
+         seq_stepsPerQuant = 2;
+         break;
+      default:
+         seq_stepsPerQuant = 1;
+         break;
+   }
 }
 //------------------------------------------------------------------------------
 void seq_toggleStep(uint8_t voice, uint8_t stepNr, uint8_t patternNr)
@@ -1376,6 +1419,7 @@ uint8_t seq_setRoll(uint8_t voice, uint8_t onOff)// called processing step if ro
    if(onOff!=1)
    {
       seq_rollState &= ~(1<<voice);
+      seq_rollPlayedEarly &= ~(1<<voice);
       return triggered;  
    }
    if(seq_rollRate == 0xff) // deal with one-shots
@@ -1388,49 +1432,31 @@ uint8_t seq_setRoll(uint8_t voice, uint8_t onOff)// called processing step if ro
    
    if(!seq_quantisation) // no quantization, deal with this immediately
    {
-      triggered = seq_rollTrig(voice); // trig the voice
-      seq_rollCounter[voice] = seq_rollRate; // set counter
+      //triggered = seq_rollTrig(voice); // trig the voice
+      seq_rollCounter[voice] = 0;//seq_rollRate; // set counter
       seq_rollState |= (1<<voice);
       return triggered;
    }
-   else // quantization is on. make sure roll uses it.
+   else if (!(seq_stepIndex[NUM_TRACKS]%seq_stepsPerQuant)) // quantization is on and at quant position
    {  
-      uint8_t stepsPerQuant = 2;
-      switch(seq_quantisation)
-      {
-         case QUANT_8:
-            stepsPerQuant = 16;
-            break;
-      
-         case QUANT_16:
-            stepsPerQuant = 8;
-            break;
-      
-         case QUANT_32:
-            stepsPerQuant = 4;
-            break;
-      
-         case QUANT_64:
-            stepsPerQuant = 2;
-            break;
-         default:
-            break;
-      }
-      uint8_t quantPosition = seq_stepIndex[NUM_TRACKS]%stepsPerQuant;
-      if ( quantPosition>(stepsPerQuant/2) ) // more than halfway through quant step. just load counter to align with
-                                             // next quant
-      {
-         seq_rollCounter[voice] = stepsPerQuant-quantPosition-1;
-      }
-      else // less than halfway through the quant. trigger now and load counter as if triggered on last quant.
-      {
-         seq_rollCounter[voice] = seq_rollRate-quantPosition-1;
-         if(!seq_skipFirstRoll)
-            triggered = seq_rollTrig(voice);
-      }
+      seq_rollCounter[voice] = 0;//seq_rollRate; // set counter
       seq_rollState |= (1<<voice);
       return triggered;
-   } // end else - quantization ON case
+   }
+   else if (!seq_skipFirstRoll)
+   {
+      if ( (seq_stepIndex[NUM_TRACKS]%seq_stepsPerQuant)<(seq_stepsPerQuant/2 - 1) )
+      {
+         if ( !(seq_rollPlayedEarly & (1<<voice)) ) // if early roll hasn't played already
+         {
+            triggered = seq_rollTrig(voice);
+            seq_rollPlayedEarly |= (1<<voice);
+         }   
+            
+      }
+      return triggered;
+   }
+   
    return 0;
 }// end func
 //--------------------------------------------------------------------------------
@@ -1484,72 +1510,75 @@ void seq_setRollRate(uint8_t rate)
 			15 - 1/128
          
 		 */
-
    switch(rate)
    {
       case 0: // one shot
-         seq_rollRate = 0xff;
+         seq_tempRate = 0xff;
          break;
       case 1: // dotted bar
-         seq_rollRate = 192;
+         seq_tempRate = 192;
          break;
    
       case 2: // bar
-         seq_rollRate = 128;
+         seq_tempRate = 128;
          break;
    
       case 3:// dotted half
-         seq_rollRate = 96;
+         seq_tempRate = 96;
          break;
    
       case 4:// half
-         seq_rollRate = 64;
+         seq_tempRate = 64;
          break;
    
       case 5:// dotted quarter
-         seq_rollRate = 48;
+         seq_tempRate = 48;
          break;
    
       case 6:// 1/4
-         seq_rollRate = 32;
+         seq_tempRate = 32;
          break;
    
       case 7:// dotted 8th
-         seq_rollRate = 24;
+         seq_tempRate = 24;
          break;
    
       case 8:// 1/8
-         seq_rollRate = 16;
+         seq_tempRate = 16;
          break;
    
       case 9: // dotted 16th
-         seq_rollRate = 12;
+         seq_tempRate = 12;
          break;
    
       case 10:// 1/16
-         seq_rollRate = 8;
+         seq_tempRate = 8;
          break;
    
       case 11:// dotted 32nd
-         seq_rollRate = 6;
+         seq_tempRate = 6;
          break;
    
       case 12:// 1/32
-         seq_rollRate = 4;
+         seq_tempRate = 4;
          break;
    
       case 13:// dotted 64th
-         seq_rollRate = 3;
+         seq_tempRate = 3;
          break;
       
       case 14://1/64
-         seq_rollRate = 2;
+         seq_tempRate = 2;
          break;
       
       case 15://1/128
-         seq_rollRate = 1;
+         seq_tempRate = 1;
          break;
    }
+   if (!seq_quantisation)
+   {
+      seq_rollRate = seq_tempRate;
+   }   
 
 
 }

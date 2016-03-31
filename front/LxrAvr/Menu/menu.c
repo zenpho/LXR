@@ -772,6 +772,7 @@ void menu_shiftPerf(uint8_t shift)
    {
       led_clearAllBlinkLeds();
       led_clearSelectLeds();
+      menuIndex=menu_lastPerfIndex;
       menu_switchPage(PERFORMANCE_PAGE);
       led_initPerformanceLeds();
    }
