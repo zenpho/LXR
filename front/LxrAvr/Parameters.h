@@ -278,8 +278,10 @@ enum ParamEnums
 	PAR_TRANS4_FREQ,
 	PAR_TRANS5_FREQ,
 	PAR_TRANS6_FREQ,
-	
-	PAR_AUDIO_OUT1,
+   
+	END_OF_MORPH_PARAMETERS,
+   
+	PAR_AUDIO_OUT1=END_OF_MORPH_PARAMETERS,
 	PAR_AUDIO_OUT2,
 	PAR_AUDIO_OUT3,
 	PAR_AUDIO_OUT4,
@@ -407,6 +409,7 @@ enum ParamEnums
    PAR_SEQ_PC_TIME,                 // bool, 0 for bar sequence change, 1 for step change
 	PAR_BUT_SHIFT_MODE,              // 0 normal shift operation, 1 shift button is a toggle
    PAR_LOAD_PERF_ON_BANK,           // 0, incoming bank changes select kit, 1 bank changes select perf
+   PAR_SKIP_FIRST_ROLL,
    
    NUM_PARAMS
 };

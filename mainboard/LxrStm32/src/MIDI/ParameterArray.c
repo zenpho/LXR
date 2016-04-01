@@ -665,18 +665,18 @@ void parameterArray_init()
 	parameterArray[PAR_MIDI_NOTE7].ptr 		= &midi_NoteOverride[6];
 	parameterArray[PAR_MIDI_NOTE7].type 	= TYPE_UINT8;
    
-   parameterArray[PAR_MORPH_DRUM1].ptr 		= &midi_KitChange[1];
-	parameterArray[PAR_MORPH_DRUM1].type		= TYPE_UINT8;
-	parameterArray[PAR_MORPH_DRUM2].ptr 		= &midi_KitChange[2];
-	parameterArray[PAR_MORPH_DRUM2].type 	   = TYPE_UINT8;
-	parameterArray[PAR_MORPH_DRUM3].ptr 		= &midi_KitChange[3];
-	parameterArray[PAR_MORPH_DRUM3].type 	   = TYPE_UINT8;
-	parameterArray[PAR_MORPH_SNARE].ptr 		= &midi_KitChange[4];
-	parameterArray[PAR_MORPH_SNARE].type 	   = TYPE_UINT8;
-	parameterArray[PAR_MORPH_CYM].ptr 		   = &midi_KitChange[5];
-	parameterArray[PAR_MORPH_CYM].type 	      = TYPE_UINT8;
-	parameterArray[PAR_MORPH_HIHAT].ptr 		= &midi_KitChange[6];
-	parameterArray[PAR_MORPH_HIHAT].type 	   = TYPE_UINT8;
+   parameterArray[PAR_MORPH_DRUM1].ptr 		= &seq_vMorphAmount[1];
+	parameterArray[PAR_MORPH_DRUM1].type		= TYPE_UINT8_VMORPH;
+	parameterArray[PAR_MORPH_DRUM2].ptr 		= &seq_vMorphAmount[2];
+	parameterArray[PAR_MORPH_DRUM2].type 	   = TYPE_UINT8_VMORPH;
+	parameterArray[PAR_MORPH_DRUM3].ptr 		= &seq_vMorphAmount[3];
+	parameterArray[PAR_MORPH_DRUM3].type 	   = TYPE_UINT8_VMORPH;
+	parameterArray[PAR_MORPH_SNARE].ptr 		= &seq_vMorphAmount[4];
+	parameterArray[PAR_MORPH_SNARE].type 	   = TYPE_UINT8_VMORPH;
+	parameterArray[PAR_MORPH_CYM].ptr 		   = &seq_vMorphAmount[5];
+	parameterArray[PAR_MORPH_CYM].type 	      = TYPE_UINT8_VMORPH;
+	parameterArray[PAR_MORPH_HIHAT].ptr 		= &seq_vMorphAmount[6];
+	parameterArray[PAR_MORPH_HIHAT].type 	   = TYPE_UINT8_VMORPH;
    
    parameterArray[PAR_MAC1_DST1].ptr 		= &macroModulators[0].destination;
 	parameterArray[PAR_MAC1_DST1].type		= TYPE_UINT8;

@@ -50,6 +50,7 @@ enum KitType
 extern uint8_t menu_currentPresetNr[NUM_PRESET_LOCATIONS];
 void menu_setShownPattern(uint8_t patternNr);
 void menu_resetSubPage();
+void menu_gotoSubPage(uint8_t subPage);
 uint8_t menu_getViewedPattern();
 
 
@@ -209,6 +210,7 @@ enum NamesEnum
 	TEXT_SEQ_PC_TIME,
 	TEXT_BUT_SHIFT_MODE,
    TEXT_LOAD_PERF_ON_BANK,
+   TEXT_SKIP_FIRST_ROLL,
    TEXT_MORPH_VOICE,
    TEXT_MAC1,
    TEXT_MAC2,
@@ -318,6 +320,7 @@ enum shortNamesEnum
    SHORT_SEQ_PC_TIME,
    SHORT_BUT_SHIFT_MODE,
    SHORT_LOAD_PERF_ON_BANK,
+   SHORT_SKIP_FIRST_ROLL,
    SHORT_MORPH_VOICE,
    SHORT_MAC1,
    SHORT_MAC2,
@@ -458,6 +461,7 @@ enum longNamesEnum
    LONG_SEQ_PC_TIME,
    LONG_BUT_SHIFT_MODE,
    LONG_LOAD_PERF_ON_BANK,
+   LONG_SKIP_FIRST_ROLL,
    LONG_MORPH_VOICE,
    LONG_MAC1,
    LONG_MAC2,
@@ -604,6 +608,8 @@ extern const ModTargetVoiceOffset PROGMEM modTargetVoiceOffsets[6];
 // It is calculated at runtime TODO move this to progmem sometime
 extern uint8_t paramToModTarget[END_OF_SOUND_PARAMETERS];
 
+extern uint8_t menu_selectedStepLed;
+
 //-----------------------------------------------------------------
 /** forces a complete repaint of the display*/
 void menu_repaintAll();
@@ -613,6 +619,22 @@ void menu_repaint();
 //-----------------------------------------------------------------
 //number of user samples in flash
 void menu_setNumSamples(uint8_t num);
+//-----------------------------------------------------------------
+void menu_enterVoiceMode();
+//-----------------------------------------------------------------
+void menu_enterPerfMode();
+//-----------------------------------------------------------------
+void menu_enterStepMode();
+//-----------------------------------------------------------------
+void menu_enterPatgenMode();
+//-----------------------------------------------------------------
+void menu_shiftVoice(uint8_t shift);
+//-----------------------------------------------------------------
+void menu_shiftPerf(uint8_t shift);
+//-----------------------------------------------------------------
+void menu_shiftStep(uint8_t shift);
+//-----------------------------------------------------------------
+void menu_shiftPatgen(uint8_t shift);
 //-----------------------------------------------------------------
 /**set all save state parameters to 0*/
 void menu_resetSaveParameters();
@@ -637,6 +659,8 @@ void menu_parseGlobalParam(uint16_t paramNr, uint8_t value);
 /** all parameters are send to the cortex soundchip. called after loading a preset into the avr ram*/
 void menu_sendAllParameters();
 //-----------------------------------------------------------------
+void menu_reloadKit();
+//-----------------------------------------------------------------
 /** get the currently active page nr*/
 uint8_t menu_getActivePage();
 //-----------------------------------------------------------------
@@ -646,6 +670,8 @@ uint8_t menu_areMuteLedsShown();
 uint8_t menu_getActiveVoice();
 //-----------------------------------------------------------------
 void menu_setActiveVoice(uint8_t voiceNr);
+//-----------------------------------------------------------------
+void menu_vMorph(uint8_t dest, uint8_t val, uint8_t amt);
 //-----------------------------------------------------------------
 /** used to upodate all global parameters that need processing after a preset is loaded*/
 void menu_sendAllGlobals();

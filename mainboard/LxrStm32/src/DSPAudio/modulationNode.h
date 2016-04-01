@@ -63,6 +63,7 @@ void modNode_init(ModulationNode* vm);
 
 void modNode_resetTargets();
 void modNode_reassignVeloMod();
+void modNode_vMorph(ModulationNode* vm, float val);
 
 /** if multiple nodes address the same target we need to update the other modNodes if one of them changes the destionation*/
 //void modNode_originalValueModulated(uint16_t idx, ModulationNode* modSource);

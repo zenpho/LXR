@@ -27,13 +27,13 @@ FIL preset_File;		/* place to hold 1 file*/
 
 char preset_currentName[8];
 char preset_currentSaveMenuName[8];
-
-static uint8_t voice1presetMask[37]={1,8,9,20,      37,43,49,50,   62,70,74,78,  82,83,88,94,   102,108,115,121,     128,134,137,143,    149,155,161,167,    173,179,185,191,    197,203,209,215,221}; 
-static uint8_t voice2presetMask[37]={2,10,11,21,    38,44,51,52,   63,71,75,79,  84,85,89,95,   103,109,116,122,     129,135,138,144,    150,156,162,168,    174,180,186,192,    198,204,210,216,222}; 
-static uint8_t voice3presetMask[37]={3,12,13,22,    39,45,53,54,   64,72,76,80,  86,87,90,96,   104,110,117,123,     130,136,139,145,    151,157,163,169,    175,181,187,193,    199,205,211,217,223}; 
-static uint8_t voice4presetMask[37]={4,14,15,27,28, 40,46,55,      56,65,68,73,  77,81,91,99,   105,111,118,124,     131,140,146,152,        158,164,170,    176,182,188,194,    200,206,212,218,224}; 
-static uint8_t voice5presetMask[37]={6,16,17,23,    24,29,30,31,   32,41,47,57,  58,66,69,92,   100,106,112,119,125, 132,141,147,153,        159,165,171,    177,183,189,195,    201,207,213,219,225}; 
-static uint8_t voice6presetMask[37]={7,18,19,25,    26,33,34,35,   36,42,48,59,  60,61,67,93,   101,107,113,120,126, 133,142,148,154,        160,166,172,    178,184,190,196,    202,208,214,220,226};         
+#define VOICE_PARAM_LENGTH 37
+static uint8_t voice1presetMask[VOICE_PARAM_LENGTH]={1,8,9,20,      37,43,49,50,   62,70,74,78,  82,83,88,94,   102,108,115,121,     128,134,137,143,    149,155,161,167,    173,179,185,191,    197,203,209,215,221}; 
+static uint8_t voice2presetMask[VOICE_PARAM_LENGTH]={2,10,11,21,    38,44,51,52,   63,71,75,79,  84,85,89,95,   103,109,116,122,     129,135,138,144,    150,156,162,168,    174,180,186,192,    198,204,210,216,222}; 
+static uint8_t voice3presetMask[VOICE_PARAM_LENGTH]={3,12,13,22,    39,45,53,54,   64,72,76,80,  86,87,90,96,   104,110,117,123,     130,136,139,145,    151,157,163,169,    175,181,187,193,    199,205,211,217,223}; 
+static uint8_t voice4presetMask[VOICE_PARAM_LENGTH]={4,14,15,27,28, 40,46,55,      56,65,68,73,  77,81,91,99,   105,111,118,124,     131,140,146,152,        158,164,170,    176,182,188,194,    200,206,212,218,224}; 
+static uint8_t voice5presetMask[VOICE_PARAM_LENGTH]={6,16,17,23,    24,29,30,31,   32,41,47,57,  58,66,69,92,   100,106,112,119,125, 132,141,147,153,        159,165,171,    177,183,189,195,    201,207,213,219,225}; 
+static uint8_t voice6presetMask[VOICE_PARAM_LENGTH]={7,18,19,25,    26,33,34,35,   36,42,48,59,  60,61,67,93,   101,107,113,120,126, 133,142,148,154,        160,166,172,    178,184,190,196,    202,208,214,220,226};         
 
 #define FILE_VERSION 4
 
@@ -513,6 +513,22 @@ void preset_sendDrumsetParameters()
    }
 	// --AS todo will this morph (and fuck up) our modulation targets?
 	// send parameters (possibly combined with morph parameters) to back
+   
+   // bc: output dests aren't morphed anymore - they are need to be a special case
+   for(i=PAR_AUDIO_OUT1;i<PAR_KIT_VERSION;i++)
+   {
+
+      frontPanel_sendData(CC_2,(uint8_t)(i-128),parameter_values[i]);
+
+   }
+   
+   // send morph amounts as special cases
+   frontPanel_sendData(CC_2,(uint8_t)(PAR_MAC1_DST1_AMT-128),parameter_values[PAR_MAC1_DST1_AMT]);
+   frontPanel_sendData(CC_2,(uint8_t)(PAR_MAC1_DST2_AMT-128),parameter_values[PAR_MAC1_DST2_AMT]);
+   frontPanel_sendData(CC_2,(uint8_t)(PAR_MAC2_DST1_AMT-128),parameter_values[PAR_MAC2_DST1_AMT]);
+   frontPanel_sendData(CC_2,(uint8_t)(PAR_MAC2_DST2_AMT-128),parameter_values[PAR_MAC2_DST2_AMT]);
+
+   
    preset_morph(parameter_values[PAR_MORPH]);
 
 
@@ -1167,12 +1183,77 @@ static uint8_t interpolate(uint8_t a, uint8_t b, uint8_t x)
 // and morph parameters and send the data to the back
 // if the morph value is 0 it will just send the parameter values
 // to the back
+void preset_voiceMorph(uint8_t voice, uint8_t morph)
+{
+   int i;
+   uint8_t *parArray;
+   if (morph>=127)
+      morph=255;
+   else
+      morph=(uint8_t)(morph<<1);
+        
+   switch(voice)
+   {   
+      case 0:
+      parArray=voice1presetMask;
+      break;   
+      case 1:
+      parArray=voice2presetMask;
+      break;   
+      case 2:
+      parArray=voice3presetMask;
+      break;   
+      case 3:
+      parArray=voice4presetMask;
+      break;   
+      case 4:
+      parArray=voice5presetMask;
+      break;   
+      case 5:
+      case 6:
+      parArray=voice6presetMask;
+      break;   
+      default:
+      return;
+      break;
+   }
+	//TODO so far only sound parameters are interpolated, no LFOs etc
+
+   for(i=0;i<VOICE_PARAM_LENGTH;i++)
+   {
+      uint8_t paramNumber = parArray[i];
+      uint8_t val;
+   	
+      val = interpolate(parameter_values[paramNumber],parameters2[paramNumber],morph);
+      if(paramNumber<128) {
+         frontPanel_sendData(MIDI_CC,(uint8_t)paramNumber,val);
+      } 
+      else {
+         frontPanel_sendData(CC_2,(uint8_t)(paramNumber-128),val);
+      }		
+   	
+   		
+   	//to omit front panel button/LED lag we have to process din dout and uart here
+   	//read next button
+      din_readNextInput();
+   	//update LEDs
+      dout_updateOutputs();
+   	//read uart messages from sequencer
+      uart_checkAndParse();
+   }		
+}
+
+//----------------------------------------------------
+// This will determine an interpolated value between parameters
+// and morph parameters and send the data to the back
+// if the morph value is 0 it will just send the parameter values
+// to the back
 void preset_morph(uint8_t morph)
 {
    int i;
 	//TODO so far only sound parameters are interpolated, no LFOs etc
 
-   for(i=0;i<END_OF_SOUND_PARAMETERS;i++)
+   for(i=0;i<END_OF_MORPH_PARAMETERS;i++)
    {
       uint8_t val;
    	

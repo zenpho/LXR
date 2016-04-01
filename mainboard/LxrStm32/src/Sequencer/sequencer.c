@@ -62,15 +62,32 @@ static uint8_t seq_prescaleCounter = 0;
 
 uint8_t seq_masterStepCnt=0;				/** keeps track of the played steps between 0 and 127 independent from the track counters*/
 uint8_t seq_rollRate = 8;				// start with roll rate = 1/16
+uint8_t seq_tempRate = 8;           // change roll on quant step, if avail
 uint8_t seq_rollNote = 63;             // note roll uses - start with Dsharp5
 uint8_t seq_rollVelocity = 100;
 uint8_t seq_rollTriggered = 0;         /**< eacn bit ... user has triggered a roll - process on step*/
+uint8_t seq_rollPlayedEarly = 0;       // roll triggered just after quant - play and note
 uint8_t seq_rollState = 0;					/**< each bit represents a voice. if bit is set, roll is active*/
 uint8_t seq_rollMode = ROLL_MODE_ALL;        //0=trig, 1=nte, 2=vel, 3=bth, 4=all                                      
 uint8_t seq_rollCounter[NUM_TRACKS];       // runs a counter for every roll trigger
 uint8_t seq_kitResetFlag=0;
+uint8_t seq_skipFirstRoll=0;
 
-static int8_t 	seq_stepIndex[NUM_TRACKS+1];	/**< we have 16 steps consisting of 8 sub steps = 128 steps.
+uint8_t seq_loopLength=0;
+uint8_t seq_pendingLoopLength=0;
+
+uint8_t seq_loopMasterStart=0;
+int8_t seq_loopCurrentPosition=0;
+
+int8_t seq_loopStartStepPosition[NUM_TRACKS+1];
+int8_t seq_loopActiveStepPosition[NUM_TRACKS+1];
+
+int8_t seq_loopUpdateFlag=0;
+
+uint8_t seq_vMorphFlag=0;
+uint8_t seq_vMorphAmount[6];
+
+int8_t 	seq_stepIndex[NUM_TRACKS+1];	/**< we have 16 steps consisting of 8 sub steps = 128 steps.
 											     each track has its own counter to allow different pattern lengths */
                                       // -bc- +1 so we don't have to use DRUM1 as a reference
 
@@ -100,7 +117,9 @@ static uint8_t seq_mutedTracks=0;			/**< indicate which tracks are muted */
 uint8_t seq_running = 0;					/**< 1 if running, 0 if stopped*/
 
 uint8_t seq_activePattern = 0;				/**< the currently playing pattern*/
+uint8_t seq_perTrackActivePattern[7];
 uint8_t seq_pendingPattern = 0;				/**< next pattern to play*/
+uint8_t seq_perTrackPendingPattern[7];
 uint8_t seq_recordActive = 0;				/**< set to 1 to activate the reording mode*/
 
 uint8_t seq_selectedStep = 0;
@@ -108,6 +127,7 @@ uint8_t seq_selectedStep = 0;
 uint8_t seq_eraseActive=0;					/**RECORD will be 1 if live erasing the active voice  */
 
 uint8_t seq_quantisation = QUANT_16;
+uint8_t seq_stepsPerQuant = 8;
 
 
 
@@ -172,11 +192,18 @@ static uint8_t seq_intIsStepActive(uint8_t voice, uint8_t stepNr, uint8_t patter
 static uint8_t seq_intIsMainStepActive(uint8_t voice, uint8_t mainStepNr, uint8_t pattern);
 static void seq_resetNote(Step *step);
 static void seq_setStepIndexToStart();
+
 //------------------------------------------------------------------------------
 void seq_init()
 {
    int i;
-
+   
+   for(i=0;i<NUM_TRACKS;i++) 
+   {
+      seq_perTrackActivePattern[i]=0;
+      seq_perTrackPendingPattern[i]=0;
+   }
+   
    for(i=0;i<NUM_TRACKS;i++) {
       autoNode_init(&seq_automationNodes[i][0]);
       autoNode_init(&seq_automationNodes[i][1]);
@@ -335,9 +362,19 @@ void seq_sync()
    sync_tick();
 }
 //------------------------------------------------------------------------------
-void seq_setNextPattern(const uint8_t patNr)
+void seq_setNextPattern(const uint8_t patNr, uint8_t voice)
 {
-   seq_pendingPattern = patNr;
+   if(voice>=0x0f)
+   {
+      seq_pendingPattern = patNr;
+      uint8_t i;
+      for(i=0;i<NUM_TRACKS;i++)
+      {
+         seq_perTrackPendingPattern[i]=patNr;
+      }
+   }
+   else
+      seq_perTrackPendingPattern[voice] = patNr;
    seq_loadPendigFlag = 1;
    seq_loadSeqNow = 1;
 }
@@ -360,22 +397,18 @@ static void seq_parseAutomationNodes(uint8_t track, Step* stepData)
    uint8_t param2 = stepData->param2Nr;
    uint8_t val1 = stepData->param1Val;
    uint8_t val2 = stepData->param2Val;
-   if(val1)
+   if(param1)
    {
       if(param1>=PAR_MORPH_DRUM1&&param1<=PAR_MORPH_HIHAT)
       {
-            uart_sendFrontpanelByte(FRONT_SEQ_VOICE_MORPH);
-            uart_sendFrontpanelByte((uint8_t)(param1-PAR_MORPH_DRUM1));
-            uart_sendFrontpanelByte(val1);
+         sequencer_sendVMorph(((uint8_t)(param1-PAR_MORPH_DRUM1)), val1);
       }
    }
-   if(val2)
+   if(param2)
    {
       if(param2>=PAR_MORPH_DRUM1&&param2<=PAR_MORPH_HIHAT)
       {
-            uart_sendFrontpanelByte(FRONT_SEQ_VOICE_MORPH);
-            uart_sendFrontpanelByte((uint8_t)(param2-PAR_MORPH_DRUM1));
-            uart_sendFrontpanelByte(val2);
+         sequencer_sendVMorph(((uint8_t)(param1-PAR_MORPH_DRUM1)), val2);
       }
    }
 
@@ -397,7 +430,7 @@ void seq_triggerVoice(uint8_t voiceNr, uint8_t vol, uint8_t note)
    if(voiceNr > 6) 
       return;
 
-   seq_parseAutomationNodes(voiceNr, &seq_patternSet.seq_subStepPattern[seq_activePattern][voiceNr][seq_stepIndex[voiceNr]]);
+   seq_parseAutomationNodes(voiceNr, &seq_patternSet.seq_subStepPattern[seq_perTrackActivePattern[voiceNr]][voiceNr][seq_stepIndex[voiceNr]]);
 
 	//turn the trigger off before sending the next one
    if(voiceNr>=5)
@@ -427,10 +460,10 @@ void seq_triggerVoice(uint8_t voiceNr, uint8_t vol, uint8_t note)
 
 	//send the new note to midi/usb out
    seq_sendMidiNoteOn(midiChan, midiNote,
-      	seq_patternSet.seq_subStepPattern[seq_activePattern][voiceNr][seq_stepIndex[voiceNr]].volume&STEP_VOLUME_MASK);
+      	seq_patternSet.seq_subStepPattern[seq_perTrackActivePattern[voiceNr]][voiceNr][seq_stepIndex[voiceNr]].volume&STEP_VOLUME_MASK);
 }
 //------------------------------------------------------------------------------
-uint8_t seq_getTransposedNote(uint8_t voice, uint8_t step, uint8_t note)
+uint8_t seq_getTransposedNote(uint8_t voice, uint8_t note)
 {
    uint8_t retNote = note;
    uint8_t transpose = 63;
@@ -438,33 +471,24 @@ uint8_t seq_getTransposedNote(uint8_t voice, uint8_t step, uint8_t note)
    {
       // transpose is on - use track value
       transpose = seq_transpose_voiceAmount[voice];
-      if (seq_recordActive)
-      {
-         // set the step's transpose amount to the current voice transpose value
-         seq_patternSet.seq_subStepPattern[seq_activePattern][voice][step].transpose=seq_transpose_voiceAmount[voice];  
-      }
-   }
-   else if (seq_recordActive) // transpose is off, but record is active - transpose based on step value
-   {
-      transpose = seq_patternSet.seq_subStepPattern[seq_activePattern][voice][step].transpose;
-   }
    
-   if (transpose!=63)
-   { // legitimate transpose value - do the transpose
-      if (note<(63-transpose)) // transposing would result in a note less than zero!
-      {
-         retNote = 0;
+      
+      if (transpose!=63)
+      { // legitimate transpose value - do the transpose
+         if (note<(63-transpose)) // transposing would result in a note less than zero!
+         {
+            retNote = 0;
+         }
+         else
+         {
+            retNote = (uint8_t)(note+(transpose-63));
+         }
+         if (retNote>127)
+         {
+            retNote=127;
+         }
       }
-      else
-      {
-         retNote = (uint8_t)(note+(transpose-63));
-      }
-      if (retNote>127)
-      {
-         retNote=127;
-      }
-   }
-   
+   }   
    return retNote;
 }
 //------------------------------------------------------------------------------
@@ -477,23 +501,89 @@ static uint8_t seq_determineNextPattern()
       return seq_activePattern;
 }
 //------------------------------------------------------------------------------
+void seq_setLoop(uint8_t length)
+{
+   if(!length) // length received is zero - turn off looping
+   {
+      seq_loopLength=0;
+      seq_pendingLoopLength=0;
+      seq_loopCurrentPosition=0;
+   }   
+   else if(seq_loopLength) // a new length is received - change length when this loop ends
+   {
+      seq_pendingLoopLength=length;
+   }   
+   else // a new loop starting - set the start point.
+   {
+      seq_loopLength=length;
+      seq_pendingLoopLength=length;
+      seq_loopUpdateFlag=1;
+   }      
+}
+//------------------------------------------------------------------------------
+void seq_startLoop()
+{
+   uint8_t i;
+   
+   seq_loopMasterStart = seq_masterStepCnt;
+   seq_loopCurrentPosition = 0;
+   
+   for(i=0;i<NUM_TRACKS+1;i++)
+   {
+      seq_loopStartStepPosition[i] = seq_stepIndex[i];
+      seq_loopActiveStepPosition[i] = seq_stepIndex[i];
+   }
+   seq_loopCurrentPosition=0;
+}
+//------------------------------------------------------------------------------
 static void seq_nextStep()
 {
-
+   int i;
    if(!seq_running)
       return;
-
+   if(
+      seq_loopUpdateFlag==1 && // flag to loop - must also have either no quant or this is quant step 
+      ( !( (seq_stepIndex[NUM_TRACKS]+1)%seq_stepsPerQuant)  )
+      )
+   {
+      seq_startLoop();
+      seq_loopUpdateFlag=0;
+   }   
+   
+   //---- do we need to do a voice morph
+   if(!(seq_stepIndex[NUM_TRACKS]%4))
+   {
+      if(seq_vMorphFlag)
+      {
+         for (i=0;i<6;i++)
+         {
+            if ( seq_vMorphFlag&(0x01<<i) )
+            {
+               sequencer_sendVMorph(i, seq_vMorphAmount[i]);
+            }
+         }
+         seq_vMorphFlag=0x00;
+      }
+   }
+   
    seq_masterStepCnt++;
-
+   
 	//---- calc master step position. max value is 127. also take in regard the pattern length ----//
    uint8_t masterStepPos;
+   uint8_t loopMasterStepPos=0;
+   
    uint8_t seqlen;
    uint8_t seqscale;
+   
    uint8_t activeScaledStep;
+   uint8_t loopActiveScaledStep;
+   
+   int8_t *stepAcPtr = seq_stepIndex;
+   
+   uint8_t voiceTriggered=0; // did we already trigger this voice?
+   
 	//if( (((seq_stepIndex[0]+1) &0x7f) == 0) ||
 	//    (((seq_patternSet.seq_subStepPattern[seq_activePattern][0][seq_stepIndex[0]+1]).note & PATTERN_END_MASK)>=PATTERN_END_MASK) )
-
-
    if ( ( (seq_stepIndex[NUM_TRACKS]+1) & 0x7f) == 0)
    {
       masterStepPos = 0;
@@ -507,6 +597,34 @@ static void seq_nextStep()
    {
       masterStepPos = seq_stepIndex[NUM_TRACKS]+1;
    }
+   
+   if(seq_loopLength)
+   {
+      stepAcPtr = seq_loopActiveStepPosition;
+         
+      seq_loopCurrentPosition++;
+      if (seq_loopCurrentPosition>=seq_loopLength)
+         seq_loopCurrentPosition-=seq_loopLength;
+      
+      if(seq_loopCurrentPosition)
+      {
+         if ( ( (seq_loopActiveStepPosition[NUM_TRACKS]+1) & 0x7f) )
+            loopMasterStepPos = seq_loopActiveStepPosition[NUM_TRACKS]+1;
+         else
+            loopMasterStepPos = 0;
+      }
+      else // loop reached end, reset
+      {
+         loopMasterStepPos = seq_loopMasterStart;
+         for(i=0;i<NUM_TRACKS+1;i++)
+         {
+            seq_loopActiveStepPosition[i] = seq_loopStartStepPosition[i];
+         }   
+      }  
+   }   
+   
+   
+   
    //-------- random pattern switch only gets calculated once per bar ------//
    if( (!masterStepPos)&&(seq_activePattern == seq_pendingPattern) )
    {
@@ -527,16 +645,34 @@ static void seq_nextStep()
       {
          if(seq_resetBarOnPatternChange)
             seq_barCounter=0;
-      	
-         seq_loadPendigFlag = 0;
+
       	//first check if 2 new pattern is available
          if(seq_newPatternAvailable)
          {
             seq_newPatternAvailable = 0;
             seq_activateTmpPattern();
          }
-      
+         
          seq_activePattern = seq_pendingPattern&0x07;
+         if (seq_loadPendigFlag)
+         {
+            // manual switching - button switch sets all per track pending
+            for (i=0;i<NUM_TRACKS;i++)
+            {
+   
+               seq_perTrackActivePattern[i]=seq_perTrackPendingPattern[i]&0x07;
+            }
+         }
+         else
+         {
+            // next pat switching - load pending pattern to per tracks
+            for (i=0;i<NUM_TRACKS;i++)
+            {
+   
+               seq_perTrackActivePattern[i]=seq_pendingPattern&0x07;
+            }
+         
+         }
       
       	//reset pattern position to pattern rotate starting position for the active pattern --AS **PATROT
          if (masterStepPos == 0){
@@ -559,6 +695,8 @@ static void seq_nextStep()
          uart_sendFrontpanelByte(FRONT_SEQ_CHANGE_PAT);
          uart_sendFrontpanelByte(seq_activePattern|(seq_kitResetFlag<<3));
          seq_kitResetFlag=0;
+         
+         seq_loadPendigFlag = 0;
       }
    }
 
@@ -581,25 +719,38 @@ static void seq_nextStep()
       uart_sendFrontpanelByte(0);
    }
 
+   //---------- now check if this is a quantize step ---------------------------------------------------------
+   if (!(seq_stepIndex[NUM_TRACKS]%seq_stepsPerQuant))
+   {
+      if (seq_rollRate != seq_tempRate) // roll rate change - queue all rolls on quant step and update
+      {
+         for(i=0;i<NUM_TRACKS;i++)
+         {
+            if (seq_rollState & (1<<i))
+               seq_rollCounter[i] = 0;      
+         }
+         seq_rollRate = seq_tempRate;
+      }
+   
+   }
+   
+
 	//--------- Time to process the single tracks -------------------------
    trigger_clockTick(seq_stepIndex[NUM_TRACKS]+1);
    
-   
-   int i;
    for(i=0;i<NUM_TRACKS;i++)
    {
-   
-      uint8_t voiceTriggered = 0; // did we already trigger this voice?
-      
+      voiceTriggered=0;
    	// --AS **PATROT we now use this for length
-      seqlen=seq_patternSet.seq_patternLengthRotate[seq_activePattern][i].length;
-      seqscale=seq_patternSet.seq_patternLengthRotate[seq_activePattern][i].scale;
+      seqlen=seq_patternSet.seq_patternLengthRotate[seq_perTrackActivePattern[i]][i].length;
+      seqscale=seq_patternSet.seq_patternLengthRotate[seq_perTrackActivePattern[i]][i].scale;
       
       if(!seqlen)
          seqlen=16;
       
       // for scaled patterns - is this step one we want to process
       activeScaledStep = !(masterStepPos & (0xff >> (8-seqscale) )); 
+      
    	//increment the step index
       if (activeScaledStep)
          seq_stepIndex[i]++;
@@ -609,7 +760,19 @@ static void seq_nextStep()
       	//if end is reached reset track to step 0
          seq_stepIndex[i] = 0;
       }
-   
+      
+      if(seq_loopLength)
+      {
+         loopActiveScaledStep = !(loopMasterStepPos & (0xff >> (8-seqscale) ));
+         if (loopActiveScaledStep)
+            seq_loopActiveStepPosition[i]++;
+            
+         if((seq_loopActiveStepPosition[i] / 8) == seqlen || (seq_loopActiveStepPosition[i] & 0x7f) == 0)
+         {
+         	//if end is reached reset track to step 0
+            seq_loopActiveStepPosition[i] = 0;
+         }
+      }
       //--------- Tracks @ proper stap positions, process roll -------------------------
       if( !(seq_rollState & (1<<i))&&(seq_rollTriggered & (1<<i)) ) // start new roll command received
       {
@@ -639,7 +802,6 @@ static void seq_nextStep()
               
          }
       }
-      
       if(seq_SomModeActive)
       {
          som_tick(seq_stepIndex[NUM_TRACKS],seq_mutedTracks);
@@ -651,51 +813,64 @@ static void seq_nextStep()
          if(!(seq_mutedTracks & (1<<i) ) )
          {
          	//if main step (associated with current substep) is active
-            if(seq_intIsMainStepActive(i,seq_stepIndex[i]/8,seq_activePattern)) {
+            if(seq_intIsMainStepActive(i,stepAcPtr[i]/8,seq_perTrackActivePattern[i])) {
             
             	// --AS **RECORD if we are in erase mode (shift clear while record and playing)
             	// and this is the active track on the front, we erase the note value
             	// only do so if we are on a main step while erase is active. in this case, the main step and
             	// all it's substeps are erased.
-               if(seq_eraseActive && i==frontParser_activeTrack && seq_stepIndex[i]%8==0) 
+               if(seq_eraseActive && i==frontParser_activeTrack && stepAcPtr[i]%8==0) 
                {
                	// erase the main step and all substeps
-                  seq_eraseStepAndSubSteps(frontParser_activeTrack,seq_stepIndex[i]/8);
+                  seq_eraseStepAndSubSteps(frontParser_activeTrack,stepAcPtr[i]/8);
                } 
-               else if((seq_intIsStepActive(i,seq_stepIndex[i],seq_activePattern))&&(activeScaledStep)&&(!voiceTriggered))
+               else if((seq_intIsStepActive(i,stepAcPtr[i],seq_perTrackActivePattern[i]))&&(activeScaledStep)&&(!voiceTriggered))
                {
                   //PROBABILITY
                   //every 8th step a new random value is generated
                   //thus every sub step block has only one random value to compare against
                   //allows randomisation of rolls by chance
                   
-                  if((seq_stepIndex[i] & 0x07) == 0x00) //every 8th step
+                  if((stepAcPtr[i] & 0x07) == 0x00) //every 8th step
                   {
                      seq_rndValue[i] = GetRngValue()&0x7f;
                   }
                
-                  if( (seq_rndValue[i]) <= seq_patternSet.seq_subStepPattern[seq_activePattern][i][seq_stepIndex[i]].prob )
+                  if( (seq_rndValue[i]) <= seq_patternSet.seq_subStepPattern[seq_perTrackActivePattern[i]][i][stepAcPtr[i]].prob )
                   {
-                     uint8_t vol = seq_patternSet.seq_subStepPattern[seq_activePattern][i][seq_stepIndex[i]].volume&STEP_VOLUME_MASK;
-                     uint8_t note = seq_patternSet.seq_subStepPattern[seq_activePattern][i][seq_stepIndex[i]].note;
-                     note = seq_getTransposedNote(i, seq_stepIndex[i], note);
+                     uint8_t vol = seq_patternSet.seq_subStepPattern[seq_perTrackActivePattern[i]][i][stepAcPtr[i]].volume&STEP_VOLUME_MASK;
+                     uint8_t note = seq_patternSet.seq_subStepPattern[seq_perTrackActivePattern[i]][i][stepAcPtr[i]].note;
+                     note = seq_getTransposedNote(i, note);
                      seq_triggerVoice(i,vol,note);
+                     if(seq_loopLength&&seq_recordActive)
+                        seq_addNote(i,vol,note);
                      
                   } // end if seq_rndValue
                } // end else if stepactive
             } // end if mainStepActive
          } // end if not muted
-      } // end else if not triggered             
+      } // end else if not triggered     
+      if(seq_rollState&0x01<<i)
+         seq_rollCounter[i]--;
+      //else
+        // seq_rollCounter[i]=seq_rollRate;       
    } // end for i=voice
    
    // increment the reference step index
    seq_stepIndex[NUM_TRACKS] = (seq_stepIndex[NUM_TRACKS]+1) & 0x7f;
+   
+   if(seq_loopLength)
+   {
+      seq_loopActiveStepPosition[NUM_TRACKS] = (seq_loopActiveStepPosition[NUM_TRACKS]+1) & 0x7f;
+      if(!seq_loopCurrentPosition) // if the loop reset, see if a length change required
+         seq_loopLength=seq_pendingLoopLength;           
+   }
 
 	//send message to frontpanel
 	//to display the current step
    uart_sendFrontpanelByte(FRONT_STEP_LED_STATUS_BYTE);
    uart_sendFrontpanelByte(FRONT_CURRENT_STEP_NUMBER_CC);
-   uart_sendFrontpanelByte(seq_stepIndex[frontParser_activeTrack]);
+   uart_sendFrontpanelByte(stepAcPtr[frontParser_activeTrack]);
 
 	// --AS check mtc, which might stop the sequencer if we haven't seen one in a while
    midiParser_checkMtc();
@@ -744,7 +919,7 @@ void seq_triggerNextMasterStep(uint8_t stepSize)
 {
    uint8_t i, sn, len;
    for(i=0;i<NUM_TRACKS;i++) {
-      len = seq_patternSet.seq_patternLengthRotate[seq_activePattern][i].length;
+      len = seq_patternSet.seq_patternLengthRotate[seq_perTrackActivePattern[i]][i].length;
       if(!len) // length of 0 means length of 16 (since we are using 4 bits)
          len=16;
       len *= 8; // need length in steps
@@ -877,6 +1052,27 @@ void seq_tick()
 void seq_setQuantisation(uint8_t value)
 {
    seq_quantisation = value;
+   switch(seq_quantisation)
+   {
+      case QUANT_8:
+         seq_stepsPerQuant = 16;
+         break;
+   
+      case QUANT_16:
+         seq_stepsPerQuant = 8;
+         break;
+   
+      case QUANT_32:
+         seq_stepsPerQuant = 4;
+         break;
+   
+      case QUANT_64:
+         seq_stepsPerQuant = 2;
+         break;
+      default:
+         seq_stepsPerQuant = 1;
+         break;
+   }
 }
 //------------------------------------------------------------------------------
 void seq_toggleStep(uint8_t voice, uint8_t stepNr, uint8_t patternNr)
@@ -935,7 +1131,7 @@ void seq_setRunning(uint8_t isRunning)
    	// --AS reset all track rotations to 0. We are not saving rotated value. it's a performance tool.
       uint8_t i;
       for(i=0;i<NUM_TRACKS;i++) {
-         seq_patternSet.seq_patternLengthRotate[seq_activePattern][i].rotate=0;
+         seq_patternSet.seq_patternLengthRotate[seq_perTrackActivePattern[i]][i].rotate=0;
       	// let the front know this is happening
          uart_sendFrontpanelByte(FRONT_SEQ_CC);
          uart_sendFrontpanelByte(FRONT_SEQ_TRACK_ROTATION);
@@ -1121,12 +1317,12 @@ uint8_t seq_rollTrig(uint8_t voice) // called by all roll modes to trigger a voi
    uint8_t triggered = 0;
 
    uint8_t vol = 
-      seq_patternSet.seq_subStepPattern[seq_activePattern][voice][seq_stepIndex[voice]].volume&0x7f;
+      seq_patternSet.seq_subStepPattern[seq_perTrackActivePattern[voice]][voice][seq_stepIndex[voice]].volume&0x7f;
    uint8_t note = 
-      seq_patternSet.seq_subStepPattern[seq_activePattern][voice][seq_stepIndex[voice]].note&0x7f;
+      seq_patternSet.seq_subStepPattern[seq_perTrackActivePattern[voice]][voice][seq_stepIndex[voice]].note&0x7f;
       
-   uint8_t stepActive = seq_intIsMainStepActive(voice,(seq_stepIndex[voice]>>3),seq_activePattern) &
-      		seq_intIsStepActive(voice,seq_stepIndex[voice],seq_activePattern);
+   uint8_t stepActive = seq_intIsMainStepActive(voice,(seq_stepIndex[voice]>>3),seq_perTrackActivePattern[voice]) &
+      		seq_intIsStepActive(voice,seq_stepIndex[voice],seq_perTrackActivePattern[voice]);
    
    switch(seq_rollMode)
    {
@@ -1223,6 +1419,7 @@ uint8_t seq_setRoll(uint8_t voice, uint8_t onOff)// called processing step if ro
    if(onOff!=1)
    {
       seq_rollState &= ~(1<<voice);
+      seq_rollPlayedEarly &= ~(1<<voice);
       return triggered;  
    }
    if(seq_rollRate == 0xff) // deal with one-shots
@@ -1235,48 +1432,31 @@ uint8_t seq_setRoll(uint8_t voice, uint8_t onOff)// called processing step if ro
    
    if(!seq_quantisation) // no quantization, deal with this immediately
    {
-      triggered = seq_rollTrig(voice); // trig the voice
-      seq_rollCounter[voice] = seq_rollRate; // set counter
+      //triggered = seq_rollTrig(voice); // trig the voice
+      seq_rollCounter[voice] = 0;//seq_rollRate; // set counter
       seq_rollState |= (1<<voice);
       return triggered;
    }
-   else // quantization is on. make sure roll uses it.
+   else if (!(seq_stepIndex[NUM_TRACKS]%seq_stepsPerQuant)) // quantization is on and at quant position
    {  
-      uint8_t stepsPerQuant = 2;
-      switch(seq_quantisation)
-      {
-         case QUANT_8:
-            stepsPerQuant = 16;
-            break;
-      
-         case QUANT_16:
-            stepsPerQuant = 8;
-            break;
-      
-         case QUANT_32:
-            stepsPerQuant = 4;
-            break;
-      
-         case QUANT_64:
-            stepsPerQuant = 2;
-            break;
-         default:
-            break;
-      }
-      uint8_t quantPosition = seq_stepIndex[NUM_TRACKS]%stepsPerQuant;
-      if ( quantPosition>(stepsPerQuant/2) ) // more than halfway through quant step. just load counter to align with
-                                             // next quant
-      {
-         seq_rollCounter[voice] = stepsPerQuant-quantPosition;
-      }
-      else // less than halfway through the quant. trigger now and load counter as if triggered on last quant.
-      {
-         seq_rollCounter[voice] = seq_rollRate-quantPosition;
-         triggered = seq_rollTrig(voice);
-      }
+      seq_rollCounter[voice] = 0;//seq_rollRate; // set counter
       seq_rollState |= (1<<voice);
       return triggered;
-   } // end else - quantization ON case
+   }
+   else if (!seq_skipFirstRoll)
+   {
+      if ( (seq_stepIndex[NUM_TRACKS]%seq_stepsPerQuant)<(seq_stepsPerQuant/2 - 1) )
+      {
+         if ( !(seq_rollPlayedEarly & (1<<voice)) ) // if early roll hasn't played already
+         {
+            triggered = seq_rollTrig(voice);
+            seq_rollPlayedEarly |= (1<<voice);
+         }   
+            
+      }
+      return triggered;
+   }
+   
    return 0;
 }// end func
 //--------------------------------------------------------------------------------
@@ -1295,8 +1475,6 @@ uint8_t seq_checkRollStep(uint8_t voice) // called every step if roll active for
       triggered = seq_rollTrig(voice);
       seq_rollCounter[voice] = seq_rollRate;
    }
-   if(seq_rollRate!=0xff)
-      seq_rollCounter[voice]--;
    return triggered;
 }
 //--------------------------------------------------------------------------------
@@ -1332,72 +1510,75 @@ void seq_setRollRate(uint8_t rate)
 			15 - 1/128
          
 		 */
-
    switch(rate)
    {
       case 0: // one shot
-         seq_rollRate = 0xff;
+         seq_tempRate = 0xff;
          break;
       case 1: // dotted bar
-         seq_rollRate = 192;
+         seq_tempRate = 192;
          break;
    
       case 2: // bar
-         seq_rollRate = 128;
+         seq_tempRate = 128;
          break;
    
       case 3:// dotted half
-         seq_rollRate = 96;
+         seq_tempRate = 96;
          break;
    
       case 4:// half
-         seq_rollRate = 64;
+         seq_tempRate = 64;
          break;
    
       case 5:// dotted quarter
-         seq_rollRate = 48;
+         seq_tempRate = 48;
          break;
    
       case 6:// 1/4
-         seq_rollRate = 32;
+         seq_tempRate = 32;
          break;
    
       case 7:// dotted 8th
-         seq_rollRate = 24;
+         seq_tempRate = 24;
          break;
    
       case 8:// 1/8
-         seq_rollRate = 16;
+         seq_tempRate = 16;
          break;
    
       case 9: // dotted 16th
-         seq_rollRate = 12;
+         seq_tempRate = 12;
          break;
    
       case 10:// 1/16
-         seq_rollRate = 8;
+         seq_tempRate = 8;
          break;
    
       case 11:// dotted 32nd
-         seq_rollRate = 6;
+         seq_tempRate = 6;
          break;
    
       case 12:// 1/32
-         seq_rollRate = 4;
+         seq_tempRate = 4;
          break;
    
       case 13:// dotted 64th
-         seq_rollRate = 3;
+         seq_tempRate = 3;
          break;
       
       case 14://1/64
-         seq_rollRate = 2;
+         seq_tempRate = 2;
          break;
       
       case 15://1/128
-         seq_rollRate = 1;
+         seq_tempRate = 1;
          break;
    }
+   if (!seq_quantisation)
+   {
+      seq_rollRate = seq_tempRate;
+   }   
 
 
 }
@@ -1407,7 +1588,7 @@ void seq_setRollRate(uint8_t rate)
 int8_t seq_quantize(int8_t step, uint8_t track)
 {
    uint8_t quantisationMultiplier=1;
-   uint8_t scale=seq_patternSet.seq_patternLengthRotate[seq_activePattern][track].scale;
+   uint8_t scale=seq_patternSet.seq_patternLengthRotate[seq_perTrackActivePattern[track]][track].scale;
    switch(seq_quantisation)
    {
       case QUANT_8:
@@ -1456,16 +1637,16 @@ void seq_recordAutomation(uint8_t voice, uint8_t dest, uint8_t value)
       uint8_t quantizedStep = seq_quantize(seq_stepIndex[voice], voice);
    
    	//only record to active steps
-      if( seq_intIsMainStepActive(voice,quantizedStep/8,seq_activePattern) &&
-      		seq_intIsStepActive(voice,quantizedStep,seq_activePattern))
+      if( seq_intIsMainStepActive(voice,quantizedStep/8,seq_perTrackActivePattern[voice]) &&
+      		seq_intIsStepActive(voice,quantizedStep,seq_perTrackActivePattern[voice]))
       {
          if(seq_activeAutomTrack == 0) {
-            seq_patternSet.seq_subStepPattern[seq_activePattern][voice][quantizedStep].param1Nr = dest;
-            seq_patternSet.seq_subStepPattern[seq_activePattern][voice][quantizedStep].param1Val = value;
+            seq_patternSet.seq_subStepPattern[seq_perTrackActivePattern[voice]][voice][quantizedStep].param1Nr = dest;
+            seq_patternSet.seq_subStepPattern[seq_perTrackActivePattern[voice]][voice][quantizedStep].param1Val = value;
          } 
          else {
-            seq_patternSet.seq_subStepPattern[seq_activePattern][voice][quantizedStep].param2Nr = dest;
-            seq_patternSet.seq_subStepPattern[seq_activePattern][voice][quantizedStep].param2Val = value;
+            seq_patternSet.seq_subStepPattern[seq_perTrackActivePattern[voice]][voice][quantizedStep].param2Nr = dest;
+            seq_patternSet.seq_subStepPattern[seq_perTrackActivePattern[voice]][voice][quantizedStep].param2Val = value;
          }
       }
    }
@@ -1475,18 +1656,18 @@ void seq_recordAutomation(uint8_t voice, uint8_t dest, uint8_t value)
    	//step button is held down
    	//-> set step automation parameters
       if(seq_activeAutomTrack == 0) {
-         seq_patternSet.seq_subStepPattern[seq_activePattern]
+         seq_patternSet.seq_subStepPattern[seq_perTrackActivePattern[voice]]
                                            [seq_armedArmedAutomationTrack]
                                             [seq_armedArmedAutomationStep].param1Nr = dest;
-         seq_patternSet.seq_subStepPattern[seq_activePattern]
+         seq_patternSet.seq_subStepPattern[seq_perTrackActivePattern[voice]]
                                            [seq_armedArmedAutomationTrack]
                                             [seq_armedArmedAutomationStep].param1Val = value;
       } 
       else {
-         seq_patternSet.seq_subStepPattern[seq_activePattern]
+         seq_patternSet.seq_subStepPattern[seq_perTrackActivePattern[voice]]
                                            [seq_armedArmedAutomationTrack]
                                             [seq_armedArmedAutomationStep].param2Nr = dest;
-         seq_patternSet.seq_subStepPattern[seq_activePattern]
+         seq_patternSet.seq_subStepPattern[seq_perTrackActivePattern[voice]]
                                            [seq_armedArmedAutomationTrack]
                                             [seq_armedArmedAutomationStep].param2Val = value;
       }
@@ -1500,19 +1681,13 @@ void seq_addNote(uint8_t trackNr,uint8_t vel, uint8_t note)
 	//only record notes when seq is running and recording
    if(seq_running && seq_recordActive)
    {
-      const int8_t unquantizedStep = seq_stepIndex[trackNr];
-      int8_t quantizedStep;
-      if (vel)
-      {
-         quantizedStep = seq_quantize(unquantizedStep, trackNr);
-      }
-      else
-      {
-         quantizedStep = unquantizedStep;
-      }
+      int8_t unquantizedStep = seq_stepIndex[trackNr];
+      int8_t quantizedStep = seq_quantize(unquantizedStep, trackNr);
+
    
    	// --AS **RECORD fix for recording across patterns
-      if(quantizedStep==0 && seq_stepIndex[trackNr] > (NUM_STEPS/2)) {
+      if(quantizedStep==0 && seq_stepIndex[trackNr] > (NUM_STEPS/2)) 
+      {
       	// this means that we hit a note in 2nd half of the bar and quantization pushed
       	// the note to position 0 of the next bar.
       	// need to see if there is about to be a pattern change so that the note
@@ -1521,7 +1696,7 @@ void seq_addNote(uint8_t trackNr,uint8_t vel, uint8_t note)
       
       } 
       else
-         targetPattern=seq_activePattern;
+         targetPattern=seq_perTrackActivePattern[trackNr];
    
    	//special care must be taken when recording midi notes!
    	//since per default the 1st substep of a mainstep cluster is always active
@@ -1534,15 +1709,15 @@ void seq_addNote(uint8_t trackNr,uint8_t vel, uint8_t note)
       }
    
    	//set the current step in the requested track active
-      if (vel)
-         stepPtr=&seq_patternSet.seq_subStepPattern[targetPattern][trackNr][quantizedStep];
+      if (vel==0)
+         stepPtr=&seq_patternSet.seq_subStepPattern[targetPattern][trackNr][unquantizedStep];
       else
          stepPtr=&seq_patternSet.seq_subStepPattern[targetPattern][trackNr][quantizedStep];
       
 
       stepPtr->note 		= note;				// note (--AS was SEQ_DEFAULT_NOTE)
 
-      stepPtr->volume		= vel;				// new velocity
+      stepPtr->volume	= vel;				// new velocity
       stepPtr->prob		= 127;				// 100% probability
       stepPtr->volume 	|= STEP_ACTIVE_MASK;
    
@@ -1570,15 +1745,15 @@ static void seq_eraseStepAndSubSteps(const uint8_t voice, const uint8_t mainStep
 {
    uint8_t i;
 	// turn off the main step
-   seq_setMainStep(seq_activePattern, voice, mainStep,0);
+   seq_setMainStep(seq_perTrackActivePattern[voice], voice, mainStep,0);
 
 	// turn off all substeps
    for(i=(uint8_t)(mainStep*8);i<(uint8_t)((mainStep+1)*8);i++) {
-      seq_resetNote(&seq_patternSet.seq_subStepPattern[seq_activePattern][voice][i]);
+      seq_resetNote(&seq_patternSet.seq_subStepPattern[seq_perTrackActivePattern[voice]][voice][i]);
    }
 
 	// first substep needs to be made active
-   seq_patternSet.seq_subStepPattern[seq_activePattern][voice][(uint8_t)(mainStep*8)].volume |= STEP_ACTIVE_MASK;
+   seq_patternSet.seq_subStepPattern[seq_perTrackActivePattern[voice]][voice][(uint8_t)(mainStep*8)].volume |= STEP_ACTIVE_MASK;
 
 	//if( (frontParser_shownPattern == seq_activePattern) && ( frontParser_activeTrack == voice) )
 	//{
@@ -1587,22 +1762,20 @@ static void seq_eraseStepAndSubSteps(const uint8_t voice, const uint8_t mainStep
 	//}
 
 }
-
-//------------------------------------------------------------------------
-void seq_setRecordingMode(uint8_t active)
+void seq_writeTranspose()
 {
-   
    uint8_t i,k,transposeAmt,trnNote;
-   if (seq_recordActive&&!active) // switching from recording to not recording
+   if (seq_transposeOnOff)
    {
-      for (i=0;i<128;i++) // merge transpose into notes
+      for (k=0;k<NUM_TRACKS;k++)
       {
-         for (k=0;k<NUM_TRACKS;k++)
+         transposeAmt = seq_transpose_voiceAmount[k];
+         if (transposeAmt!=63)
          {
-            transposeAmt = seq_patternSet.seq_subStepPattern[seq_activePattern][k][i].transpose;
-            if (transposeAmt!=63)
-            { // legitimate transpose value - do the transpose
-               trnNote = seq_patternSet.seq_subStepPattern[seq_activePattern][k][i].note;
+            for (i=0;i<128;i++) // for all steps
+            {
+               // legitimate transpose value - do the transpose
+               trnNote = seq_patternSet.seq_subStepPattern[seq_perTrackActivePattern[k]][k][i].note;
                if (trnNote<(63-transposeAmt)) // transposing would result in a note less than zero!
                {
                   trnNote = 0;
@@ -1615,11 +1788,17 @@ void seq_setRecordingMode(uint8_t active)
                {
                   trnNote=127;
                }
-               seq_patternSet.seq_subStepPattern[seq_activePattern][k][i].note = trnNote;
+               seq_patternSet.seq_subStepPattern[seq_perTrackActivePattern[k]][k][i].note = trnNote;  
             }
-         }
+         }   
+         seq_transpose_voiceAmount[k]=63;
       }
-   }
+   }   
+}   
+
+//------------------------------------------------------------------------
+void seq_setRecordingMode(uint8_t active)
+{
    seq_recordActive = active;
 }
 
@@ -1782,8 +1961,8 @@ void seq_copySubStep(uint8_t src, uint8_t dst, uint8_t track)
    
       // copy the step data
 
-         pdst=&seq_patternSet.seq_subStepPattern[seq_activePattern][track][dst];
-         psrc=&seq_patternSet.seq_subStepPattern[seq_activePattern][track][src];
+         pdst=&seq_patternSet.seq_subStepPattern[seq_perTrackActivePattern[track]][track][dst];
+         psrc=&seq_patternSet.seq_subStepPattern[seq_perTrackActivePattern[track]][track][src];
          pdst->note			= psrc->note;
          pdst->param1Nr 		= psrc->param1Nr;
          pdst->param1Val 	= psrc->param1Val;
@@ -1918,8 +2097,8 @@ static void seq_setStepIndexToStart()
    for(i=0;i<NUM_TRACKS;i++) {
    	// adjust rot in case the pattern length is less than the rotated amount
    	// len is 0-15 where a value of 0 means 16
-      rot=seq_patternSet.seq_patternLengthRotate[seq_activePattern][i].rotate;
-      len=seq_patternSet.seq_patternLengthRotate[seq_activePattern][i].length;
+      rot=seq_patternSet.seq_patternLengthRotate[seq_perTrackActivePattern[i]][i].rotate;
+      len=seq_patternSet.seq_patternLengthRotate[seq_perTrackActivePattern[i]][i].length;
       if(len && (rot > len))
          rot = rot % len;
    
@@ -1949,18 +2128,18 @@ void seq_realign()
    uint16_t trackSteps;
    
    for(i=0;i<NUM_TRACKS;i++) {
-      length=seq_patternSet.seq_patternLengthRotate[seq_activePattern][i].length;
+      length=seq_patternSet.seq_patternLengthRotate[seq_perTrackActivePattern[i]][i].length;
       if (!length)
          length=16;
       length = length << 3;
-      scale=seq_patternSet.seq_patternLengthRotate[seq_activePattern][i].scale;
+      scale=seq_patternSet.seq_patternLengthRotate[seq_perTrackActivePattern[i]][i].scale;
       
       
       trackSteps=(stepsFromZero>>scale)%length;
       
       seq_stepIndex[i] = trackSteps;
       // resetting the stepindex also resets rotation
-      seq_patternSet.seq_patternLengthRotate[seq_activePattern][i].rotate = 0;
+      seq_patternSet.seq_patternLengthRotate[seq_perTrackActivePattern[i]][i].rotate = 0;
    }
    
    // make sure the front panel knows that roation has been reset
@@ -1969,4 +2148,12 @@ void seq_realign()
    uart_sendFrontpanelByte(0);
    
    seq_midiNoteOff(0xff);
+}
+
+void sequencer_sendVMorph(uint8_t voice, uint8_t morphAmount)
+{
+   uart_sendFrontpanelByte(FRONT_SEQ_VOICE_MORPH);
+   uart_sendFrontpanelByte(voice);
+   uart_sendFrontpanelByte(morphAmount);
+
 }

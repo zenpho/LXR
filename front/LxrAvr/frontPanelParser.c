@@ -381,33 +381,8 @@ void frontPanel_parseData(uint8_t data)
 					menu_repaintAll();
 				}
 				else if(frontParser_midiMsg.status == VOICE_MORPH)
-            {/*
-               uint8_t signum=0;
-               switch(frontParser_midiMsg.data1)
-               { // voice load - each voice has unique bits
-                  case 0:
-                     signum = 0x01;
-                  break;
-                  case 1:
-                     signum = 0x02;
-                  break;
-                  case 2:
-                     signum = 0x04;
-                  break;
-                  case 3:
-                     signum = 0x08;
-                  break;
-                  case 4:
-                     signum = 0x10;
-                  break;
-                  case 5:
-                     signum = 0x60;
-                  break;
-                  default:
-                  break;
-               }*/
-               /* INSERT MORPH CODE HERE */
-               //preset_loadVoice(frontParser_midiMsg.data2, signum, 0);
+            {
+               preset_voiceMorph(frontParser_midiMsg.data1, frontParser_midiMsg.data2);
             }
 				else if(frontParser_midiMsg.status == SEQ_CC)
 				{

@@ -75,6 +75,8 @@ enum Seq_RollModeEnum //0=trig, 1=nte, 2=vel, 3=bth, 4=all
    ROLL_MODE_VELOCITY,
    ROLL_MODE_BOTH,
    ROLL_MODE_ALL,
+   ROLL_MODE_FIRST_ON,
+   ROLL_MODE_FIRST_OFF,
 };
 
 enum Seq_QuantisationEnum
@@ -155,7 +157,12 @@ extern uint8_t seq_rollMode;
 extern uint8_t seq_rollNote;
 extern uint8_t seq_rollVelocity;
 extern uint8_t seq_kitResetFlag;
+extern uint8_t seq_skipFirstRoll;
 
+extern uint8_t seq_vMorphAmount[6];
+extern uint8_t seq_vMorphFlag;
+
+void sequencer_sendVMorph(uint8_t voice, uint8_t morphAmount);
 //------------------------------------------------------------------------------
 void seq_triggerVoice(uint8_t voiceNr, uint8_t vol, uint8_t note);
 //------------------------------------------------------------------------------
@@ -170,6 +177,8 @@ void seq_setTrackScale(uint8_t trackNr, uint8_t scale);
 uint8_t seq_getTrackScale(uint8_t trackNr);
 //------------------------------------------------------------------------------
 void seq_setTrackRotation(uint8_t trackNr, const uint8_t rot);
+//------------------------------------------------------------------------------
+void seq_setLoop(uint8_t length);
 //------------------------------------------------------------------------------
 uint8_t seq_getTrackRotation(uint8_t trackNr);
 //------------------------------------------------------------------------------
@@ -205,7 +214,7 @@ void seq_setQuantisation(uint8_t value);
 void seq_setExtSync(uint8_t isExt);
 //------------------------------------------------------------------------------
 /** switch to pattern patNr after the current pattern has finished*/
-void seq_setNextPattern(const uint8_t patNr);
+void seq_setNextPattern(const uint8_t patNr, uint8_t voice);
 //------------------------------------------------------------------------------
 void seq_toggleStep(uint8_t voice, uint8_t stepNr, uint8_t patternNr);
 //------------------------------------------------------------------------------
@@ -270,6 +279,8 @@ void seq_copySubStep(uint8_t srcStep, uint8_t dstStep, uint8_t activeTrack);
 void seq_setActiveAutomationTrack(uint8_t trackNr);
 //------------------------------------------------------------------------------
 void seq_recordAutomation(uint8_t voice, uint8_t dest, uint8_t value);
+//------------------------------------------------------------------------------
+void seq_writeTranspose();
 //------------------------------------------------------------------------------
 int8_t seq_quantize(int8_t step, uint8_t track);
 //------------------------------------------------------------------------------

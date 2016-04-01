@@ -24,6 +24,13 @@
 #include <ctype.h>
 #include "../front.h"
 
+#define MACRO_VMORPH_DRUM1 36
+#define MACRO_VMORPH_DRUM2 71
+#define MACRO_VMORPH_DRUM3 106
+#define MACRO_VMORPH_SNARE 140
+#define MACRO_VMORPH_CYM   175
+#define MACRO_VMORPH_HIHAT 210
+
 // uppercase 3 letters in buf
 static void upr_three(char *buf);
 // given a menuid and a param value fill buf with the short menu item value. will not exceed 3 chars
@@ -202,6 +209,7 @@ const Name valueNames[NUM_NAMES] PROGMEM =
       {SHORT_SEQ_PC_TIME, CAT_SEQUENCER, LONG_SEQ_PC_TIME}, // TEXT_SEQ_PC_TIME
       {SHORT_BUT_SHIFT_MODE, CAT_GLOBAL, LONG_BUT_SHIFT_MODE}, // TEXT_BUT_SHIFT_MODE
       {SHORT_LOAD_PERF_ON_BANK, CAT_GLOBAL, LONG_LOAD_PERF_ON_BANK}, // TEXT_LOAD_PERF_ON_BANK
+      {SHORT_SKIP_FIRST_ROLL, CAT_SEQUENCER, LONG_SKIP_FIRST_ROLL}, // TEXT_LOAD_PERF_ON_BANK      
       {SHORT_MORPH_VOICE, CAT_MORPH_VOICE, LONG_MORPH_VOICE}, // text for voice morph automation
       
       {SHORT_MAC1, CAT_MACRO1, LONG_MAC1}, // text for macro 1 send amount
@@ -537,6 +545,7 @@ const enum Datatypes PROGMEM parameter_dtypes[NUM_PARAMS] = {
 	   /*PAR_SEQ_PC_TIME*/  DTYPE_ON_OFF, // -bc- change patterns on sub-step instead of bar
 	   /*PAR_BUT_SHIFT_MODE*/ DTYPE_ON_OFF, // -bc- make shift a toggle
       /*PAR_LOAD_PERF_ON_BANK*/  DTYPE_ON_OFF, // -bc- load perfs instead of kits on bank change cc
+      /*PAR_SKIP_FIRST_ROLL*/  DTYPE_ON_OFF,
 
 };
 
@@ -587,29 +596,12 @@ static uint8_t parameterFetch = 0b00011111;	/**< the lower 4 bits define a lock 
 uint8_t parameter_values[NUM_PARAMS];
 uint8_t parameter_values_temp[END_OF_SOUND_PARAMETERS];
 uint8_t parameters2[END_OF_SOUND_PARAMETERS];/**< a second array for sound x-fade to another preset*/
-//-----------------------------------------------------------------
 
-void menu_setShownPattern(uint8_t patternNr)
-{
-	menu_shownPattern = patternNr;
-	frontPanel_sendData(SEQ_CC,SEQ_SET_SHOWN_PATTERN,menu_shownPattern);
-}
+uint8_t menu_lastVoiceIndex=0;
+uint8_t menu_lastPerfIndex=0;
 
-uint8_t menu_getViewedPattern()
-{
-	return menu_shownPattern;
-}
-
-
-//lock all 4 potentiometer values
-void lockPotentiometerFetch()
-{
-	if(parameterFetch & PARAMETER_LOCK_ACTIVE)
-	{
-		//all 4 parameters locked
-		parameterFetch |= 0x0F;
-	}	
-}
+uint8_t menu_lastStepSubPage=0;
+uint8_t menu_selectedStepLed=LED_STEP1;
 
 //-----------------------------------------------------------------
 void menu_init()
@@ -636,6 +628,8 @@ void menu_init()
    parameter_values[PAR_ROLL_MODE] = 4; //0=trig, 1=nte, 2=vel, 3=bth, 4=all
    parameter_values[PAR_TRANSPOSE] = 63;
    parameter_values[PAR_TRANSPOSE_ON_OFF] = 0;
+   parameter_values[PAR_ACTIVE_STEP] = 0;
+   parameter_values[PAR_SKIP_FIRST_ROLL] = 0;
    
 	//frontPanel_sendData(SEQ_CC,SEQ_ROLL_RATE,8); //value is initialized in cortex firmware
 
@@ -646,14 +640,17 @@ void menu_init()
 	// but then the global data loaded from glo.cfg seemed like it was not being sent to the back.
 	// need to figure out why as it's likely to crop up again at some point.
 
-	//set voice 1 active
-	menu_switchPage(0);
+
 	frontPanel_sendData(SEQ_CC,SEQ_SET_ACTIVE_TRACK,0);
 	//the currently active button is lit
 	led_setActiveVoice(0);
 
 	//display start menu page
 	menu_repaintAll();
+   //set voice 1 active
+	menu_switchPage(0);
+   menu_switchSubPage(0);
+   led_setActiveSelectButton(0);
 }
 //-----------------------------------------------------------------
 /** compare the currentDisplayBuffer with the editDisplayBuffer and send all differences to the display*/
@@ -691,6 +688,178 @@ void sendDisplayBuffer()
 	lcd_setcursor((uint8_t)(visibleCursor >> 2), (uint8_t)(((visibleCursor & 2) >> 1)+1));
 	lcd_turnOn(1,(visibleCursor & 1));
 
+}
+//-----------------------------------------------------------------
+void menu_enterVoiceMode()
+{
+   //set menu to voice page mode
+   //uint8_t pageNr=menu_getActiveVoice();
+	//uint8_t paramNr=menu_lastVoiceParameter;
+   //menu_switchSubPage(menu_lastVoiceSubPage);
+   led_clearAllBlinkLeds();
+   menuIndex = menu_lastVoiceIndex;
+   menu_switchPage(menu_getActiveVoice());
+	led_setActiveSelectButton(menu_getSubPage());
+	//menu_resetActiveParameter();
+   if(shiftState)
+      menu_shiftVoice(1);
+   
+}
+//-----------------------------------------------------------------
+void menu_enterPerfMode()
+{
+	led_clearSequencerLeds();
+	led_clearSelectLeds();
+	led_initPerformanceLeds();
+
+	//set menu to perf page
+   menuIndex=menu_lastPerfIndex;   
+   menu_switchPage(PERFORMANCE_PAGE);
+	menu_repaintAll();   
+}
+//-----------------------------------------------------------------
+void menu_enterStepMode()
+{
+	menu_switchPage(SEQ_PAGE);   
+   menu_resetSubPage();
+	frontPanel_updatePatternLeds();
+	led_setBlinkLed(menu_selectedStepLed, 1);
+   menu_repaint();
+   if(shiftState)
+      menu_shiftStep(1);
+}
+//-----------------------------------------------------------------
+void menu_enterPatgenMode()
+{
+   // bc todo - disonnect this action from button handlers
+}
+//-----------------------------------------------------------------
+void menu_shiftVoice(uint8_t shift)
+{
+   if(shift)
+   {
+      
+      menu_switchPage(SEQ_PAGE);
+      menu_resetSubPage(0);
+      
+      frontPanel_updatePatternLeds();
+   
+      led_setBlinkLed(menu_selectedStepLed, 1);
+      menu_repaint();
+   }
+   else
+   {
+      menu_enterVoiceMode();
+   }
+}
+//-----------------------------------------------------------------
+void menu_shiftPerf(uint8_t shift)
+{
+   if(shift)
+   {
+      //blink selected pattern LED
+      menu_switchPage(PATTERN_SETTINGS_PAGE);
+      led_clearSelectLeds();
+      led_clearAllBlinkLeds();
+      //**PATROT The step led's are repurposed here to have the current track rotation
+      // represented by a blinking led. The leftmost LED blinking means rotation is off (0)
+      // and each one represents a different rotation
+      led_setBlinkLed((uint8_t) (LED_STEP1 + parameter_values[PAR_TRACK_ROTATION]), 1);
+      led_setBlinkLed((uint8_t) (LED_PART_SELECT1 + menu_getViewedPattern()),	1);
+      led_setBlinkLed((uint8_t)(LED_VOICE1 + menu_getActiveVoice()) ,1);
+   }
+   else
+   {
+      led_clearAllBlinkLeds();
+      led_clearSelectLeds();
+      menuIndex=menu_lastPerfIndex;
+      menu_switchPage(PERFORMANCE_PAGE);
+      led_initPerformanceLeds();
+   }
+}
+//-----------------------------------------------------------------
+void menu_shiftStep(uint8_t shift)
+{
+   if(shift)
+   {
+      led_setBlinkLed(menu_selectedStepLed, 0);
+      led_setValue(0, menu_selectedStepLed);
+      
+      led_clearAllBlinkLeds();
+      frontPanel_updatePatternLeds();
+   }
+   else
+   {
+   
+      //menu_switchSubPage(0);
+	   menu_switchPage(SEQ_PAGE);
+
+	   frontPanel_updatePatternLeds();
+
+	   led_setBlinkLed(menu_selectedStepLed, 1);
+   
+   }
+   
+}
+//-----------------------------------------------------------------
+void menu_shiftPatgen(uint8_t shift)
+{
+   if(shift)
+   {
+      //blink selected pattern LED
+      menu_switchPage(PATTERN_SETTINGS_PAGE);
+      led_clearSelectLeds();
+      led_clearAllBlinkLeds();
+      led_setBlinkLed(LED_MODE2, 1);
+      // --AS todo taking the below out while in perf mode so I can see if the above works. Not sure if the below is needed, since
+      // at this stage the shift button is held
+      //the pattern change update for the follow mode is not made immediately when the pattern options are active
+      //so we have to do it here
+      if (parameter_values[PAR_FOLLOW]) 
+      {
+         menu_setShownPattern(menu_shownPattern);
+         led_clearSequencerLeds();
+         //query current sequencer step states and light up the corresponding leds
+         uint8_t trackNr = menu_getActiveVoice(); //max 6 => 0x6 = 0b110
+         uint8_t patternNr = menu_getViewedPattern(); //max 7 => 0x07 = 0b111
+         uint8_t value = (uint8_t) ((trackNr << 4) | (patternNr & 0x7));
+         frontPanel_sendData(LED_CC, LED_QUERY_SEQ_TRACK, value);
+         frontPanel_sendData(SEQ_CC, SEQ_REQUEST_PATTERN_PARAMS,
+         frontParser_midiMsg.data2);
+   
+      }
+   
+      led_setBlinkLed((uint8_t) (LED_PART_SELECT1 + menu_getViewedPattern()),	1);
+   }
+   else
+   {
+      led_clearSelectLeds();
+      menu_switchPage(EUKLID_PAGE);
+      led_initPerformanceLeds();
+      led_setValue(1,	(uint8_t) (menu_getViewedPattern() + LED_PART_SELECT1));
+   }
+}
+//-----------------------------------------------------------------
+void menu_setShownPattern(uint8_t patternNr)
+{
+	menu_shownPattern = patternNr;
+	frontPanel_sendData(SEQ_CC,SEQ_SET_SHOWN_PATTERN,menu_shownPattern);
+}
+//-----------------------------------------------------------------
+uint8_t menu_getViewedPattern()
+{
+	return menu_shownPattern;
+}
+//-----------------------------------------------------------------
+
+//lock all 4 potentiometer values
+void lockPotentiometerFetch()
+{
+	if(parameterFetch & PARAMETER_LOCK_ACTIVE)
+	{
+		//all 4 parameters locked
+		parameterFetch |= 0x0F;
+	}	
 }
 //-----------------------------------------------------------------
 void menu_repaintAll()
@@ -2354,7 +2523,7 @@ static void menu_encoderChangeParameter(int8_t inc)
    	if(*paramValue >= nmt)
    		*paramValue = (uint8_t)(nmt-1);
       if (menu_activePage == PERFORMANCE_PAGE)
-      {
+      { // the only time you get a dtype autom target on the PERF page is when assigning macros
    		uint8_t value =  (uint8_t)pgm_read_word(&modTargets[*paramValue].param); // the value of the mod target
          uint8_t lower = value&0x7f;
          uint8_t upper = (uint8_t)
@@ -2363,6 +2532,7 @@ static void menu_encoderChangeParameter(int8_t inc)
                               <<2 )                      //  shift over 2 to make room for upper mod target bit
                               |(value>>7) );
                               
+         
          frontPanel_sendData(MACRO_CC,upper,lower);
       }      
 	}
@@ -2435,7 +2605,6 @@ static void menu_encoderChangeParameter(int8_t inc)
    }
 	else // non sound parameters (ie current step data, etc)
 		menu_parseGlobalParam(paramNr,parameter_values[paramNr]);
-
 	//frontPanel_sendData(0xb0,paramNr,*paramValue);
 }
 
@@ -2775,6 +2944,12 @@ checkvalid:
 	menuIndex = (uint8_t)( (activePage << PAGE_SHIFT) | activeParameter);
 	if(needLock)
 		lockPotentiometerFetch();
+      
+   if(menu_activePage<=VOICE7_PAGE)
+      menu_lastVoiceIndex=menuIndex;
+   else if(menu_activePage==PERFORMANCE_PAGE)
+      menu_lastPerfIndex=menuIndex;
+  
 }
 
 //-----------------------------------------------------------------
@@ -2806,6 +2981,13 @@ void menu_resetSubPage() // forces menu to first sub-page, disregarding toggle
    menuIndex = 0;
 }
 //-----------------------------------------------------------------
+void menu_gotoSubPage(uint8_t subPage) // forces menu to first sub-page, disregarding toggle
+{
+   uint8_t activeParameter	= menuIndex & MASK_PARAMETER;
+	uint8_t activePage = subPage;
+   menuIndex = (uint8_t)( (activePage << PAGE_SHIFT) | activeParameter);
+}
+//-----------------------------------------------------------------
 // switches us to a different menu sub page. If that page is already active
 // and has multiple screens, will toggle to the other screen
 // if its the global menu, and there are multiple pages will toggle to the next page
@@ -2820,42 +3002,93 @@ void menu_switchSubPage(uint8_t subPageNr)
 	//get current position
 	uint8_t activeParameter	= menuIndex & MASK_PARAMETER;
 	uint8_t activePage		= (menuIndex&MASK_PAGE)>>PAGE_SHIFT;
+   
+   if (menu_activePage<=VOICE7_PAGE) // on a voice menu page
+   {
+      if(subPageNr == activePage)
+      {
+         if(activeParameter < 4) 
+         {
+   			// toggle to next if possible
+   			if(has2ndPage(activePage))
+   				activeParameter=4;
+         }
+         else
+            activeParameter=0;
+      }
+      else
+      {
+         activePage=subPageNr;
+         activeParameter=0;
+      }  
 
-	if(subPageNr == activePage) { // toggle only
-		// we are toggling to next screen, or back to first
-		if(activeParameter < 4) {
-			// toggle to next if possible
-			if(has2ndPage(activePage))
-				activeParameter=4;
-			else if(menu_activePage==MENU_MIDI_PAGE) { // special case for global - wrap around to first
-				activePage=0;
-				activeParameter=0;
-			}
-		} else { // we are on 2nd screen
+      menuIndex = (uint8_t)( (activePage << PAGE_SHIFT) | activeParameter);
+      menu_lastVoiceIndex=menuIndex;
+   }
+   else if (menu_activePage==MENU_MIDI_PAGE)
+   {
+      if(subPageNr == activePage) 
+      { // in global mode, we move to next page if possible (or wrap to first)
+         if(activeParameter<4)
+         {
+            if(pgm_read_byte(&menuPages[menu_activePage][activePage].top5) != TEXT_EMPTY) 
+               activeParameter=4;
+            else
+               activePage=0;   
+         }   
+         else
+         {  
+   		   if(pgm_read_byte(&menuPages[menu_activePage][activePage].top1) != TEXT_EMPTY) 
+            {
+   				activePage=(uint8_t)((activePage+1)%8);
+   			} 
+            else 
+            {
+   				activePage=0;
+   			}
+            activeParameter=0;
+         }
+      }
+      menuIndex = (uint8_t)( (activePage << PAGE_SHIFT) | activeParameter);
+   }
+   else if (menu_activePage==PERFORMANCE_PAGE)
+   {
+      if(subPageNr == activePage)
+      {
+         if(activeParameter < 4)
+            activeParameter=4;
+         else
+            activeParameter=0;
+      }
+      else
+      {
+         activePage=subPageNr;
+         activeParameter=0;
+      }   
+         
+      menuIndex = (uint8_t)( (activePage << PAGE_SHIFT) | activeParameter);
+      menu_lastPerfIndex=menuIndex;
+   }
+   else if (menu_activePage==SEQ_PAGE)
+   {
+      if(subPageNr == activePage)
+      {
+         if(activeParameter < 4)
+            activeParameter=4;
+         else
+            activeParameter=0;
+      }
+      else
+      {
+         activePage=subPageNr;
+         activeParameter=0;
+      }   
+         
+      menuIndex = (uint8_t)( (activePage << PAGE_SHIFT) | activeParameter);
+   }
+   
+   
 
-			if(menu_activePage==MENU_MIDI_PAGE){
-				// in global mode, we move to next page if possible (or wrap to first)
-				if(activePage < NUM_SUB_PAGES-1 &&
-				   pgm_read_byte(&menuPages[menu_activePage][activePage+1].top1) != TEXT_EMPTY) {
-					activePage++;
-				} else {
-					activePage=0;
-				}
-			}
-			activeParameter=0;
-		}
-	} 
-   else 
-   { // move to different sub page
-		// we are moving to a different (specific) subpage
-		activePage=subPageNr;
-		if(activeParameter > 3 && has2ndPage(activePage))
-			activeParameter = 4;
-		else
-			activeParameter = 0;
-	}
-
-	menuIndex = (uint8_t)( (activePage << PAGE_SHIFT) | activeParameter);
 }
 
 //-----------------------------------------------------------------
@@ -3301,21 +3534,102 @@ void menu_parseGlobalParam(uint16_t paramNr, uint8_t value)
 		break;
    case PAR_LOAD_PERF_ON_BANK:
       parameter_values[PAR_LOAD_PERF_ON_BANK]=value;
-   break;
-      
-
+      break;
+   case PAR_SKIP_FIRST_ROLL:
+      parameter_values[PAR_SKIP_FIRST_ROLL]=value; 
+      frontPanel_sendData(SEQ_CC, SEQ_ROLL_MODE, (uint8_t)(value+5) );
+      break;
 	}
+}
+//-----------------------------------------------------------------
+void menu_vMorph(uint8_t dest, uint8_t val, uint8_t amt)
+{
+   switch(dest)
+   {
+      case MACRO_VMORPH_DRUM1:
+      {
+         float morphValue;
+         morphValue = ((float)amt/64)-1;
+         if(morphValue>0)
+            morphValue = val*morphValue;
+         else
+            morphValue = 127+(val*morphValue);  
+         preset_voiceMorph(0,(uint8_t)morphValue);
+         break;
+      }
+      case MACRO_VMORPH_DRUM2:
+      {
+         float morphValue;
+         morphValue = ((float)amt/64)-1;
+         if(morphValue>0)
+            morphValue = val*morphValue;
+         else
+            morphValue = 127+(val*morphValue);  
+         preset_voiceMorph(1,(uint8_t)morphValue);
+         break;
+      }
+      case MACRO_VMORPH_DRUM3:
+      {
+         float morphValue;
+         morphValue = ((float)amt/64)-1;
+         if(morphValue>0)
+            morphValue = val*morphValue;
+         else
+            morphValue = 127+(val*morphValue);  
+         preset_voiceMorph(2,(uint8_t)morphValue);
+         break;
+      }
+      case MACRO_VMORPH_SNARE:
+      {
+         float morphValue;
+         morphValue = ((float)amt/64)-1;
+         if(morphValue>0)
+            morphValue = val*morphValue;
+         else
+            morphValue = 127+(val*morphValue);  
+         preset_voiceMorph(3,(uint8_t)morphValue);
+         break;
+      }   
+      case MACRO_VMORPH_CYM:
+      {
+         float morphValue;
+         morphValue = ((float)amt/64)-1;
+         if(morphValue>0)
+            morphValue = val*morphValue;
+         else
+            morphValue = 127+(val*morphValue);  
+         preset_voiceMorph(4,(uint8_t)morphValue);
+         break;
+      }
+      case MACRO_VMORPH_HIHAT:
+      {
+         float morphValue;
+         morphValue = ((float)amt/64)-1;
+         if(morphValue>0)
+            morphValue = val*morphValue;
+         else
+            morphValue = 127+(val*morphValue);  
+         preset_voiceMorph(5,(uint8_t)morphValue);
+         break;
+      }
+      default:
+         break;               
+   }   
 }
 //-----------------------------------------------------------------
 static void menu_processSpecialCaseValues(uint16_t paramNr/*, const uint8_t *value*/)
 {
-   
    if(paramNr == PAR_MAC1)
    {
+      
+      menu_vMorph(parameter_values[PAR_MAC1_DST1],parameter_values[PAR_MAC1],parameter_values[PAR_MAC1_DST1_AMT]);
+      menu_vMorph(parameter_values[PAR_MAC1_DST2],parameter_values[PAR_MAC1],parameter_values[PAR_MAC1_DST2_AMT]);
       frontPanel_sendMacro(1,parameter_values[PAR_MAC1]);
    }
    else if (paramNr == PAR_MAC2)
    {
+      menu_vMorph(parameter_values[PAR_MAC2_DST1],parameter_values[PAR_MAC2],parameter_values[PAR_MAC2_DST1_AMT]);
+      menu_vMorph(parameter_values[PAR_MAC2_DST2],parameter_values[PAR_MAC2],parameter_values[PAR_MAC2_DST2_AMT]);
       frontPanel_sendMacro(2,parameter_values[PAR_MAC2]);
    }
 	else if(paramNr == PAR_BPM)
@@ -3585,15 +3899,25 @@ void menu_sendAllParameters()
 	}		
 }
 //----------------------------------------------------------------
+void menu_reloadKit()
+{
+   if (menu_kitLockType==KITLOCK_DRUMKIT)
+      preset_loadDrumset(menu_kitLockPreset,0);
+   else if (menu_kitLockType==KITLOCK_PERF)
+      preset_loadAll(menu_kitLockPreset,KITLOCK_PERF,1);
+   else if (menu_kitLockType==KITLOCK_ALL)
+      preset_loadAll(menu_kitLockPreset,KITLOCK_ALL,1);
+}
+//----------------------------------------------------------------
 uint8_t menu_getActivePage()
 {
 	return menu_activePage;
-};
+}
 //----------------------------------------------------------------
 uint8_t menu_getActiveVoice()
 {
 	return menu_activeVoice;
-};
+}
 //----------------------------------------------------------------
 void menu_setActiveVoice(uint8_t voiceNr)
 {
@@ -3601,7 +3925,7 @@ void menu_setActiveVoice(uint8_t voiceNr)
 	menu_TargetVoiceGapIndex = getModTargetGapIndex(parameter_values[PAR_TARGET_LFO1+voiceNr]);
 	menu_activeVoice = voiceNr;
    frontPanel_sendData(SEQ_CC, SEQ_REQUEST_EUKLID_PARAMS, voiceNr);
-};
+}
 //----------------------------------------------------------------
 uint8_t menu_areMuteLedsShown()
 {

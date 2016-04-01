@@ -453,7 +453,7 @@ static void frontParser_handleMidiMessage()
             
             uint8_t upper = frontParser_midiMsg.data1;
             uint8_t lower = frontParser_midiMsg.data2;
-           
+            //sequencer_sendVMorph(0,(uint8_t)(lower*macroModulators[0].amount));
             if (upper&0x20)
             {
                float value = ((float)(lower))/127.f;
@@ -1035,13 +1035,21 @@ static void frontParser_handleSeqCC()
          seq_setRollVelocity(frontParser_midiMsg.data2);
          break;
       case FRONT_SEQ_ROLL_MODE:
-         seq_rollMode = frontParser_midiMsg.data2;
+         if(frontParser_midiMsg.data2==ROLL_MODE_FIRST_ON)
+            seq_skipFirstRoll=0;
+         else if(frontParser_midiMsg.data2==ROLL_MODE_FIRST_OFF)
+            seq_skipFirstRoll=1;   
+         else
+            seq_rollMode = frontParser_midiMsg.data2;
          break;
       case FRONT_SEQ_TRANSPOSE:
          seq_transpose_voiceAmount[frontParser_activeTrack]=frontParser_midiMsg.data2;
       break;
       case FRONT_SEQ_TRANSPOSE_ON_OFF:
-         seq_transposeOnOff = frontParser_midiMsg.data2;
+         if (frontParser_midiMsg.data2==0x0f)
+            seq_writeTranspose();
+         else if (frontParser_midiMsg.data2<=1)
+            seq_transposeOnOff = frontParser_midiMsg.data2;
       break;
    
       case FRONT_SEQ_ROLL_ON_OFF:
@@ -1055,7 +1063,7 @@ static void frontParser_handleSeqCC()
    
       case FRONT_SEQ_CHANGE_PAT:
          //switch to one of the 8 patterns on the next pattern start
-         seq_setNextPattern(frontParser_midiMsg.data2&0x7);
+         seq_setNextPattern( (frontParser_midiMsg.data2&0x07),(frontParser_midiMsg.data2>>3) );
          break;
    
    
@@ -1162,6 +1170,10 @@ static void frontParser_handleSeqCC()
    
       case FRONT_SEQ_TRIGGER_GATE_MODE:
          trigger_setGatemode(frontParser_midiMsg.data2);
+         break;
+         
+      case FRONT_SEQ_SET_LOOP:
+         seq_setLoop(frontParser_midiMsg.data2);
          break;
    
       default:

@@ -189,21 +189,24 @@ void modNode_setDestination(ModulationNode* vm, uint16_t dest)
 void modNode_updateValue(ModulationNode* vm, float val)
 {
 	Parameter const *p = &parameterArray[vm->destination];
-
+   
 	vm->lastVal = val;
 
 	// --AS **PATROT avoid setting this if it's not set to something good
 	if(!p->ptr)
 		return;
       
-  if (vm->amount<0)
+  if ( (p->type)==TYPE_UINT8_VMORPH)
+  {
+    modNode_vMorph(vm, val);
+  }
+  else if (vm->amount<0)
   {
       switch(p->type)
    	{
    	case TYPE_UINT8:
    		(*((uint8_t*)p->ptr)) = (*((uint8_t*)p->ptr)) * vm->amount * val + (*((uint8_t*)p->ptr));
    		break;
-   
    	case TYPE_UINT32:
    		(*((uint32_t*)p->ptr)) = (*((uint32_t*)p->ptr)) * vm->amount * val + (*((uint32_t*)p->ptr));
    		break;
@@ -231,7 +234,6 @@ void modNode_updateValue(ModulationNode* vm, float val)
    	case TYPE_UINT8:
    		(*((uint8_t*)p->ptr)) = (*((uint8_t*)p->ptr)) * vm->amount * val + (1.f-vm->amount) * (*((uint8_t*)p->ptr));
    		break;
-   
    	case TYPE_UINT32:
    		(*((uint32_t*)p->ptr)) = (*((uint32_t*)p->ptr)) * vm->amount * val + (1.f-vm->amount) * (*((uint32_t*)p->ptr));
    		break;
@@ -250,8 +252,40 @@ void modNode_updateValue(ModulationNode* vm, float val)
    		break;
    
    	}
-      
    }
+}
+//-----------------------------------------------------------------------
+void modNode_vMorph(ModulationNode* vm, float val)
+{
+   switch(vm->destination)
+   {
+      case PAR_MORPH_DRUM1:
+         seq_vMorphFlag|=(0x01<<0);
+         seq_vMorphAmount[0]=(uint8_t)( (vm->amount * val * 128)  );
+         break;
+      case PAR_MORPH_DRUM2:
+         seq_vMorphFlag|=(0x01<<1);
+         seq_vMorphAmount[1]=(uint8_t)( (vm->amount * val * 128)  );
+         break;
+      case PAR_MORPH_DRUM3:
+         seq_vMorphFlag|=(0x01<<2);
+         seq_vMorphAmount[2]=(uint8_t)( (vm->amount * val * 128)  );
+         break;
+      case PAR_MORPH_SNARE:
+         seq_vMorphFlag|=(0x01<<3);
+         seq_vMorphAmount[3]=(uint8_t)( (vm->amount * val * 128)  );
+         break;
+      case PAR_MORPH_CYM:
+         seq_vMorphFlag|=(0x01<<4);
+         seq_vMorphAmount[4]=(uint8_t)( (vm->amount * val * 128)  );
+         break;
+      case PAR_MORPH_HIHAT:
+         seq_vMorphFlag|=(0x01<<5);
+         seq_vMorphAmount[5]=(uint8_t)( (vm->amount * val * 128)  );
+         break;
+      default:
+         break;               
+   }   
 }
 //-----------------------------------------------------------------------
 void modNode_resetMacros()

@@ -142,7 +142,6 @@ uint8_t midi_MidiChannels[8];	// the currently selected midi channel for each vo
 
 //--AS note overrides for each voice
 uint8_t midi_NoteOverride[7];
-uint8_t midi_KitChange[6];
 //uint8_t midi_mode; //--AS not used anymore
 MidiMsg midiMsg_tmp;				// buffer message where the incoming data is stored
 // these two are used only when building up a midi message
@@ -1397,23 +1396,36 @@ void midiParser_parseMidiMessage(MidiMsg msg)
          } // check midi filter
          
       } 
-      else if(msgonly==PROG_CHANGE) {
+      else if(msgonly==PROG_CHANGE) 
+      {
       // --AS respond to prog change and change patterns. This responds only when global channel matches the PC message's channel.
          //send the ack message to tell the front that a new pattern starts playing
-         if((midiParser_txRxFilter & 0x08) && (chanonly == midi_MidiChannels[7]))
+         if(midiParser_txRxFilter & 0x08)
          {
-            if(msg.data1<16)
+            if(chanonly == midi_MidiChannels[7])
             {
-               uint8_t patMsg = (msg.data1&0x07);
-               seq_setNextPattern(patMsg);
-               seq_kitResetFlag=((msg.data1&0x08)>>3); //if PC with 8-15, reset kit
-               
-               //uart_sendFrontpanelByte(FRONT_SEQ_CC);
-               //uart_sendFrontpanelByte(FRONT_SEQ_CHANGE_PAT);
-               //uart_sendFrontpanelByte(patMsg|(seq_kitResetFlag<<3));
+               if(msg.data1<16)
+               {
+                  uint8_t patMsg = (msg.data1&0x07);
+                  seq_setNextPattern(patMsg,0x0f);
+                  seq_kitResetFlag=((msg.data1&0x08)>>3); //if PC with 8-15, reset kit
+                  
+                  //uart_sendFrontpanelByte(FRONT_SEQ_CC);
+                  //uart_sendFrontpanelByte(FRONT_SEQ_CHANGE_PAT);
+                  //uart_sendFrontpanelByte(patMsg|(seq_kitResetFlag<<3));
+               }   
+            }
+            uint8_t i;
+            for(i=0;i<NUM_TRACKS;i++) // set individual track patterns with PC on that channel
+            {
+               if(chanonly == midi_MidiChannels[i])
+               {
+                  uint8_t patMsg = (msg.data1&0x07);
+                  seq_setNextPattern(patMsg,i);
+                   
+               }
             }   
-         }   
-      
+         }
       } 
       else if(msgonly==MIDI_CC){
       // respond to CC message. 
@@ -1484,7 +1496,8 @@ void midiParser_MIDIccHandler(MidiMsg msg, uint8_t updateOriginalValue)
       {
          switch(MIDIparamNr){
             case MOD_WHEEL:
-               break; // -bc- todo: assignable mod wheel?
+               sequencer_sendVMorph(0, msg.data2);
+               break;
             case CHANNEL_VOL: // voice 1-6
                voiceArray[0].vol = msg.data2/127.f;
                LXRparamNr=VOL1;
@@ -1740,7 +1753,8 @@ void midiParser_MIDIccHandler(MidiMsg msg, uint8_t updateOriginalValue)
       {
          switch(MIDIparamNr){
             case MOD_WHEEL:
-               break; // -bc- todo: assignable mod wheel?
+                  sequencer_sendVMorph(1, msg.data2);
+               break; 
             case CHANNEL_VOL: // voice 1-6
                voiceArray[1].vol = msg.data2/127.f;
                LXRparamNr=VOL2;
@@ -1996,7 +2010,8 @@ void midiParser_MIDIccHandler(MidiMsg msg, uint8_t updateOriginalValue)
       {
          switch(MIDIparamNr){
             case MOD_WHEEL:
-               break; // -bc- todo: assignable mod wheel?
+                  sequencer_sendVMorph(2, msg.data2);
+               break;
             case CHANNEL_VOL: // voice 1-6
                voiceArray[2].vol = msg.data2/127.f;
                LXRparamNr=VOL3;
@@ -2252,7 +2267,8 @@ void midiParser_MIDIccHandler(MidiMsg msg, uint8_t updateOriginalValue)
       {
          switch(MIDIparamNr){
             case MOD_WHEEL:
-               break; // -bc- todo: assignable mod wheel?
+                  sequencer_sendVMorph(3, msg.data2);
+               break;
             case CHANNEL_VOL: // voice 1-6
                snareVoice.vol = msg.data2/127.f;
                LXRparamNr=VOL4;
@@ -2508,10 +2524,10 @@ void midiParser_MIDIccHandler(MidiMsg msg, uint8_t updateOriginalValue)
    
       if (chanonly == midi_MidiChannels[4]) // CYMBAL voice is a target
       {
-         switch(MIDIparamNr){
-               break; 
+         switch(MIDIparamNr){ 
             case MOD_WHEEL:
-               break; // -bc- todo: assignable mod wheel?
+                  sequencer_sendVMorph(4, msg.data2);
+               break;
             case CHANNEL_VOL: // voice 1-6
                cymbalVoice.vol = msg.data2/127.f;
                LXRparamNr=VOL5;
@@ -2770,7 +2786,8 @@ void midiParser_MIDIccHandler(MidiMsg msg, uint8_t updateOriginalValue)
       {
          switch(MIDIparamNr){
             case MOD_WHEEL:
-               break; // -bc- todo: assignable mod wheel?
+                  sequencer_sendVMorph(5, msg.data2);
+               break;
             case CHANNEL_VOL: // voice 1-6
                hatVoice.vol = msg.data2/127.f;
                LXRparamNr=VOL6;
@@ -3024,7 +3041,8 @@ void midiParser_MIDIccHandler(MidiMsg msg, uint8_t updateOriginalValue)
       {
          switch(MIDIparamNr){
             case MOD_WHEEL:
-               break; // -bc- todo: assignable mod wheel?
+                  sequencer_sendVMorph(6, msg.data2);
+               break;
             case CHANNEL_VOL: // voice 1-6
                hatVoice.vol = msg.data2/127.f;
                LXRparamNr=VOL6;
