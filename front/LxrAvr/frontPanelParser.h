@@ -210,6 +210,7 @@ void frontPanel_sendMidiMsg(MidiMsg msg);
 void frontPanel_sendData(uint8_t status, uint8_t data1, uint8_t data2);
 void frontPanel_sendByte(uint8_t data);
 void frontPanel_updatePatternLeds();
+void frontPanel_updateActiveLeds();
 void frontPanel_updateSubstepLeds();
 void frontPanel_sendMacro(uint8_t whichMacro,uint8_t value);
 

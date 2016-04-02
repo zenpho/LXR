@@ -287,7 +287,7 @@ static void buttonHandler_handleModeButtons(uint8_t mode) {
 	led_clearAllBlinkLeds();
 
 	//update the status LED
-	led_setMode2(buttonHandler_stateMemory.selectButtonMode);
+	led_clearModeLeds();
 
 	switch (buttonHandler_stateMemory.selectButtonMode) 
    {
@@ -295,6 +295,7 @@ static void buttonHandler_handleModeButtons(uint8_t mode) {
          buttonHandler_stateMemory.selectButtonMode = (uint8_t) (mode & 0x07); // no voice2 mode yet
       case SELECT_MODE_VOICE:
    		menu_enterVoiceMode();
+         led_setValue(1,LED_MODE1);
    		break;
          
    	case SELECT_MODE_PERF: 
@@ -304,28 +305,37 @@ static void buttonHandler_handleModeButtons(uint8_t mode) {
             menu_repaint();
          }   
          else
-            menu_enterPerfMode();   
+            menu_enterPerfMode();  
+         led_setValue(1,LED_MODE2);   
    		break;
       
       case SELECT_MODE_STEP2:
-         buttonHandler_stateMemory.selectButtonMode = (uint8_t) (mode & 0x07); // no step2 mode yet
+         menu_enterActiveStepMode();
+         break;
    	case SELECT_MODE_STEP:
+         if (menu_activePage==SEQ_PAGE)
+            menu_switchSubPage(menu_getSubPage()); //to enable toggle
          menu_enterStepMode();
    		break;
          
    	case SELECT_MODE_LOAD_SAVE:
-   		menu_switchPage(LOAD_PAGE);
+         if (menu_activePage==LOAD_PAGE)
+            menu_switchPage(SAVE_PAGE);
+   		else
+            menu_switchPage(LOAD_PAGE);
+         led_setValue(1,LED_MODE4);   
    		break;
    
    	case SELECT_MODE_MENU:
    		menu_switchPage(MENU_MIDI_PAGE);
+         led_setBlinkLed(LED_MODE4,1);
    		break;
          
    	case SELECT_MODE_PAT_GEN:
    		frontPanel_sendData(SEQ_CC, SEQ_REQUEST_EUKLID_PARAMS,
    				menu_getActiveVoice());
    		menu_switchPage(EUKLID_PAGE);
-   
+         led_setBlinkLed(LED_MODE2,1);
    		break;
    
    	default:
@@ -414,8 +424,11 @@ static void buttonHandler_handleSelectButton(uint8_t buttonNr) {
             
             //request step parameters from sequencer
                frontPanel_sendData(SEQ_CC, SEQ_REQUEST_STEP_PARAMS, stepNr);
-            
-               parameter_values[PAR_ACTIVE_STEP] = stepNr;
+               
+               if (parameter_values[PAR_ACTIVE_STEP]==stepNr)
+                  menu_switchSubPage(menu_getSubPage()); //to enable toggle
+               else       
+                  parameter_values[PAR_ACTIVE_STEP] = stepNr;
             
             //buttonHandler_armTimerActionStep(stepNr);
                led_clearAllBlinkLeds();
@@ -1165,8 +1178,10 @@ void buttonHandler_handleShift(uint8_t isDown)
          break;
       
          case SELECT_MODE_STEP:
-         case SELECT_MODE_STEP2:
             menu_shiftStep(1);
+            break;
+         case SELECT_MODE_STEP2:
+            menu_shiftActiveStep(1);
             break;
          default:
             break;
@@ -1214,8 +1229,10 @@ void buttonHandler_handleShift(uint8_t isDown)
                   menu_shiftPatgen(0);
                   break;
                case SELECT_MODE_STEP:
-               case SELECT_MODE_STEP2:
                   menu_shiftStep(0);
+                  break;
+               case SELECT_MODE_STEP2:
+                  menu_shiftActiveStep(0);
                   break;
                default:
                   break;

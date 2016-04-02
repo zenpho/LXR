@@ -703,7 +703,18 @@ void menu_enterVoiceMode()
 	//menu_resetActiveParameter();
    if(shiftState)
       menu_shiftVoice(1);
-   
+}
+//-----------------------------------------------------------------
+void menu_enterActiveStepMode()
+{
+	led_clearSequencerLeds();
+	led_clearSelectLeds();
+   led_clearVoiceLeds();
+  
+   menu_switchPage(ACTIVESTEP_PAGE);
+   frontPanel_updateActiveLeds();
+	menu_repaintAll();
+   led_setBlinkLed(LED_MODE3,1);
 }
 //-----------------------------------------------------------------
 void menu_enterPerfMode()
@@ -715,18 +726,19 @@ void menu_enterPerfMode()
 	//set menu to perf page
    menuIndex=menu_lastPerfIndex;   
    menu_switchPage(PERFORMANCE_PAGE);
-	menu_repaintAll();   
+	menu_repaintAll();
 }
 //-----------------------------------------------------------------
 void menu_enterStepMode()
 {
+   menuIndex=menu_lastStepSubPage;
 	menu_switchPage(SEQ_PAGE);   
-   menu_resetSubPage();
 	frontPanel_updatePatternLeds();
 	led_setBlinkLed(menu_selectedStepLed, 1);
    menu_repaint();
    if(shiftState)
       menu_shiftStep(1);
+   led_setValue(1,LED_MODE3);
 }
 //-----------------------------------------------------------------
 void menu_enterPatgenMode()
@@ -797,6 +809,20 @@ void menu_shiftStep(uint8_t shift)
 	   frontPanel_updatePatternLeds();
 
 	   led_setBlinkLed(menu_selectedStepLed, 1);
+   
+   }
+   
+}
+//-----------------------------------------------------------------
+void menu_shiftActiveStep(uint8_t shift)
+{
+   if(shift)
+   {
+      
+   }
+   else
+   {
+   
    
    }
    
@@ -3085,6 +3111,7 @@ void menu_switchSubPage(uint8_t subPageNr)
       }   
          
       menuIndex = (uint8_t)( (activePage << PAGE_SHIFT) | activeParameter);
+      menu_lastStepSubPage=menuIndex;
    }
    
    
@@ -3141,29 +3168,11 @@ void menu_switchPage(uint8_t pageNr)
 		break;
 
 	case LOAD_PAGE:
+   case SAVE_PAGE:
 	{
 		//re-init the save page variables
 		menu_resetSaveParameters();
-
-		if((menu_activePage != LOAD_PAGE) && (menu_activePage != SAVE_PAGE))
-		{
-			//when coming from another page, do a complete reset and show the sound select page
-			menu_resetSaveParameters();
-			//menu_saveOptions.what	= SAVE_TYPE_SOUND;
-		}
-
-		//if we are already on the load page, toggle to save page
-		// otherwise go to load page (because we were somewhere else or we were on the save page)
-		if(menu_activePage == LOAD_PAGE)
-      {
-			menu_activePage = SAVE_PAGE;
-         // re-load name in case name no longer matches
-         DISABLE_CONV_WARNING
-      preset_loadName(menu_currentPresetNr[menu_saveOptions.what],menu_saveOptions.what,1);
-      END_DISABLE_CONV_WARNING
-      }
-		else
-			menu_activePage = LOAD_PAGE;
+		menu_activePage = pageNr;
 
 		//leave edit mode if active
 		//editModeActive = 0;
@@ -3176,25 +3185,26 @@ void menu_switchPage(uint8_t pageNr)
 		break;
 
 	default: //voice pages etc
-	{
-		menu_activePage = pageNr;
-		if(pageNr<7) {
-			menu_setActiveVoice(pageNr);
-		}
-		//leave edit mode if active
-		editModeActive = 0;
-
-		//activate the parameter lock
-		lockPotentiometerFetch();
-		//query current sequencer step states and light up the corresponding leds
-
-		uint8_t trackNr = menu_getActiveVoice(); //max 6 => 0x6 = 0b110
-		uint8_t patternNr = menu_shownPattern; //max 7 => 0x07 = 0b111
-		uint8_t value = (uint8_t)((trackNr<<4) | (patternNr&0x7));
-		frontPanel_sendData(LED_CC,LED_QUERY_SEQ_TRACK,value);
+      {
+   		menu_activePage = pageNr;
+   		if(pageNr<7) 
+         {
+   		   menu_setActiveVoice(pageNr);
+   	   }
+   		//leave edit mode if active
+   		editModeActive = 0;
+   
+   		//activate the parameter lock
+   		lockPotentiometerFetch();
+   		//query current sequencer step states and light up the corresponding leds
+   
+   		uint8_t trackNr = menu_getActiveVoice(); //max 6 => 0x6 = 0b110
+   		uint8_t patternNr = menu_shownPattern; //max 7 => 0x07 = 0b111
+   		uint8_t value = (uint8_t)((trackNr<<4) | (patternNr&0x7));
+   		frontPanel_sendData(LED_CC,LED_QUERY_SEQ_TRACK,value);
       
-		}
-		break;
+   	}
+   	break;
 	}		
 
 

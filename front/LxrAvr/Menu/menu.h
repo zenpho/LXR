@@ -81,6 +81,7 @@ enum PageNames
 	PATTERN_SETTINGS_PAGE,
 	RECORDING_PAGE,
 	SOM_PAGE,
+   ACTIVESTEP_PAGE,
 	
 	//The Voice settings -> Midi Channel, Audio Out...
 	/*
@@ -626,6 +627,8 @@ void menu_enterPerfMode();
 //-----------------------------------------------------------------
 void menu_enterStepMode();
 //-----------------------------------------------------------------
+void menu_enterActiveStepMode();
+//-----------------------------------------------------------------
 void menu_enterPatgenMode();
 //-----------------------------------------------------------------
 void menu_shiftVoice(uint8_t shift);
@@ -633,6 +636,8 @@ void menu_shiftVoice(uint8_t shift);
 void menu_shiftPerf(uint8_t shift);
 //-----------------------------------------------------------------
 void menu_shiftStep(uint8_t shift);
+//-----------------------------------------------------------------
+void menu_shiftActiveStep(uint8_t shift);
 //-----------------------------------------------------------------
 void menu_shiftPatgen(uint8_t shift);
 //-----------------------------------------------------------------

@@ -55,7 +55,7 @@ void led_clearSelectLeds();
 void led_clearSelectBlinkLeds();
 void led_clearVoiceLeds();
 
-void led_setMode2(uint8_t status);
+void led_clearModeLeds();
 
 
 

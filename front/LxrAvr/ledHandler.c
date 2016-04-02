@@ -262,7 +262,7 @@ void led_clearSequencerLeds1_8()
 	}
 };
 //-------------------------------------------------
-void led_setMode2(uint8_t status)
+void led_clearModeLeds()
 {
 	led_setValue(0,LED_MODE1);
 	led_setValue(0,LED_MODE2);
@@ -274,43 +274,6 @@ void led_setMode2(uint8_t status)
 	led_setBlinkLed(LED_MODE3,0);
 	led_setBlinkLed(LED_MODE4,0);
 			
-	switch(status)
-	{
-		case 0:
-			led_setValue(1,LED_MODE1);
-		break;
-		
-		case 1:
-			led_setValue(1,LED_MODE2);
-		break;
-		
-		case 2:
-			led_setValue(1,LED_MODE3);
-		break;
-		
-		case 3:
-			led_setValue(1,LED_MODE4);		
-		break;
-		
-		case 4:
-		   led_setValue(1,LED_MODE1);
-		break;
-		
-		case 5:
-			led_setBlinkLed(LED_MODE2,1);
-		break;
-		
-		case 6:
-			led_setValue(1,LED_MODE3);
-		break;
-		
-		case 7:
-			led_setBlinkLed(LED_MODE4,1);
-		break;
-		
-		default:
-		break;
-	}
 };
 //-------------------------------------------------------
 void led_setMode2Leds(uint8_t value)
