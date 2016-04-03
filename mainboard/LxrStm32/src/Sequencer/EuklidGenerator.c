@@ -183,6 +183,9 @@ void euklid_generate(uint8_t trackNr, uint8_t patternNr)
 //-----------------------------------------------------
 uint8_t euklid_getLength(uint8_t trackNr)
 {
+   euklid_length[trackNr] = seq_patternSet.seq_patternLengthRotate[seq_activePattern][trackNr].length;
+   if (!euklid_length[trackNr])
+      euklid_length[trackNr]=16;
 	return euklid_length[trackNr];
 }
 //-----------------------------------------------------
