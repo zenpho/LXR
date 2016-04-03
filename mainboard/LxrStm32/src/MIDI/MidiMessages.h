@@ -652,6 +652,7 @@ byte3, data2 byte: xbbbbbbb : b=macro mod target value lower 7 bits or top level
 #define FRONT_SEQ_ERASE_ON_OFF			0x33    // --AS turn erase mode on/off
 #define FRONT_SEQ_TRACK_ROTATION		   0x34	// --AS rotate a track's start position 0 to 15
 #define FRONT_SEQ_EUKLID_ROTATION		0x35
+#define FRONT_SEQ_EUKLID_SUBSTEP_ROTATION 0x46
 
 #define FRONT_SEQ_TRIGGER_IN_PPQ		   0x36
 #define FRONT_SEQ_TRIGGER_OUT1_PPQ 		0x37

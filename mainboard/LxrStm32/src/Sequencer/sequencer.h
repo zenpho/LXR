@@ -91,9 +91,9 @@ enum Seq_QuantisationEnum
 typedef struct StepStruct
 {
    uint8_t 	volume;		// 0-127 volume -> 0x7f => lower 7 bit, upper bit => active
-   uint8_t  	prob;		//step probability (--AS todo we have one free bit here)
-   uint8_t		note;		//midi note value 0-127 -> 0x7f, --AS todo upper bit is now free for other usages
-   uint8_t     transpose; // note offset while transpose on, record on. this gets writ to note when record off
+   uint8_t  	prob;		// step probability // bc - I'm going to appropriate the upper bit of prob for
+                        // activestep - 0 will be on (default), 1 will be step off (skip)
+   uint8_t		note;		// midi note value 0-127 -> 0x7f, --AS todo upper bit is now free for other usages
 
 	//parameter automation
    uint8_t 	param1Nr;

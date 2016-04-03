@@ -775,9 +775,11 @@ static void frontParser_handleSeqCC()
    
       case FRONT_SEQ_EUKLID_LENGTH:
          {
+            uint8_t pattern = frontParser_midiMsg.data2&0x07;
             uint8_t length 	= frontParser_midiMsg.data2 >> 3;
             length += 1;
-            euklid_setLength(frontParser_activeTrack, length);
+            euklid_setLength(frontParser_activeTrack, pattern, length);
+            frontParser_updateTrackLeds(frontParser_activeTrack, pattern);
          }
          break;
    
@@ -802,6 +804,17 @@ static void frontParser_handleSeqCC()
             frontParser_updateTrackLeds(frontParser_activeTrack, pattern);
          }
          break;
+         
+      case FRONT_SEQ_EUKLID_SUBSTEP_ROTATION:
+         {
+            uint8_t rotation = frontParser_midiMsg.data2 >> 3;
+         //rotation += 1;
+            uint8_t pattern = frontParser_midiMsg.data2 & 0x7;
+         
+            euklid_setSubStepRotation(frontParser_activeTrack,rotation,pattern);
+            frontParser_updateTrackLeds(frontParser_activeTrack, pattern);
+         }
+         break;   
    
       case FRONT_SEQ_CLEAR_TRACK: 
          {

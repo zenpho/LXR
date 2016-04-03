@@ -38,14 +38,17 @@
 #define EUKLIDGENERATOR_H_
 
 #include "stm32f4xx.h"
+#include "sequencer.h"
 
 void euklid_init();
 uint8_t euklid_getLength(uint8_t trackNr);
 uint8_t euklid_getSteps(uint8_t trackNr);
 uint8_t euklid_getRotation(uint8_t trackNr);
-void euklid_setLength(uint8_t trackNr, uint8_t value);
+void euklid_setLength(uint8_t trackNr, uint8_t patternNr, uint8_t value);
 void euklid_setSteps(uint8_t trackNr, uint8_t value, uint8_t patternNr);
 void euklid_setRotation(uint8_t trackNr, uint8_t value, uint8_t patternNr);
-void euklid_rotatePattern(uint8_t length, uint8_t amount);
+void euklid_setSubStepRotation(uint8_t trackNr, uint8_t value, uint8_t patternNr);
+void euklid_rotatePattern(uint8_t trackNr, uint8_t patternNr, uint8_t length, int8_t amount, int8_t subSteps);
 void euklid_transferPattern(uint8_t trackNr, uint8_t patternNr);
+void euklid_copySubStep();
 #endif /* EUKLIDGENERATOR_H_ */

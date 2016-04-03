@@ -371,6 +371,9 @@ static void buttonHandler_handleSelectButton(uint8_t buttonNr) {
    if (buttonHandler_getShift()) {
    
       switch (buttonHandler_stateMemory.selectButtonMode) {
+         case SELECT_MODE_STEP2:
+            break;
+         
          case SELECT_MODE_STEP:
          case SELECT_MODE_VOICE:
             {
@@ -414,7 +417,10 @@ static void buttonHandler_handleSelectButton(uint8_t buttonNr) {
    } 
    else {
       switch (buttonHandler_stateMemory.selectButtonMode) {
-      
+         
+         case SELECT_MODE_STEP2:
+            break;
+            
          case SELECT_MODE_STEP: 
             {
             //select buttons represent sub steps
@@ -627,6 +633,8 @@ static void buttonHandler_seqButtonPressed(uint8_t seqButtonPressed)
 
    if (buttonHandler_getShift()) {
       switch(buttonHandler_stateMemory.selectButtonMode) {
+         case SELECT_MODE_STEP2:
+            break;
          case SELECT_MODE_VOICE: //sequencer mode -> buttons select active step because shift is down
             buttonHandler_selectActiveStep(ledNr, seqButtonPressed);
             frontPanel_updatePatternLeds();
@@ -644,6 +652,8 @@ static void buttonHandler_seqButtonPressed(uint8_t seqButtonPressed)
    } 
    else { // shift is not down
       switch (buttonHandler_stateMemory.selectButtonMode) {
+         case SELECT_MODE_STEP2:
+            break;
          case SELECT_MODE_VOICE:
             // button is held down, start a timer. If the button is held we
             // can record automation for the one button. The regular handling for
@@ -1011,7 +1021,11 @@ static void buttonHandler_voiceButtonPressed(uint8_t voiceNr)
                frontPanel_sendData(SEQ_CC, SEQ_MUTE_TRACK, voiceNr);
             }
       
-         }   
+         }
+         else if (buttonHandler_stateMemory.selectButtonMode == SELECT_MODE_STEP2)//activestep mode
+         {
+            
+         }
          else
          {
             //select active voice

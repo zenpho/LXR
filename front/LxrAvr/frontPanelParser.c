@@ -94,7 +94,7 @@ void frontPanel_updatePatternLeds()
    frontPanel_sendData(LED_CC, LED_QUERY_SEQ_TRACK, value);
 }
 //------------------------------------------------------------
-void frontPanel_updateActiveLeds()
+void frontPanel_updateActiveStepLeds()
 {
    /*
    uint8_t trackNr = menu_getActiveVoice(); //max 6 => 0x6 = 0b110

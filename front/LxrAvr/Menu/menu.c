@@ -157,7 +157,8 @@ const Name valueNames[NUM_NAMES] PROGMEM =
       {SHORT_SCALE,CAT_PATTERN,LONG_SCALE},				//TEXT_PAT_SCALE,
 		{SHORT_STEP,CAT_EUKLID,LONG_STEPS},					//TEXT_NUM_STEPS,
 		{SHORT_ROTATION, CAT_EUKLID, LONG_ROTATION}, 		//TEXT_ROTATION
-
+      {SHORT_SUBSTEP_ROTATION, CAT_EUKLID, LONG_SUBSTEP_ROTATION}, 		//TEXT_ROTATION
+      
 		{SHORT_BPM,CAT_GLOBAL,LONG_TEMPO},					//TEXT_BPM
 
 		{SHORT_CHANNEL,CAT_VOICE,LONG_MIDI_CHANNEL},		//TEXT_MIDI_CHANNEL
@@ -494,6 +495,7 @@ const enum Datatypes PROGMEM parameter_dtypes[NUM_PARAMS] = {
 	    /*PAR_EUKLID_LENGTH*/ 	DTYPE_1B16,
 	    /*PAR_EUKLID_STEPS*/ 	DTYPE_1B16,
 	    /*PAR_EUKLID_ROTATION*/	DTYPE_0B15,
+       /*PAR_EUKLID_SUBSTEP_ROTATION*/  DTYPE_0B15,
 	    /*PAR_AUTOM_TRACK*/ 	DTYPE_0b1,
 	    /*PAR_P1_DEST*/ 		DTYPE_AUTOM_TARGET,
 	    /*PAR_P2_DEST*/ 		DTYPE_AUTOM_TARGET,
@@ -509,6 +511,7 @@ const enum Datatypes PROGMEM parameter_dtypes[NUM_PARAMS] = {
 	    /*PAR_FLUX*/ 			DTYPE_0B127,
 	    /*PAR_SOM_FREQ*/ 		DTYPE_0B127,
 	    /*PAR_TRACK_ROTATION*/  DTYPE_1B16,  //**PATROT this is not shown in menu, but if it were it would really be 0 to 15
+
 
        /*PAR_MAC1*/        DTYPE_0B127,
        /*PAR_MAC2*/        DTYPE_0B127,
@@ -712,7 +715,7 @@ void menu_enterActiveStepMode()
    led_clearVoiceLeds();
   
    menu_switchPage(ACTIVESTEP_PAGE);
-   frontPanel_updateActiveLeds();
+   frontPanel_updateActiveStepLeds();
 	menu_repaintAll();
    led_setBlinkLed(LED_MODE3,1);
 }
@@ -3453,12 +3456,7 @@ void menu_parseGlobalParam(uint16_t paramNr, uint8_t value)
 		//select the track nr
 		frontPanel_sendData(SEQ_CC,SEQ_SET_ACTIVE_TRACK,menu_getActiveVoice());
 		frontPanel_sendData(SEQ_CC,SEQ_EUKLID_LENGTH,msg);
-
-
-		uint8_t steps = (uint8_t)(parameter_values[PAR_EUKLID_STEPS] - 1); // max 16
-		//uint8_t pattern = menu_shownPattern; //max 7
-		msg = (uint8_t)((pattern&0x7) | (steps<<3));
-		frontPanel_sendData(SEQ_CC,SEQ_EUKLID_STEPS,msg);
+      
 	}
 	break;
 
@@ -3484,6 +3482,18 @@ void menu_parseGlobalParam(uint16_t paramNr, uint8_t value)
 		frontPanel_sendData(SEQ_CC,SEQ_SET_ACTIVE_TRACK,menu_getActiveVoice());
 
 		frontPanel_sendData(SEQ_CC,SEQ_EUKLID_ROTATION,msg);
+	}
+   break;
+   
+   case PAR_EUKLID_SUBSTEP_ROTATION:	{
+		uint8_t rotation =(uint8_t)(value); // max 15
+		uint8_t pattern = menu_shownPattern; //max 7
+		uint8_t msg =(uint8_t)( (pattern&0x7) | (rotation<<3));
+
+		//select the track nr
+		frontPanel_sendData(SEQ_CC,SEQ_SET_ACTIVE_TRACK,menu_getActiveVoice());
+
+		frontPanel_sendData(SEQ_CC,SEQ_EUKLID_SUBSTEP_ROTATION,msg);
 	}
 	break;
 

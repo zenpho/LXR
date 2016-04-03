@@ -41,6 +41,7 @@
 static uint8_t euklid_length[NUM_TRACKS];
 static uint8_t euklid_steps[NUM_TRACKS];
 static uint8_t euklid_rotation[NUM_TRACKS];
+static uint8_t euklid_subStepRotation[NUM_TRACKS];
 
 static uint16_t euklid_patternBuffer;	/**< 16 bits for maximum 16 steps. 1 is a note 0 is a pause*/
 
@@ -55,6 +56,7 @@ void euklid_init()
 		euklid_length[i] = 16;
 		euklid_steps[i] = 4;
 		euklid_rotation[i] = 0;
+      euklid_subStepRotation[i] = 0;
 	}
 
 	euklid_patternBuffer = 0;
@@ -174,7 +176,7 @@ void euklid_generate(uint8_t trackNr, uint8_t patternNr)
 	euklid_calcRecursive(length,steps,1,1,0); //always start with 1st iterations
 	//rotate resulting pattern
 	//euklid_rotatePattern(length, seq_getTrackRotation(trackNr));
-	euklid_rotatePattern(length, rotation);
+	euklid_rotatePattern(trackNr, patternNr, length, rotation, 0/*substeps*/);
 	//and store it in the active track
 	euklid_transferPattern(trackNr, patternNr);
 }
@@ -190,10 +192,11 @@ uint8_t euklid_getSteps(uint8_t trackNr)
 };
 
 //-----------------------------------------------------
-void euklid_setLength(uint8_t trackNr, uint8_t value)
+void euklid_setLength(uint8_t trackNr, uint8_t patternNr, uint8_t value)
 {
 	if(value<=0)value=1;
 	euklid_length[trackNr] = value;
+   seq_patternSet.seq_patternLengthRotate[patternNr][trackNr].length = value;
 }
 //-----------------------------------------------------
 void euklid_setSteps(uint8_t trackNr, uint8_t value, uint8_t patternNr)
@@ -213,21 +216,91 @@ uint8_t euklid_getRotation(uint8_t trackNr)
 //-----------------------------------------------------
 void euklid_setRotation(uint8_t trackNr, uint8_t value, uint8_t patternNr)
 {
-	if(value>euklid_length[trackNr]) value = euklid_rotation[trackNr];
-
-	euklid_rotation[trackNr] = value;
-	euklid_generate(trackNr, patternNr);
+   uint8_t length = seq_patternSet.seq_patternLengthRotate[patternNr][trackNr].length;
+   
+	euklid_rotatePattern(trackNr, patternNr, length, (int8_t)(value-euklid_rotation[trackNr]), 0);
+   
+   euklid_rotation[trackNr] = value;
+   
+   
 }
 //-----------------------------------------------------
-void euklid_rotatePattern(uint8_t length, uint8_t amount)
+void euklid_setSubStepRotation(uint8_t trackNr, uint8_t value, uint8_t patternNr)
 {
-	if( amount==0 || length==1 || amount%length==0  ) return; //Nothing to be done
+   uint8_t length = seq_patternSet.seq_patternLengthRotate[patternNr][trackNr].length;
+   
+	euklid_rotatePattern(trackNr, patternNr, length, 0, (int8_t)(value-euklid_subStepRotation[trackNr]) );
+   
+   euklid_subStepRotation[trackNr] = value;
+ 
+}
+//-----------------------------------------------------
+void euklid_rotatePattern(uint8_t trackNr, uint8_t patternNr, uint8_t length, int8_t amount, int8_t subSteps)
+{
+   Step tempTrack[NUM_STEPS];
+   Step *psrc, *pdst;
+   uint8_t i;
+   uint16_t mainStepTemp = seq_patternSet.seq_mainSteps[patternNr][trackNr];
+   int8_t rotationSteps;
+   
+   // get correct length, amount, and substeps - if hey are negative, make positive
+   
+   if (length==0)
+      length=16;
+   if (subSteps>7) 
+      amount++;
+   else if (subSteps<-7)
+      amount--;           
+   if (subSteps<0)
+      subSteps = 8-((-subSteps)%8); 
+        
+   if (amount<0)
+      amount = length-((-amount)%length);
+     
+   // if rotating by any main steps, rotate the active main step index    
+   if (amount)
+   {
+      seq_patternSet.seq_mainSteps[patternNr][trackNr]=0x00;
+      for (i=0;i<length;i++)
+      {
+         if (mainStepTemp&(0x01<<i))
+         {
+            seq_patternSet.seq_mainSteps[patternNr][trackNr]|=(0x01<<((i+amount)%length));  
+         }   
+      }
+   }   
+   
+   // deal with rotating the step data structure
+   rotationSteps = amount*8 + subSteps;
+   for (i=0;i<(length*8);i++)
+   { 
+      psrc=&seq_patternSet.seq_subStepPattern[patternNr][trackNr][i];
+      pdst=&tempTrack[(i+rotationSteps)%(length*8)];
+      euklid_copySubStep(psrc,pdst);
+   }
+   
+   for (i=0;i<(length*8);i++)
+   { 
+      pdst=&seq_patternSet.seq_subStepPattern[patternNr][trackNr][i];
+      psrc=&tempTrack[i];
+      euklid_copySubStep(psrc,pdst);
+      //update front sub step LED
+      //seq_sendStepInfoToFront(i);
+   }
 
-	amount = amount%length;
+}
+//-----------------------------------------------------
+void euklid_copySubStep(Step *psrc, Step *pdst)
+{
 
-	euklid_patternBuffer = (euklid_patternBuffer<<amount) | (euklid_patternBuffer>>(length-amount));
+         pdst->note			= psrc->note;
+         pdst->param1Nr 		= psrc->param1Nr;
+         pdst->param1Val 	= psrc->param1Val;
+         pdst->param2Nr		= psrc->param2Nr;
+         pdst->param2Val		= psrc->param2Val;
+         pdst->prob			= psrc->prob;
+         pdst->volume		= psrc->volume;
 
-	euklid_patternBuffer &= ~(0xffff<<length); //Remove "leftovers"
 }
 //-----------------------------------------------------
 void euklid_transferPattern(uint8_t trackNr, uint8_t patternNr)

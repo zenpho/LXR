@@ -1737,7 +1737,6 @@ void seq_addNote(uint8_t trackNr,uint8_t vel, uint8_t note)
       }
    }
 }
-
 //------------------------------------------------------------------------
 // --AS **RECORD erase a main step and all it's sub steps on the active pattern
 // for the specified voice
@@ -1818,7 +1817,6 @@ static void seq_resetNote(Step *step)
    step->param2Val	= 0;
    step->prob		= 127;
    step->volume	= 100; // clears active bit as well
-   step->transpose = 63;
 }
 //------------------------------------------------------------------------------
 void seq_clearTrack(uint8_t trackNr, uint8_t pattern)
@@ -1916,7 +1914,6 @@ void seq_copyPattern(uint8_t src, uint8_t dst)
          pdst->param2Val		= psrc->param2Val;
          pdst->prob			= psrc->prob;
          pdst->volume		= psrc->volume;
-         pdst->transpose   = psrc->transpose;
       }
    
       seq_patternSet.seq_mainSteps[dst][j] = seq_patternSet.seq_mainSteps[src][j];
@@ -1944,7 +1941,7 @@ void seq_copyTrackPattern(uint8_t srcNr, uint8_t dstPat, uint8_t srcPat)
       pdst->param2Val		= psrc->param2Val;
       pdst->prob			= psrc->prob;
       pdst->volume		= psrc->volume;
-      pdst->transpose   = pdst->transpose;
+
    }
    
    seq_patternSet.seq_mainSteps[dstPat][srcNr] = seq_patternSet.seq_mainSteps[srcPat][srcNr];
@@ -1970,7 +1967,7 @@ void seq_copySubStep(uint8_t src, uint8_t dst, uint8_t track)
          pdst->param2Val		= psrc->param2Val;
          pdst->prob			= psrc->prob;
          pdst->volume		= psrc->volume;
-         pdst->transpose   = psrc->transpose;
+
       
 
 }

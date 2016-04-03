@@ -165,6 +165,7 @@ byte3, data2 byte: xbbbbbbb : b=macro mod target value lower 7 bits or top level
 #define SEQ_ERASE_ON_OFF    0x33 //--AS **RECORD data2=1: erase on data2=0: erase off
 #define SEQ_TRACK_ROTATION	0x34 // --AS **PATROT rotate a track's start position 0 to 15
 #define SEQ_EUKLID_ROTATION	0x35
+#define SEQ_EUKLID_SUBSTEP_ROTATION 0x46
 
 #define SEQ_TRIGGER_IN_PPQ	  0x36
 #define SEQ_TRIGGER_OUT1_PPQ  0x37
@@ -210,7 +211,7 @@ void frontPanel_sendMidiMsg(MidiMsg msg);
 void frontPanel_sendData(uint8_t status, uint8_t data1, uint8_t data2);
 void frontPanel_sendByte(uint8_t data);
 void frontPanel_updatePatternLeds();
-void frontPanel_updateActiveLeds();
+void frontPanel_updateActiveStepLeds();
 void frontPanel_updateSubstepLeds();
 void frontPanel_sendMacro(uint8_t whichMacro,uint8_t value);
 
