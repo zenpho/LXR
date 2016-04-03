@@ -451,6 +451,11 @@ void frontPanel_parseData(uint8_t data)
 							parameter_values[PAR_EUKLID_ROTATION] = frontParser_midiMsg.data2;
 							menu_repaint();
 						break;
+                  
+                  case SEQ_EUKLID_SUBSTEP_ROTATION:
+							parameter_values[PAR_EUKLID_SUBSTEP_ROTATION] = frontParser_midiMsg.data2;
+							menu_repaint();
+						break;
 
 						case SEQ_VOLUME:
 							parameter_values[PAR_STEP_VOLUME] = frontParser_midiMsg.data2;

@@ -214,6 +214,11 @@ uint8_t euklid_getRotation(uint8_t trackNr)
 	return euklid_rotation[trackNr];
 }
 //-----------------------------------------------------
+uint8_t euklid_getSubStepRotation(uint8_t trackNr)
+{
+	return euklid_subStepRotation[trackNr];
+}
+//-----------------------------------------------------
 void euklid_setRotation(uint8_t trackNr, uint8_t value, uint8_t patternNr)
 {
    uint8_t length = seq_patternSet.seq_patternLengthRotate[patternNr][trackNr].length;
