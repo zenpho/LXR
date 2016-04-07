@@ -243,7 +243,7 @@ void euklid_setSubStepRotation(uint8_t trackNr, uint8_t value, uint8_t patternNr
  
 }
 //-----------------------------------------------------
-void euklid_rotatePattern(uint8_t trackNr, uint8_t patternNr, uint8_t length, int8_t amount, int8_t subSteps)
+void euklid_rotatePattern(uint8_t trackNr, uint8_t patternNr, uint8_t length, int8_t mainSteps, int8_t subSteps)
 {
    Step tempTrack[NUM_STEPS];
    Step *psrc, *pdst;
@@ -251,35 +251,49 @@ void euklid_rotatePattern(uint8_t trackNr, uint8_t patternNr, uint8_t length, in
    uint16_t mainStepTemp = seq_patternSet.seq_mainSteps[patternNr][trackNr];
    int8_t rotationSteps;
    
-   // get correct length, amount, and substeps - if hey are negative, make positive
+   // get correct length, mainSteps, and substeps - if hey are negative, make positive
    
    if (length==0)
       length=16;
-   if (subSteps>7) 
-      amount++;
+      
+   if (subSteps>7)
+   { 
+      mainSteps=(int)(mainSteps+subSteps/8);
+      subSteps=subSteps%8;
+   }   
+      
    else if (subSteps<-7)
-      amount--;           
+   {
+      mainSteps=(int)(mainSteps+subSteps/8);
+      subSteps=-( (-subSteps)%8 );
+   }
+               
    if (subSteps<0)
-      subSteps = 8-((-subSteps)%8); 
-        
-   if (amount<0)
-      amount = length-((-amount)%length);
+   {
+      subSteps = 8-((-subSteps)%8);
+      mainSteps--;
+   }
+   
+   if (mainSteps<0)
+   {
+      mainSteps = length-((-mainSteps)%length);
+   }
      
    // if rotating by any main steps, rotate the active main step index    
-   if (amount)
+   if (!subSteps)
    {
       seq_patternSet.seq_mainSteps[patternNr][trackNr]=0x00;
       for (i=0;i<length;i++)
       {
          if (mainStepTemp&(0x01<<i))
          {
-            seq_patternSet.seq_mainSteps[patternNr][trackNr]|=(0x01<<((i+amount)%length));  
+            seq_patternSet.seq_mainSteps[patternNr][trackNr]|=(0x01<<((i+mainSteps)%length));  
          }   
       }
    }   
    
    // deal with rotating the step data structure
-   rotationSteps = amount*8 + subSteps;
+   rotationSteps = mainSteps*8 + subSteps;
    for (i=0;i<(length*8);i++)
    { 
       psrc=&seq_patternSet.seq_subStepPattern[patternNr][trackNr][i];
