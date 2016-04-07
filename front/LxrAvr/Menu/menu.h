@@ -50,6 +50,7 @@ enum KitType
 extern uint8_t menu_currentPresetNr[NUM_PRESET_LOCATIONS];
 void menu_setShownPattern(uint8_t patternNr);
 void menu_resetSubPage();
+void menu_updateMainStepDisplay();
 void menu_gotoSubPage(uint8_t subPage);
 uint8_t menu_getViewedPattern();
 

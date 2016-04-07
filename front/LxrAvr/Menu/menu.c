@@ -648,12 +648,11 @@ void menu_init()
 	//the currently active button is lit
 	led_setActiveVoice(0);
 
-	//display start menu page
-	menu_repaintAll();
    //set voice 1 active
 	menu_switchPage(0);
    menu_switchSubPage(0);
    led_setActiveSelectButton(0);
+   menu_enterVoiceMode();
 }
 //-----------------------------------------------------------------
 /** compare the currentDisplayBuffer with the editDisplayBuffer and send all differences to the display*/
@@ -737,7 +736,10 @@ void menu_enterStepMode()
    menuIndex=menu_lastStepSubPage;
 	menu_switchPage(SEQ_PAGE);   
 	frontPanel_updatePatternLeds();
-	led_setBlinkLed(menu_selectedStepLed, 1);
+	// set mainstep blinking
+   led_setBlinkLed(menu_selectedStepLed, 1);
+   // set selected substep blinking
+   led_setBlinkLed((uint8_t)(LED_PART_SELECT1+(parameter_values[PAR_ACTIVE_STEP]%8)), 1);
    menu_repaint();
    if(shiftState)
       menu_shiftStep(1);
@@ -746,7 +748,14 @@ void menu_enterStepMode()
 //-----------------------------------------------------------------
 void menu_enterPatgenMode()
 {
-   // bc todo - disonnect this action from button handlers
+   frontPanel_sendData(SEQ_CC, SEQ_REQUEST_EUKLID_PARAMS,
+   				menu_getActiveVoice());
+   menu_switchPage(EUKLID_PAGE);
+   led_clearAllBlinkLeds();
+   led_setBlinkLed(LED_MODE2,1);
+   led_clearSequencerLeds();
+	led_clearSelectLeds();
+   frontPanel_updatePatternLeds();
 }
 //-----------------------------------------------------------------
 void menu_shiftVoice(uint8_t shift)
@@ -759,7 +768,11 @@ void menu_shiftVoice(uint8_t shift)
       
       frontPanel_updatePatternLeds();
    
-      led_setBlinkLed(menu_selectedStepLed, 1);
+      // set mainstep blinking
+	   led_setBlinkLed(menu_selectedStepLed, 1);
+      // set selected substep blinking
+      led_setBlinkLed((uint8_t)(LED_PART_SELECT1+(parameter_values[PAR_ACTIVE_STEP]%8)), 1);
+      
       menu_repaint();
    }
    else
@@ -782,6 +795,9 @@ void menu_shiftPerf(uint8_t shift)
       led_setBlinkLed((uint8_t) (LED_STEP1 + parameter_values[PAR_TRACK_ROTATION]), 1);
       led_setBlinkLed((uint8_t) (LED_PART_SELECT1 + menu_getViewedPattern()),	1);
       led_setBlinkLed((uint8_t)(LED_VOICE1 + menu_getActiveVoice()) ,1);
+      
+      // show the active voice pattern
+      menu_updateMainStepDisplay();
    }
    else
    {
@@ -810,8 +826,11 @@ void menu_shiftStep(uint8_t shift)
 	   menu_switchPage(SEQ_PAGE);
 
 	   frontPanel_updatePatternLeds();
-
+      
+      // set mainstep blinking
 	   led_setBlinkLed(menu_selectedStepLed, 1);
+      // set selected substep blinking
+      led_setBlinkLed((uint8_t)(LED_PART_SELECT1+(parameter_values[PAR_ACTIVE_STEP]%8)), 1);
    
    }
    
@@ -835,38 +854,36 @@ void menu_shiftPatgen(uint8_t shift)
 {
    if(shift)
    {
-      //blink selected pattern LED
-      menu_switchPage(PATTERN_SETTINGS_PAGE);
-      led_clearSelectLeds();
-      led_clearAllBlinkLeds();
-      led_setBlinkLed(LED_MODE2, 1);
-      // --AS todo taking the below out while in perf mode so I can see if the above works. Not sure if the below is needed, since
-      // at this stage the shift button is held
-      //the pattern change update for the follow mode is not made immediately when the pattern options are active
-      //so we have to do it here
-      if (parameter_values[PAR_FOLLOW]) 
-      {
-         menu_setShownPattern(menu_shownPattern);
-         led_clearSequencerLeds();
-         //query current sequencer step states and light up the corresponding leds
-         uint8_t trackNr = menu_getActiveVoice(); //max 6 => 0x6 = 0b110
-         uint8_t patternNr = menu_getViewedPattern(); //max 7 => 0x07 = 0b111
-         uint8_t value = (uint8_t) ((trackNr << 4) | (patternNr & 0x7));
-         frontPanel_sendData(LED_CC, LED_QUERY_SEQ_TRACK, value);
-         frontPanel_sendData(SEQ_CC, SEQ_REQUEST_PATTERN_PARAMS,
-         frontParser_midiMsg.data2);
-   
-      }
-   
-      led_setBlinkLed((uint8_t) (LED_PART_SELECT1 + menu_getViewedPattern()),	1);
+      menu_switchPage(SEQ_PAGE);
+      menu_resetSubPage(0);
+      
+      frontPanel_updatePatternLeds();
+      
+      // set mainstep blinking
+	   led_setBlinkLed(menu_selectedStepLed, 1);
+      // set selected substep blinking
+      led_setBlinkLed((uint8_t)(LED_PART_SELECT1+(parameter_values[PAR_ACTIVE_STEP]%8)), 1);
+
+      menu_repaint();
    }
    else
    {
-      led_clearSelectLeds();
+      //led_clearSelectLeds();
       menu_switchPage(EUKLID_PAGE);
-      led_initPerformanceLeds();
-      led_setValue(1,	(uint8_t) (menu_getViewedPattern() + LED_PART_SELECT1));
+      led_clearAllBlinkLeds();
+      led_setBlinkLed(LED_MODE2,1);
+      //led_initPerformanceLeds();
+      //led_setValue(1,	(uint8_t) (menu_getViewedPattern() + LED_PART_SELECT1));
    }
+}
+//-----------------------------------------------------------------
+void menu_updateMainStepDisplay()
+{
+   led_clearSequencerLeds();
+   uint8_t trackNr = menu_getActiveVoice(); //max 6 => 0x6 = 0b110
+	uint8_t patternNr = menu_shownPattern; //max 7 => 0x07 = 0b111
+	uint8_t value = (uint8_t)((trackNr<<4) | (patternNr&0x7));
+	frontPanel_sendData(LED_CC,LED_QUERY_SEQ_TRACK,value);
 }
 //-----------------------------------------------------------------
 void menu_setShownPattern(uint8_t patternNr)
