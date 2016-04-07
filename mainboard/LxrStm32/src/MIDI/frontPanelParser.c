@@ -624,11 +624,22 @@ static void frontParser_handleMidiMessage()
          //data 2 = step nr
             uint8_t voiceNr 	= frontParser_midiMsg.data1 >> 4;
             uint8_t patternNr 	= frontParser_midiMsg.data1 & 0x7;
-            uint8_t stepNr 		= frontParser_midiMsg.data2;
+            uint8_t stepNr 		= frontParser_midiMsg.data2 & 0x1f;
          
          
-         //toggle the step in the seq
+         if (frontParser_midiMsg.data2 & 0x40) // flag for force ON
+         {
+            seq_setMainStep(patternNr, voiceNr, stepNr, 1);
+         }
+         else if (frontParser_midiMsg.data2 & 0x20) // flag for force OFF
+         {
+            seq_setMainStep(patternNr, voiceNr, stepNr, 0);
+         }
+        
+         else  //toggle the step in the seq
+         {
             seq_toggleMainStep(voiceNr, stepNr, patternNr);
+         }   
          
          //if step active send led on message to front
             if(seq_isMainStepActive(voiceNr, stepNr, patternNr))

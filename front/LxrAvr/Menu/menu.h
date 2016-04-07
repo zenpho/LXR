@@ -83,6 +83,7 @@ enum PageNames
 	RECORDING_PAGE,
 	SOM_PAGE,
    ACTIVESTEP_PAGE,
+   SHIFTVOICE_PAGE,
 	
 	//The Voice settings -> Midi Channel, Audio Out...
 	/*
@@ -644,6 +645,8 @@ void menu_shiftStep(uint8_t shift);
 void menu_shiftActiveStep(uint8_t shift);
 //-----------------------------------------------------------------
 void menu_shiftPatgen(uint8_t shift);
+//-----------------------------------------------------------------
+void menu_resetBlinkLeds();
 //-----------------------------------------------------------------
 /**set all save state parameters to 0*/
 void menu_resetSaveParameters();

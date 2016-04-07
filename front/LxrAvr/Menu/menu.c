@@ -877,6 +877,29 @@ void menu_shiftPatgen(uint8_t shift)
    }
 }
 //-----------------------------------------------------------------
+void menu_resetBlinkLeds()
+{
+   led_clearAllBlinkLeds();
+   switch(menu_activePage)
+   {
+      case SHIFTVOICE_PAGE:
+      led_setBlinkLed(LED_MODE1,1);
+      break;
+      case EUKLID_PAGE:
+      led_setBlinkLed(LED_MODE2,1);
+      break;
+      case ACTIVESTEP_PAGE:
+      led_setBlinkLed(LED_MODE3,1);
+      break;
+      case MENU_MIDI_PAGE:
+      led_setBlinkLed(LED_MODE4,1);
+      break;
+      default:
+      break;
+   }   
+
+}
+//-----------------------------------------------------------------
 void menu_updateMainStepDisplay()
 {
    led_clearSequencerLeds();

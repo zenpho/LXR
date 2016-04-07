@@ -1091,7 +1091,7 @@ void seq_toggleMainStep(uint8_t voice, uint8_t stepNr, uint8_t patternNr)
    seq_patternSet.seq_mainSteps[patternNr][voice] ^= (1<<stepNr);
 }
 //------------------------------------------------------------------------------
-static void seq_setMainStep(uint8_t patternNr, uint8_t voice, uint8_t stepNr, uint8_t onOff)
+void seq_setMainStep(uint8_t patternNr, uint8_t voice, uint8_t stepNr, uint8_t onOff)
 {
    if(onOff)
    {

@@ -220,6 +220,8 @@ void seq_toggleStep(uint8_t voice, uint8_t stepNr, uint8_t patternNr);
 //------------------------------------------------------------------------------
 void seq_toggleMainStep(uint8_t voice, uint8_t stepNr, uint8_t patternNr);
 //------------------------------------------------------------------------------
+void seq_setMainStep(uint8_t patternNr, uint8_t voice, uint8_t stepNr, uint8_t onOff);
+//------------------------------------------------------------------------------
 //void seq_setStep(uint8_t voice, uint8_t stepNr, uint8_t onOff);
 //------------------------------------------------------------------------------
 void seq_setRunning(uint8_t isRunning);

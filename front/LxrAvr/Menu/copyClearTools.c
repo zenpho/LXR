@@ -150,12 +150,19 @@ void copyClear_copyStep()
    uint8_t i;
    
    //led_clearSequencerLeds();
+   // send substep copy commands
    for (i=0;i<8;i++)
    {
       frontPanel_sendData(SEQ_CC,SEQ_COPY_STEP_SET_SRC,(uint8_t)(srcStep+i));
       frontPanel_sendData(SEQ_CC,SEQ_COPY_STEP_SET_DST,(uint8_t)(dstStep+i));
       
    }
+   // turn on destination main step
+   uint8_t trackNr = menu_getActiveVoice(); //max 6 => 0x6 = 0b110
+   uint8_t patternNr = menu_getViewedPattern(); //max 7 => 0x07 = 0b111
+   uint8_t value = (uint8_t) ((trackNr << 4) | (patternNr & 0x7));
+   frontPanel_sendData(MAIN_STEP_CC, value, (uint8_t)( (buttonHandler_copyDst / 8) | (0x40) ) );
+   
    led_clearAllBlinkLeds();
 	copyClear_Mode = MODE_NONE;
    buttonHandler_copySrc = buttonHandler_copyDst = SRC_DST_NONE;
@@ -168,6 +175,13 @@ void copyClear_copySubStep()
    //led_clearSequencerLeds();
    frontPanel_sendData(SEQ_CC,SEQ_COPY_STEP_SET_SRC,(uint8_t)buttonHandler_copySrc);
    frontPanel_sendData(SEQ_CC,SEQ_COPY_STEP_SET_DST,(uint8_t)buttonHandler_copyDst);
+   
+   // turn on destination main step
+   uint8_t trackNr = menu_getActiveVoice(); //max 6 => 0x6 = 0b110
+   uint8_t patternNr = menu_getViewedPattern(); //max 7 => 0x07 = 0b111
+   uint8_t value = (uint8_t) ((trackNr << 4) | (patternNr & 0x7));
+   frontPanel_sendData(MAIN_STEP_CC, value, (uint8_t)( (buttonHandler_copyDst / 8) | (0x40) ) );
+   
    led_clearAllBlinkLeds();
    copyClear_Mode = MODE_NONE;
    buttonHandler_copySrc = buttonHandler_copyDst = SRC_DST_NONE;
