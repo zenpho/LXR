@@ -787,7 +787,8 @@ static void frontParser_handleSeqCC()
       case FRONT_SEQ_EUKLID_RESET:
          {
             euklid_clearRotation();
-         }   
+         }
+         break;
    
       case FRONT_SEQ_EUKLID_LENGTH:
          {
