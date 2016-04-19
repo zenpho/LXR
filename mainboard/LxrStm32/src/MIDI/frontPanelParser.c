@@ -783,6 +783,11 @@ static void frontParser_handleSeqCC()
       
          seq_patternSet.seq_subStepPattern[frontParser_shownPattern][frontParser_activeTrack][frontParser_activeStep].prob = frontParser_midiMsg.data2;
          break;
+         
+      case FRONT_SEQ_EUKLID_RESET:
+         {
+            euklid_clearRotation();
+         }   
    
       case FRONT_SEQ_EUKLID_LENGTH:
          {

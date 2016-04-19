@@ -620,7 +620,7 @@ byte3, data2 byte: xbbbbbbb : b=macro mod target value lower 7 bits or top level
 //#define FRONT_SEQ_RESYNC_LFO			0x16	/**< LFO is no longer running on the front */
 #define FRONT_SEQ_EUKLID_LENGTH 		   0x17	/** sets the length of the current track from 0 to 16 steps*/
 #define FRONT_SEQ_EUKLID_STEPS			0x18
-#define FRONT_SEQ_REQUEST_EUKLID_PARAMS 0x19
+#define FRONT_SEQ_REQUEST_EUKLID_PARAMS 0x19         
 #define FRONT_SEQ_SET_SHOWN_PATTERN		0x1A
 
 #define FRONT_SEQ_REC_ON_OFF			   0x1B	/**< start(data2=1) or stop(data2=0) recording mode */
@@ -653,6 +653,7 @@ byte3, data2 byte: xbbbbbbb : b=macro mod target value lower 7 bits or top level
 #define FRONT_SEQ_TRACK_ROTATION		   0x34	// --AS rotate a track's start position 0 to 15
 #define FRONT_SEQ_EUKLID_ROTATION		0x35
 #define FRONT_SEQ_EUKLID_SUBSTEP_ROTATION 0x46
+#define FRONT_SEQ_EUKLID_RESET         0x47
 
 #define FRONT_SEQ_TRIGGER_IN_PPQ		   0x36
 #define FRONT_SEQ_TRIGGER_OUT1_PPQ 		0x37

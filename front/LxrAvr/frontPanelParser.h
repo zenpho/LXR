@@ -166,6 +166,7 @@ byte3, data2 byte: xbbbbbbb : b=macro mod target value lower 7 bits or top level
 #define SEQ_TRACK_ROTATION	0x34 // --AS **PATROT rotate a track's start position 0 to 15
 #define SEQ_EUKLID_ROTATION	0x35
 #define SEQ_EUKLID_SUBSTEP_ROTATION 0x46
+#define SEQ_EUKLID_RESET   0x47
 
 #define SEQ_TRIGGER_IN_PPQ	  0x36
 #define SEQ_TRIGGER_OUT1_PPQ  0x37

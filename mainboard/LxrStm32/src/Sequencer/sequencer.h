@@ -41,6 +41,7 @@
 
 #include "stm32f4xx.h"
 #include "globals.h"
+#include "EuklidGenerator.h"
 
  /**<
   * we have 6 voices

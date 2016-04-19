@@ -767,6 +767,7 @@ static void preset_writePatternData()
    uint8_t length;
    uint8_t scale;
 
+	frontPanel_sendData(SEQ_CC,SEQ_EUKLID_RESET,0x01);
 
 	//write the preset data
 	//initiate the sysex mode
@@ -897,11 +898,15 @@ static void preset_writePatternData()
 void preset_savePattern(uint8_t presetNr)
 {
 #if USE_SD_CARD
+
+   frontPanel_sendData(SEQ_CC,SEQ_EUKLID_RESET,0x01);
+   
    uint16_t bytesWritten;
    lcd_clear();
    lcd_home();
    lcd_string_F(PSTR("Saving pattern"));
 	
+     
 	
 	//filename in 8.3  format
    char filename[9];
@@ -933,6 +938,7 @@ static uint8_t preset_readPatternData()
 	// This means that loading old patterns with non-standard length, the length will be
 	// ignored and a standard length used. I think it's acceptable as long as users are aware of this.
 #if USE_SD_CARD
+   frontPanel_sendData(SEQ_CC,SEQ_EUKLID_RESET,0x01);
    UINT bytesRead;
    uint8_t success=1; // start off succeeding
    uint16_t i;
@@ -1130,6 +1136,8 @@ frontPanel_sendData(PRESET,PATTERN_LOAD,presetNr);
 uint8_t preset_loadPattern(uint8_t presetNr)
 {
 #if USE_SD_CARD		
+   
+   frontPanel_sendData(SEQ_CC,SEQ_EUKLID_RESET,0x01);
 	//filename in 8.3  format
    char filename[9];
    UINT bytesRead;

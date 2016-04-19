@@ -657,15 +657,16 @@ static void seq_nextStep()
          if (seq_loadPendigFlag)
          {
             // manual switching - button switch sets all per track pending
+            euklid_clearRotation();
             for (i=0;i<NUM_TRACKS;i++)
             {
-   
                seq_perTrackActivePattern[i]=seq_perTrackPendingPattern[i]&0x07;
             }
          }
          else
          {
             // next pat switching - load pending pattern to per tracks
+            euklid_clearRotation();
             for (i=0;i<NUM_TRACKS;i++)
             {
    

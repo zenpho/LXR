@@ -43,6 +43,8 @@ static uint8_t euklid_steps[NUM_TRACKS];
 static uint8_t euklid_rotation[NUM_TRACKS];
 static uint8_t euklid_subStepRotation[NUM_TRACKS];
 
+static uint8_t euklid_workingPattern = 0; // if we detect another pattern, clear the rotation amounts
+
 static uint16_t euklid_patternBuffer;	/**< 16 bits for maximum 16 steps. 1 is a note 0 is a pause*/
 
 static uint16_t euklid_nextCnt1=0;
@@ -161,6 +163,12 @@ void euklid_generate(uint8_t trackNr, uint8_t patternNr)
 	length = euklid_length[trackNr];
 	steps = euklid_steps[trackNr];
 	rotation = euklid_rotation[trackNr];
+   
+   if (patternNr != euklid_workingPattern)
+   {
+      euklid_clearRotation();
+      euklid_workingPattern = patternNr;
+   }
 
 	//todo ist das hier n�tig? zero steps sollte doch gehen...
 	if(steps==0)steps++;
@@ -197,6 +205,12 @@ uint8_t euklid_getSteps(uint8_t trackNr)
 //-----------------------------------------------------
 void euklid_setLength(uint8_t trackNr, uint8_t patternNr, uint8_t value)
 {
+   if(patternNr != euklid_workingPattern)
+   {
+      euklid_clearRotation();
+      euklid_workingPattern = patternNr;
+   }
+   
 	if(value<=0)value=1;
 	euklid_length[trackNr] = value;
    seq_patternSet.seq_patternLengthRotate[patternNr][trackNr].length = value;
@@ -204,6 +218,12 @@ void euklid_setLength(uint8_t trackNr, uint8_t patternNr, uint8_t value)
 //-----------------------------------------------------
 void euklid_setSteps(uint8_t trackNr, uint8_t value, uint8_t patternNr)
 {
+   if(patternNr != euklid_workingPattern)
+   {
+      euklid_clearRotation();
+      euklid_workingPattern = patternNr;
+   }
+   
 	if(value<=0)value=1;
 
 	if(value>euklid_length[trackNr]) value= euklid_length[trackNr];
@@ -224,6 +244,12 @@ uint8_t euklid_getSubStepRotation(uint8_t trackNr)
 //-----------------------------------------------------
 void euklid_setRotation(uint8_t trackNr, uint8_t value, uint8_t patternNr)
 {
+   if(patternNr != euklid_workingPattern)
+   {
+      euklid_clearRotation();
+      euklid_workingPattern = patternNr;
+   }
+   
    uint8_t length = seq_patternSet.seq_patternLengthRotate[patternNr][trackNr].length;
    
 	euklid_rotatePattern(trackNr, patternNr, length, (int8_t)(value-euklid_rotation[trackNr]), 0);
@@ -235,6 +261,12 @@ void euklid_setRotation(uint8_t trackNr, uint8_t value, uint8_t patternNr)
 //-----------------------------------------------------
 void euklid_setSubStepRotation(uint8_t trackNr, uint8_t value, uint8_t patternNr)
 {
+   if(patternNr != euklid_workingPattern)
+   {
+      euklid_clearRotation();
+      euklid_workingPattern = patternNr;
+   }
+   
    uint8_t length = seq_patternSet.seq_patternLengthRotate[patternNr][trackNr].length;
    
 	euklid_rotatePattern(trackNr, patternNr, length, 0, (int8_t)(value-euklid_subStepRotation[trackNr]) );
@@ -245,6 +277,12 @@ void euklid_setSubStepRotation(uint8_t trackNr, uint8_t value, uint8_t patternNr
 //-----------------------------------------------------
 void euklid_rotatePattern(uint8_t trackNr, uint8_t patternNr, uint8_t length, int8_t mainSteps, int8_t subSteps)
 {
+   if(patternNr != euklid_workingPattern)
+   {
+      euklid_clearRotation();
+      euklid_workingPattern = patternNr;
+   }
+   
    Step tempTrack[NUM_STEPS];
    Step *psrc, *pdst;
    uint8_t i;
@@ -327,6 +365,12 @@ void euklid_copySubStep(Step *psrc, Step *pdst)
 //-----------------------------------------------------
 void euklid_transferPattern(uint8_t trackNr, uint8_t patternNr)
 {
+   if(patternNr != euklid_workingPattern)
+   {
+      euklid_clearRotation();
+      euklid_workingPattern = patternNr;
+   }
+   
 	uint8_t len=euklid_length[trackNr];
 	seq_patternSet.seq_mainSteps[patternNr][trackNr] = euklid_patternBuffer;
 // **PATROT - pattern end is now stored differently
@@ -335,4 +379,37 @@ void euklid_transferPattern(uint8_t trackNr, uint8_t patternNr)
 		len=0;
 	seq_patternSet.seq_patternLengthRotate[patternNr][trackNr].length=len;
 
+}
+//-----------------------------------------------------
+void euklid_clearRotation()
+{
+   // reset euklid rotation amounts for all tracks
+   uint8_t i;
+   for (i=0;i<NUM_TRACKS;i++)
+   {
+      euklid_clearTrackRotation(i);
+   }   
+
+}//-----------------------------------------------------
+void euklid_clearTrackRotation(uint8_t trackNr)
+{
+   // reset euklid rotation for a single track
+   euklid_rotation[trackNr]=0;
+   euklid_subStepRotation[trackNr]=0;
+
+}//-----------------------------------------------------
+void euklid_resetRotation()
+{
+   // reset euklid rotation amounts for all tracks
+   uint8_t i;
+   for (i=0;i<NUM_TRACKS;i++)
+   {
+      euklid_resetTrackRotation(i);
+   } 
+
+}//-----------------------------------------------------
+void euklid_resetTrackRotation(uint8_t trackNr)
+{
+   euklid_rotation[trackNr]=0;
+   euklid_subStepRotation[trackNr]=0;
 }
