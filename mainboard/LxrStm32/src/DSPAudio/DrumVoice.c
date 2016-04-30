@@ -148,6 +148,9 @@ void Drum_trigger(const uint8_t voiceNr, const uint8_t vol, const uint8_t note)
 			voiceArray[voiceNr].osc.phase = (0xff<<20)*offset;
 		else
 			voiceArray[voiceNr].osc.phase = 0;
+        
+        if(voiceArray[voiceNr].modOsc.waveform >  REC)
+            voiceArray[voiceNr].modOsc.phase = 0;
 
 	}
 
