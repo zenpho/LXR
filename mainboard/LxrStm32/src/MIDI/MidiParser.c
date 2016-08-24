@@ -1236,6 +1236,7 @@ static void midiParser_noteOff(uint8_t voice, uint8_t note, uint8_t vel, uint8_t
  */
 void midiParser_parseMidiMessage(MidiMsg msg)
 {
+
 // route message if needed
    if(midiParser_routing.value) {
       if(msg.bits.source==midiSourceUSB) {
@@ -1264,6 +1265,11 @@ void midiParser_parseMidiMessage(MidiMsg msg)
 
 
    if((msg.status & 0xF0) == 0XF0) {
+   // BC: !!!NB!!! for midi jack input, system realtime messages 
+   // are dealt with at the top of midiParser_parseUartData(),
+   // to avoid conflicts with channel-specific messages. These may
+   // not need repeating here, or may only exist for USB messages.
+   
    // non-channel specific messages (system messages)
       switch(msg.status) {
          case MIDI_CLOCK:
@@ -1753,7 +1759,7 @@ void midiParser_MIDIccHandler(MidiMsg msg, uint8_t updateOriginalValue)
       {
          switch(MIDIparamNr){
             case MOD_WHEEL:
-                  sequencer_sendVMorph(1, msg.data2);
+               sequencer_sendVMorph(1, msg.data2);
                break; 
             case CHANNEL_VOL: // voice 1-6
                voiceArray[1].vol = msg.data2/127.f;
@@ -2010,7 +2016,7 @@ void midiParser_MIDIccHandler(MidiMsg msg, uint8_t updateOriginalValue)
       {
          switch(MIDIparamNr){
             case MOD_WHEEL:
-                  sequencer_sendVMorph(2, msg.data2);
+               sequencer_sendVMorph(2, msg.data2);
                break;
             case CHANNEL_VOL: // voice 1-6
                voiceArray[2].vol = msg.data2/127.f;
@@ -2267,7 +2273,7 @@ void midiParser_MIDIccHandler(MidiMsg msg, uint8_t updateOriginalValue)
       {
          switch(MIDIparamNr){
             case MOD_WHEEL:
-                  sequencer_sendVMorph(3, msg.data2);
+               sequencer_sendVMorph(3, msg.data2);
                break;
             case CHANNEL_VOL: // voice 1-6
                snareVoice.vol = msg.data2/127.f;
@@ -2526,7 +2532,7 @@ void midiParser_MIDIccHandler(MidiMsg msg, uint8_t updateOriginalValue)
       {
          switch(MIDIparamNr){ 
             case MOD_WHEEL:
-                  sequencer_sendVMorph(4, msg.data2);
+               sequencer_sendVMorph(4, msg.data2);
                break;
             case CHANNEL_VOL: // voice 1-6
                cymbalVoice.vol = msg.data2/127.f;
@@ -2786,7 +2792,7 @@ void midiParser_MIDIccHandler(MidiMsg msg, uint8_t updateOriginalValue)
       {
          switch(MIDIparamNr){
             case MOD_WHEEL:
-                  sequencer_sendVMorph(5, msg.data2);
+               sequencer_sendVMorph(5, msg.data2);
                break;
             case CHANNEL_VOL: // voice 1-6
                hatVoice.vol = msg.data2/127.f;
@@ -3041,7 +3047,7 @@ void midiParser_MIDIccHandler(MidiMsg msg, uint8_t updateOriginalValue)
       {
          switch(MIDIparamNr){
             case MOD_WHEEL:
-                  sequencer_sendVMorph(6, msg.data2);
+               sequencer_sendVMorph(6, msg.data2);
                break;
             case CHANNEL_VOL: // voice 1-6
                hatVoice.vol = msg.data2/127.f;
@@ -3520,6 +3526,49 @@ void midiParser_parseUartData(unsigned char data)
 
    if(data&0x80) { // High bit is set -  its either a status or a system message.
    // regardless of current state, we blindly start a new message without questioning it
+      if((data&0xf8)==0xf8) // data is system realtime - deal with here to avoid data conflicts
+      {
+         switch(data)
+         {      
+            case MIDI_START:
+            case MIDI_CONTINUE:
+               if((midiParser_txRxFilter & 0x02) && seq_getExtSync())
+                  sync_midiStartStop(1);
+               break;
+               
+            case MIDI_STOP:
+               if((midiParser_txRxFilter & 0x02) && seq_getExtSync())
+                  sync_midiStartStop(0);
+               break;
+               
+            case MIDI_CLOCK:
+            // passthru clock and other realtime messages. start/stop are transmitted
+            // by the sequencer, we don't need to duplicate them.
+               if((midiParser_txRxFilter & 0x02) && seq_getExtSync())
+                  seq_sync();
+                  
+            default:
+            
+               if(midiParser_routing.value) {
+                  MidiMsg rtMsg;
+                  rtMsg.status=data;
+                  rtMsg.data1=0x00;
+                  rtMsg.data2=0x00;
+                  if(midiParser_routing.route.midi2midi) {
+                  // route to midi out port
+                     uart_sendMidi(rtMsg);
+                  }
+                  if(midiParser_routing.route.midi2usb) {
+                  // route to usb out port
+                     usb_sendMidi(rtMsg);
+                  }
+               
+               }
+               break;
+         }
+         // route message if needed
+         return; // don't do anything else - leave the parser as it was. there is no followup data.
+      }
       midiMsg_tmp.bits.sysxbyte=0;
       if( (data&0xf0) == 0xf0) { // system message
          midiMsg_tmp.status = data;

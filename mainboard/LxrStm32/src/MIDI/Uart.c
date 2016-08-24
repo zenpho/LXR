@@ -262,6 +262,9 @@ void initMidiUart()
 	USART_ITConfig(USART2, USART_IT_TXE, DISABLE);
 	//enable Receive Data register not empty interrupt
 	USART_ITConfig(USART2, USART_IT_RXNE, ENABLE);
+   
+   // kick the midi parser
+   midiParser_parseUartData(0xB0);
 }
 //-------------------------------------------------------------------------------------------
 
