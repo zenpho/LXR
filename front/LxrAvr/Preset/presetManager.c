@@ -207,7 +207,6 @@ void preset_loadGlobals()
 
 static FRESULT preset_readDrumsetData(uint8_t isMorph)
 {
-
 #if USE_SD_CARD		
 	//read the file content
    unsigned int bytesRead=1;
@@ -250,6 +249,14 @@ static FRESULT preset_readDrumsetData(uint8_t isMorph)
          }
          // end of corrections - save the version as a param so it gets written with kit on save
          para[PAR_KIT_VERSION]=FILE_VERSION; 
+      }
+   }
+
+   if(!isMorph)
+   {
+      for(i=0;i<END_OF_SOUND_PARAMETERS;i++)
+      {
+         parameter_values_kitReset[i]=parameter_values[i];
       }
    }
 
@@ -301,7 +308,15 @@ static FRESULT preset_readVoiceData(uint8_t voiceArray, uint8_t isMorph)
          if(isMorph)
             para=parameters2;
          else
+         {
             para=parameter_values;
+            for(i=0;i<END_OF_SOUND_PARAMETERS;i++)
+            {
+               parameter_values_kitReset[i]=parameter_values_temp[i];
+            }
+         }
+               
+       
                
          if(menu_sequencerRunning&&(voiceArray!=0x7f))
          { // sequencer is running and partial voice load - lock volume
@@ -405,7 +420,6 @@ static FRESULT preset_readVoiceData(uint8_t voiceArray, uint8_t isMorph)
 //----------------------------------------------------
 uint8_t preset_loadDrumset(uint8_t presetNr, uint8_t isMorph)
 {
-   uint16_t i;
 #if USE_SD_CARD
 	//filename in 8.3  format
    char filename[9];
@@ -450,10 +464,6 @@ closeFile:
       menu_currentPresetNr[5]=presetNr;
       menu_currentPresetNr[6]=presetNr;
       
-      for(i=0;i<END_OF_SOUND_PARAMETERS;i++)
-      {
-         parameter_values_kitReset[i]=parameter_values[i];
-      }
    
       return 1;
       
@@ -468,7 +478,6 @@ error:
    //----------------------------------------------------
 uint8_t preset_loadVoice(uint8_t presetNr, uint8_t voiceArray, uint8_t isMorph)
 {//FYI DRUM1:0x01 DRUM2:0x02 DRUM3:0x04 SNARE:0x08 CYM:0x10 HIHAT:0x60
-   uint16_t i;
 #if USE_SD_CARD
 	//filename in 8.3  format
    char filename[9];
@@ -535,10 +544,6 @@ closeFile:
          menu_currentPresetNr[6]=presetNr; 
       }
       
-      for(i=0;i<END_OF_SOUND_PARAMETERS;i++)
-      {
-         parameter_values_kitReset[i]=parameter_values[i];
-      }
       
       preset_sendDrumsetParameters();
       return 1;
@@ -1512,7 +1517,7 @@ void preset_saveAll(uint8_t presetNr, uint8_t isAll)
 //----------------------------------------------------
 void preset_loadAll(uint8_t presetNr, uint8_t isAll, uint8_t releaseLock, uint8_t voiceArray)
 {
-uint16_t i;
+   uint16_t i;
 #if USE_SD_CARD
 	//filename in 8.3  format
    char filename[GEN_BUF_LEN];
