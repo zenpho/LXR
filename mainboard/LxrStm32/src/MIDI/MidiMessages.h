@@ -663,7 +663,10 @@ byte3, data2 byte: xbbbbbbb : b=macro mod target value lower 7 bits or top level
 #define FRONT_SEQ_COPY_TRACK_PATTERN   0x3a // added message for single track pattern copy
 #define FRONT_SEQ_PC_TIME_MODE         0x3b // setting for change pattern on bar or step
 #define FRONT_SEQ_COPY_SRC            0x3d // added message for copy step
-#define FRONT_SEQ_COPY_DST            0x3e 
+#define FRONT_SEQ_COPY_DST            0x3e
+#define FRONT_SEQ_PATTERN_BEGIN	      0x3f  // let the mainboard know which
+					    // voices to care about for patterns
+
 #define FRONT_SEQ_ROLL_NOTE            0x40
 #define FRONT_SEQ_ROLL_VELOCITY        0x41
 #define FRONT_SEQ_ROLL_MODE            0x42
@@ -696,5 +699,10 @@ byte3, data2 byte: xbbbbbbb : b=macro mod target value lower 7 bits or top level
 #define SYSEX_REQUEST_PATTERN_DATA		0x05
 #define SYSEX_RECEIVE_PAT_LEN_DATA		0x06
 #define SYSEX_RECEIVE_PAT_SCALE_DATA	0x07
+
+// bc - added to parse individual track pattern changes
+#define SYSEX_BEGIN_PATTERN_TRANSMIT	0x08
+#define SYSEX_END_PATTERN_TRANSMIT	0x09
+
 #define SYSEX_ACTIVE_MODE_NONE			0x7f	/**< a placeholder message indicating that sysex is active but no mode is selected yet*/
 #endif /* MIDIMESSAGES_H_ */

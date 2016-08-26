@@ -22,6 +22,7 @@
 
 #define MASK_PAGE 0xf8
 #define PAGE_SHIFT 3
+#define NUM_TRACKS 7
 //-----------------------------------------------------------------
 
 //#define PATTERN_END_MARKER 127
@@ -37,6 +38,11 @@ extern uint8_t menu_sequencerRunning;
 extern uint8_t menu_kitLocked;
 extern uint8_t menu_kitLockPreset;
 extern uint8_t menu_kitLockType;
+extern uint8_t menu_instPerfLock;
+extern uint8_t menu_instPerfLockPreset;
+extern uint8_t menu_voiceArray;
+extern uint8_t menu_kitLockVoiceArray;
+
 
 enum KitType
 {
@@ -592,8 +598,10 @@ enum Datatypes
 //-----------------------------------------------------------------
 extern const enum Datatypes PROGMEM parameter_dtypes[NUM_PARAMS];
 extern uint8_t parameter_values[NUM_PARAMS];
+extern uint8_t parameter_values_kitReset[END_OF_SOUND_PARAMETERS];
 extern uint8_t parameter_values_temp[END_OF_SOUND_PARAMETERS];
 extern uint8_t parameters2[END_OF_SOUND_PARAMETERS];
+extern uint8_t parameters2_temp[END_OF_SOUND_PARAMETERS];
 
 extern const Page PROGMEM menuPages[NUM_PAGES][NUM_SUB_PAGES];
 
@@ -663,6 +671,8 @@ void menu_switchSubPage(uint8_t subPageNr);
 void menu_resetActiveParameter();
 //-----------------------------------------------------------------
 uint8_t menu_getSubPage();
+//-----------------------------------------------------------------
+int menu_getWhat();
 //-----------------------------------------------------------------
 void menu_parseKnobValue(uint8_t potNr, uint8_t potValue);
 //-----------------------------------------------------------------

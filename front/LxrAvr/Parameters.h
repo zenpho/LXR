@@ -120,12 +120,12 @@ enum ParamEnums
 	PAR_FMAMNT3,
 	PAR_FM_FREQ3,	
 	
-	PAR_VOL1,	
-	PAR_VOL2,	
-	PAR_VOL3,							/*90*/
-	PAR_VOL4,		
-	PAR_VOL5,
-	PAR_VOL6,	
+	PAR_VOL1,	//88
+	PAR_VOL2,	//89
+	PAR_VOL3,	//90
+	PAR_VOL4,	//91	
+	PAR_VOL5,	//92
+	PAR_VOL6,	//93
 	
 	PAR_PAN1,	
 	PAR_PAN2,	

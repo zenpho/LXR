@@ -31,6 +31,7 @@
 #define MACRO_VMORPH_CYM   175
 #define MACRO_VMORPH_HIHAT 210
 
+
 // uppercase 3 letters in buf
 static void upr_three(char *buf);
 // given a menuid and a param value fill buf with the short menu item value. will not exceed 3 chars
@@ -579,6 +580,10 @@ uint8_t menu_sequencerRunning = 0;
 uint8_t menu_kitLocked = 0;
 uint8_t menu_kitLockPreset = 0;
 uint8_t menu_kitLockType = 0;
+uint8_t menu_instPerfLock = 0;
+uint8_t menu_instPerfLockPreset = 0;
+uint8_t menu_voiceArray = 0x7f;
+uint8_t menu_kitLockVoiceArray = 0x7f;
 
 /** buffer to minimize the display configuration.
 It holds a representation of the display content so only the changed cells have to be updated*/
@@ -597,8 +602,10 @@ static uint8_t parameterFetch = 0b00011111;	/**< the lower 4 bits define a lock 
 
 /** array holding all the available parameter values*/
 uint8_t parameter_values[NUM_PARAMS];
+uint8_t parameter_values_kitReset[END_OF_SOUND_PARAMETERS];
 uint8_t parameter_values_temp[END_OF_SOUND_PARAMETERS];
 uint8_t parameters2[END_OF_SOUND_PARAMETERS];/**< a second array for sound x-fade to another preset*/
+uint8_t parameters2_temp[END_OF_SOUND_PARAMETERS];
 
 uint8_t menu_lastVoiceIndex=0;
 uint8_t menu_lastPerfIndex=0;
@@ -609,6 +616,7 @@ uint8_t menu_selectedStepLed=LED_STEP1;
 //-----------------------------------------------------------------
 void menu_init()
 {
+   uint16_t i;
 	lcd_clear();
 
 	paramToModTargetInit();
@@ -616,6 +624,8 @@ void menu_init()
 	memset(menu_currentPresetNr,0,sizeof(uint8_t) *NUM_PRESET_LOCATIONS );
 
 	memset(parameter_values, 0, sizeof(uint8_t) * NUM_PARAMS);
+
+   memset(parameter_values_kitReset, 0, sizeof(uint8_t) * END_OF_SOUND_PARAMETERS);
 
 	parameter_values[PAR_EUKLID_LENGTH] = 16;
 	parameter_values[PAR_EUKLID_STEPS] = 16;
@@ -643,7 +653,6 @@ void menu_init()
 	// but then the global data loaded from glo.cfg seemed like it was not being sent to the back.
 	// need to figure out why as it's likely to crop up again at some point.
 
-
 	frontPanel_sendData(SEQ_CC,SEQ_SET_ACTIVE_TRACK,0);
 	//the currently active button is lit
 	led_setActiveVoice(0);
@@ -653,6 +662,12 @@ void menu_init()
    menu_switchSubPage(0);
    led_setActiveSelectButton(0);
    menu_enterVoiceMode();
+   
+   for(i=0;i<END_OF_SOUND_PARAMETERS;i++)
+   {
+      parameter_values_kitReset[i]=parameter_values[i];
+   }
+   
 }
 //-----------------------------------------------------------------
 /** compare the currentDisplayBuffer with the editDisplayBuffer and send all differences to the display*/
@@ -1947,17 +1962,20 @@ void menu_handleLoadMenu(int8_t inc, uint8_t btnClicked)
             
             
             case SAVE_TYPE_PATTERN:
-               preset_loadPattern(menu_currentPresetNr[SAVE_TYPE_PATTERN]);
+               preset_loadPattern(menu_currentPresetNr[SAVE_TYPE_PATTERN],menu_voiceArray);
+               menu_kitLockVoiceArray = menu_voiceArray;
                menu_resetSaveParameters();
                break;
             
             case SAVE_TYPE_PERFORMANCE:
-               preset_loadAll(menu_currentPresetNr[SAVE_TYPE_PERFORMANCE],0,0);//last 0 is don't release kit lock
+               preset_loadAll(menu_currentPresetNr[SAVE_TYPE_PERFORMANCE],0,0,menu_voiceArray);//last 0 is don't release kit lock
+               menu_kitLockVoiceArray = menu_voiceArray;
                menu_resetSaveParameters();
                break;
             
             case SAVE_TYPE_ALL:
-               preset_loadAll(menu_currentPresetNr[SAVE_TYPE_ALL],1,0);//last 0 is don't release kit lock
+               preset_loadAll(menu_currentPresetNr[SAVE_TYPE_ALL],1,0,menu_voiceArray);//last 0 is don't release kit lock
+               menu_kitLockVoiceArray = menu_voiceArray;
                menu_resetSaveParameters();
                break;
             
@@ -3042,7 +3060,7 @@ void menu_resetSaveParameters()
 	}		
 
 	menu_repaintAll();
-
+   menu_voiceArray = 0x7f;
 }
 //-----------------------------------------------------------------
 void menu_resetSubPage() // forces menu to first sub-page, disregarding toggle
@@ -3171,6 +3189,11 @@ void menu_resetActiveParameter()
 		menuIndex &= ~MASK_PARAMETER;
 		END_DISABLE_CONV_WARNING
 	}		
+};
+//-----------------------------------------------------------------
+int menu_getWhat()
+{
+	return menu_saveOptions.what;
 };
 //-----------------------------------------------------------------
 uint8_t menu_getSubPage()
@@ -3961,12 +3984,12 @@ void menu_sendAllParameters()
 //----------------------------------------------------------------
 void menu_reloadKit()
 {
-   if (menu_kitLockType==KITLOCK_DRUMKIT)
-      preset_loadDrumset(menu_kitLockPreset,0);
-   else if (menu_kitLockType==KITLOCK_PERF)
-      preset_loadAll(menu_kitLockPreset,KITLOCK_PERF,1);
-   else if (menu_kitLockType==KITLOCK_ALL)
-      preset_loadAll(menu_kitLockPreset,KITLOCK_ALL,1);
+   uint8_t i;
+   for(i=0;i<END_OF_SOUND_PARAMETERS;i++)
+   {
+      parameter_values[i]=parameter_values_kitReset[i];
+   }
+   menu_sendAllParameters();
 }
 //----------------------------------------------------------------
 uint8_t menu_getActivePage()

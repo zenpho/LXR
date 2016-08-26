@@ -177,7 +177,7 @@ uint8_t seq_transpose_voiceAmount[7];
 uint8_t seq_transposeOnOff;
 
 uint8_t seq_newPatternAvailable = 0; //indicate that a new pattern has loaded in the background and we should switch
-
+uint8_t seq_newPatternVoiceArray = 0;
 //for the automation tracks each track needs 2 modNodes
 static AutomationNode seq_automationNodes[NUM_TRACKS][2];
 
@@ -225,12 +225,15 @@ void seq_init()
 
 }
 //------------------------------------------------------------------------------
-static void seq_activateTmpPattern()
-{
+void seq_activateTmpPattern()
+{  
+
    memcpy(&seq_patternSet.seq_subStepPattern[seq_activePattern],&seq_tmpPattern.seq_subStepPattern,sizeof(Step)*NUM_TRACKS*NUM_STEPS);
    memcpy(&seq_patternSet.seq_mainSteps[seq_activePattern],&seq_tmpPattern.seq_mainSteps,sizeof(uint16_t)*NUM_TRACKS);
    memcpy(&seq_patternSet.seq_patternSettings[seq_activePattern],&seq_tmpPattern.seq_patternSettings,sizeof(PatternSetting));
    memcpy(&seq_patternSet.seq_patternLengthRotate[seq_activePattern],&seq_tmpPattern.seq_patternLengthRotate,sizeof(LengthRotate)*NUM_TRACKS);
+
+   seq_newPatternVoiceArray=0;
 }
 //------------------------------------------------------------------------------
 void seq_setShuffle(float shuffle)
@@ -413,10 +416,10 @@ static void seq_parseAutomationNodes(uint8_t track, Step* stepData)
    }
 
    {
-	   //set new destination
+      //set new destination
       autoNode_setDestination(&seq_automationNodes[track][0], param1);
       autoNode_setDestination(&seq_automationNodes[track][1], param2);
-	   //set new mod value
+      //set new mod value
       autoNode_updateValue(&seq_automationNodes[track][0], val1);
       autoNode_updateValue(&seq_automationNodes[track][1], val2);
    }
@@ -645,12 +648,17 @@ static void seq_nextStep()
       {
          if(seq_resetBarOnPatternChange)
             seq_barCounter=0;
-
-      	//first check if 2 new pattern is available
+      
+      	// first check if 2 new pattern is available
+         // bc - seq_newPatternAvailable is now a register. if a complete pattern switch if necessary, 
+         // it will be 0xff. if only some voices need switch, they will be represented by single bits
+         // 0x01 for drum1, 0x02 for drum 2, 0x04, etc.
+         
          if(seq_newPatternAvailable)
          {
-            seq_newPatternAvailable = 0;
             seq_activateTmpPattern();
+            seq_newPatternVoiceArray = 0;
+            seq_newPatternAvailable = 0;
          }
          
          seq_activePattern = seq_pendingPattern&0x07;
@@ -669,7 +677,7 @@ static void seq_nextStep()
             euklid_clearRotation();
             for (i=0;i<NUM_TRACKS;i++)
             {
-   
+            
                seq_perTrackActivePattern[i]=seq_pendingPattern&0x07;
             }
          
@@ -1209,7 +1217,7 @@ void seq_setMute(uint8_t trackNr, uint8_t isMuted)
       }
       else
       {
-   	   //unmute all
+         //unmute all
          seq_mutedTracks = 0;
       }
    } 
@@ -1684,7 +1692,7 @@ void seq_addNote(uint8_t trackNr,uint8_t vel, uint8_t note)
    {
       int8_t unquantizedStep = seq_stepIndex[trackNr];
       int8_t quantizedStep = seq_quantize(unquantizedStep, trackNr);
-
+   
    
    	// --AS **RECORD fix for recording across patterns
       if(quantizedStep==0 && seq_stepIndex[trackNr] > (NUM_STEPS/2)) 
@@ -1715,9 +1723,9 @@ void seq_addNote(uint8_t trackNr,uint8_t vel, uint8_t note)
       else
          stepPtr=&seq_patternSet.seq_subStepPattern[targetPattern][trackNr][quantizedStep];
       
-
+   
       stepPtr->note 		= note;				// note (--AS was SEQ_DEFAULT_NOTE)
-
+   
       stepPtr->volume	= vel;				// new velocity
       stepPtr->prob		= 127;				// 100% probability
       stepPtr->volume 	|= STEP_ACTIVE_MASK;
@@ -1942,7 +1950,7 @@ void seq_copyTrackPattern(uint8_t srcNr, uint8_t dstPat, uint8_t srcPat)
       pdst->param2Val		= psrc->param2Val;
       pdst->prob			= psrc->prob;
       pdst->volume		= psrc->volume;
-
+   
    }
    
    seq_patternSet.seq_mainSteps[dstPat][srcNr] = seq_patternSet.seq_mainSteps[srcPat][srcNr];
@@ -1959,15 +1967,15 @@ void seq_copySubStep(uint8_t src, uint8_t dst, uint8_t track)
    
       // copy the step data
 
-         pdst=&seq_patternSet.seq_subStepPattern[seq_perTrackActivePattern[track]][track][dst];
-         psrc=&seq_patternSet.seq_subStepPattern[seq_perTrackActivePattern[track]][track][src];
-         pdst->note			= psrc->note;
-         pdst->param1Nr 		= psrc->param1Nr;
-         pdst->param1Val 	= psrc->param1Val;
-         pdst->param2Nr		= psrc->param2Nr;
-         pdst->param2Val		= psrc->param2Val;
-         pdst->prob			= psrc->prob;
-         pdst->volume		= psrc->volume;
+   pdst=&seq_patternSet.seq_subStepPattern[seq_perTrackActivePattern[track]][track][dst];
+   psrc=&seq_patternSet.seq_subStepPattern[seq_perTrackActivePattern[track]][track][src];
+   pdst->note			= psrc->note;
+   pdst->param1Nr 		= psrc->param1Nr;
+   pdst->param1Val 	= psrc->param1Val;
+   pdst->param2Nr		= psrc->param2Nr;
+   pdst->param2Val		= psrc->param2Val;
+   pdst->prob			= psrc->prob;
+   pdst->volume		= psrc->volume;
 
       
 

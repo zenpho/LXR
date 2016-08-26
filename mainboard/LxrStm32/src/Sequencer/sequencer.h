@@ -139,6 +139,7 @@ typedef struct TempPatternStruct
 
 extern uint8_t seq_activePattern;
 extern uint8_t seq_newPatternAvailable;
+extern uint8_t seq_newPatternVoiceArray;
 extern uint8_t seq_recordActive;				/**< set to 1 to activate the reording mode*/
 
 //extern PatternSet* seq_activePatternSetPtr;
@@ -183,7 +184,7 @@ void seq_setLoop(uint8_t length);
 //------------------------------------------------------------------------------
 uint8_t seq_getTrackRotation(uint8_t trackNr);
 //------------------------------------------------------------------------------
-//void seq_activateTmpPattern();
+// void seq_activateTmpPattern();
 //------------------------------------------------------------------------------
 void seq_init();
 //------------------------------------------------------------------------------

@@ -1033,6 +1033,22 @@ static void buttonHandler_voiceButtonPressed(uint8_t voiceNr)
          led_setBlinkLed((uint8_t) (LED_VOICE1 + voiceNr), 1);
       }
    } 
+   else if( (menu_activePage==LOAD_PAGE) &&
+   (menu_getWhat()==SAVE_TYPE_PERFORMANCE||menu_getWhat()==SAVE_TYPE_PATTERN||
+   menu_getWhat()==SAVE_TYPE_ALL) )
+   {
+      if(menu_voiceArray==0x7f)
+      {
+         menu_voiceArray = 0;
+         led_clearVoiceLeds();
+         led_clearAllBlinkLeds();
+      }
+      
+      menu_voiceArray ^= (uint8_t)(0x01<<voiceNr);
+      led_setBlinkLed((uint8_t)(LED_VOICE1+voiceNr),(uint8_t)(menu_voiceArray&(uint8_t)(0x01<<voiceNr)));
+
+
+   }
    else {
    	// mode none or clear
    	// determine if we are in mute/unmute mode -

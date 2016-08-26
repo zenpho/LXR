@@ -487,19 +487,21 @@ void frontPanel_parseData(uint8_t data)
    						//ack message that the sequencer changed to the requested pattern
                      uint8_t patMsg = frontParser_midiMsg.data2&0x07;
                      uint8_t kitRst = frontParser_midiMsg.data2&0x08;
-  
    						// if a 'perf' or 'all' load locked the kit, un-lock and load
+
                      if(menu_kitLocked)
                      {
                         menu_kitLocked = 0;
-                        preset_loadAll(menu_kitLockPreset,menu_kitLockType,1);
+                        preset_loadAll(menu_kitLockPreset,menu_kitLockType,1,menu_kitLockVoiceArray);
+                     }
+                     else if(menu_instPerfLock)
+                     {
+                        //preset_loadInstPerf(menu_instPerfLockPreset, menu_instPerfLock,1);
+                        menu_instPerfLock = 0;
                      }
                      else if(kitRst)
                      {
-                        if (menu_kitLockType==KITLOCK_DRUMKIT)
-                           preset_loadDrumset(menu_kitLockPreset,0);
-                        else if (menu_kitLockType<KITLOCK_DRUMKIT)
-                           preset_loadAll(menu_kitLockPreset,menu_kitLockType,1);
+                        menu_reloadKit(); 
                      }                     
    						//stop blinking pattern led
    						led_setBlinkLed((uint8_t)(LED_PART_SELECT1+patMsg),0);
@@ -566,7 +568,7 @@ void frontPanel_parseData(uint8_t data)
             else if(frontParser_midiMsg.status == PARAM_CC)
             {
             parameter_values[frontParser_midiMsg.data1]=frontParser_midiMsg.data2;
-
+            parameters2[frontParser_midiMsg.data1]=frontParser_midiMsg.data2;
             menu_repaint();
             
             }
@@ -574,7 +576,7 @@ void frontPanel_parseData(uint8_t data)
             else if(frontParser_midiMsg.status == PARAM_CC2)
             {
             parameter_values[frontParser_midiMsg.data1+128]=frontParser_midiMsg.data2;
-
+            parameters2[frontParser_midiMsg.data1+128]=frontParser_midiMsg.data2;
             menu_repaint();
             
             }
@@ -584,7 +586,7 @@ void frontPanel_parseData(uint8_t data)
                if (frontParser_midiMsg.data1&&(frontPanel_longOp<PATTERN_CHANGE_OP) )
                {
                   // we have a valid message and we're not waiting for a pattern change to finish
-                  // global bank change operation
+                  // all bits in data1 are set - global bank change operation
                   if ( !(frontParser_midiMsg.data1^0x3F) ) 
                   // global bank change request or, all voice channels set the same
                   {
@@ -765,7 +767,7 @@ void midiMsg_checkLongOps()
       if (frontPanel_longOp==BANK_GLOBAL)
       {
          if (parameter_values[PAR_LOAD_PERF_ON_BANK]){
-            preset_loadAll(frontPanel_longData,0,0); //last 0 is don't release kit lock
+            preset_loadAll(frontPanel_longData,0,0,0x7f); // preset, isAll, release kitlock, voiceArray
             menu_repaint();
             frontPanel_longOp=NULL_OP;            
          }
@@ -786,9 +788,18 @@ void midiMsg_checkLongOps()
       else if (frontPanel_longOp<BANK_GLOBAL)
       // we have (possibly multiple) voice bank changes
       {
-         preset_loadVoice(frontPanel_longData,frontPanel_longOp,0);
-         menu_repaint();
-         frontPanel_longOp=NULL_OP; 
+        
+         if (parameter_values[PAR_LOAD_PERF_ON_BANK]){
+            preset_loadAll(frontPanel_longData,0,0,frontPanel_longOp);
+            menu_repaint();
+            frontPanel_longOp=NULL_OP;            
+         }
+         else {
+            preset_loadVoice(frontPanel_longData,frontPanel_longOp,0);
+            menu_repaint();
+            frontPanel_longOp=NULL_OP; 
+         }
+         
       }
       
       

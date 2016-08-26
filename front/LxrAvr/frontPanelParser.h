@@ -186,16 +186,23 @@ byte3, data2 byte: xbbbbbbb : b=macro mod target value lower 7 bits or top level
 #define SEQ_PC_TIME                    0x3b
 #define SEQ_COPY_STEP_SET_SRC          0x3d // added message for copy step
 #define SEQ_COPY_STEP_SET_DST          0x3e 
+#define SEQ_PATTERN_BEGIN	       0x3f // let the mainboard know which
+					    // voices to care about for patterns
 
 //SysEx
 #define SYSEX_REQUEST_STEP_DATA			0x01
 #define SYSEX_SEND_STEP_DATA			0x02
-#define SYSEX_REQUEST_MAIN_STEP_DATA	0x03
+#define SYSEX_REQUEST_MAIN_STEP_DATA		0x03
 #define SYSEX_SEND_MAIN_STEP_DATA		0x04
 #define SYSEX_REQUEST_PATTERN_DATA		0x05
 #define SYSEX_SEND_PAT_LEN_DATA			0x06
 #define SYSEX_SEND_PAT_SCALE_DATA		0x07
+// bc - added to deal with changing only some patterns. let the mainboard
+// know the pattern transmit is done and which voices should change
+#define SYSEX_BEGIN_PATTERN_TRANSMIT		0x08
+#define SYSEX_END_PATTERN_TRANSMIT		0x09
 
+#define SYSEX_ACTIVE_MODE_NONE			0x7f	/**< a placeholder message indicating that sysex is active but no mode is selected yet*/
 
 /** a struct defining a standard midi message*/
 typedef struct MidiStruct {
