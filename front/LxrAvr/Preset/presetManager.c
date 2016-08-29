@@ -315,17 +315,7 @@ static FRESULT preset_readVoiceData(uint8_t voiceArray, uint8_t isMorph)
                parameter_values_kitReset[i]=parameter_values_temp[i];
             }
          }
-               
-       
-               
-         if(menu_sequencerRunning&&(voiceArray!=0x7f))
-         { // sequencer is running and partial voice load - lock volume
-            for(i=PAR_VOL1;i<PAR_PAN1;i++)
-            {
-               parameter_values_temp[i]=parameter_values[i];
-               parameters2_temp[i]=parameters2[i];
-            }
-         }
+              
                
          if (voiceArray&BANK_1){
             for (i=0;i<37;i++)
@@ -627,7 +617,7 @@ void preset_sendDrumsetParameters()
    frontPanel_sendData(CC_2,(uint8_t)(PAR_MAC2_DST2_AMT-128),parameter_values[PAR_MAC2_DST2_AMT]);
 
    
-   preset_morph(parameter_values[PAR_MORPH]);
+   preset_morph(0x7f,parameter_values[PAR_MORPH]);
 
 
 
@@ -1030,6 +1020,7 @@ void preset_savePattern(uint8_t presetNr)
 
 //----------------------------------------------------
 // returns 1 on success
+
 static uint8_t preset_readPatternData(uint8_t voiceArray)
 {
 	//--AS note that the pattern length data is no longer stored in the same way.
@@ -1049,7 +1040,7 @@ static uint8_t preset_readPatternData(uint8_t voiceArray)
 
    // SYSEX_BEGIN_PATTERN_TRANSMIT
    // let mainboard know what voices we care about
-   frontPanel_sendData(SEQ_CC,SEQ_PATTERN_BEGIN,voiceArray);
+   frontPanel_sendData(SEQ_CC,SEQ_PATTERN_TRACKARRAY,voiceArray);
    
 
 	// ---------- Send step data first
@@ -1306,7 +1297,7 @@ static uint8_t interpolate(uint8_t a, uint8_t b, uint8_t x)
 // and morph parameters and send the data to the back
 // if the morph value is 0 it will just send the parameter values
 // to the back
-void preset_voiceMorph(uint8_t voice, uint8_t morph)
+void preset_morph(uint8_t voiceArray, uint8_t morph)
 {
    int i;
    uint8_t *parArray;
@@ -1314,56 +1305,182 @@ void preset_voiceMorph(uint8_t voice, uint8_t morph)
       morph=255;
    else
       morph=(uint8_t)(morph<<1);
-        
-   switch(voice)
-   {   
-      case 0:
-         parArray=voice1presetMask;
-         break;   
-      case 1:
-         parArray=voice2presetMask;
-         break;   
-      case 2:
-         parArray=voice3presetMask;
-         break;   
-      case 3:
-         parArray=voice4presetMask;
-         break;   
-      case 4:
-         parArray=voice5presetMask;
-         break;   
-      case 5:
-      case 6:
-         parArray=voice6presetMask;
-         break;   
-      default:
-         return;
-         break;
-   }
-	//TODO so far only sound parameters are interpolated, no LFOs etc
-
-   for(i=0;i<VOICE_PARAM_LENGTH;i++)
+         
+   if(voiceArray&(0x01))
    {
-      uint8_t paramNumber = parArray[i];
-      uint8_t val;
-   	
-      val = interpolate(parameter_values[paramNumber],parameters2[paramNumber],morph);
-      if(paramNumber<128) {
-         frontPanel_sendData(MIDI_CC,(uint8_t)paramNumber,val);
-      } 
-      else {
-         frontPanel_sendData(CC_2,(uint8_t)(paramNumber-128),val);
-      }		
-   	
-   		
-   	//to omit front panel button/LED lag we have to process din dout and uart here
-   	//read next button
-      din_readNextInput();
-   	//update LEDs
-      dout_updateOutputs();
-   	//read uart messages from sequencer
-      uart_checkAndParse();
-   }		
+      parArray=voice1presetMask;
+      for(i=0;i<VOICE_PARAM_LENGTH;i++)
+      {
+         uint8_t paramNumber = parArray[i];
+         uint8_t val;
+         	
+         val = interpolate(parameter_values[paramNumber],parameters2[paramNumber],morph);
+         if(paramNumber<128) 
+         {
+            frontPanel_sendData(MIDI_CC,(uint8_t)paramNumber,val);
+         } 
+         else 
+         {
+            frontPanel_sendData(CC_2,(uint8_t)(paramNumber-128),val);
+         }		
+         	
+         		
+         	//to omit front panel button/LED lag we have to process din dout and uart here
+         	//read next button
+         din_readNextInput();
+         	//update LEDs
+         dout_updateOutputs();
+         	//read uart messages from sequencer
+         uart_checkAndParse();
+      }	
+   }	
+      
+   if(voiceArray&(0x02))
+   {
+      parArray=voice2presetMask;
+      for(i=0;i<VOICE_PARAM_LENGTH;i++)
+      {
+         uint8_t paramNumber = parArray[i];
+         uint8_t val;
+         	
+         val = interpolate(parameter_values[paramNumber],parameters2[paramNumber],morph);
+         if(paramNumber<128) 
+         {
+            frontPanel_sendData(MIDI_CC,(uint8_t)paramNumber,val);
+         } 
+         else 
+         {
+            frontPanel_sendData(CC_2,(uint8_t)(paramNumber-128),val);
+         }		
+         	
+         		
+         	//to omit front panel button/LED lag we have to process din dout and uart here
+         	//read next button
+         din_readNextInput();
+         	//update LEDs
+         dout_updateOutputs();
+         	//read uart messages from sequencer
+         uart_checkAndParse();
+      }	
+   }	
+   
+   if(voiceArray&(0x04))
+   {
+      parArray=voice3presetMask;
+      for(i=0;i<VOICE_PARAM_LENGTH;i++)
+      {
+         uint8_t paramNumber = parArray[i];
+         uint8_t val;
+         	
+         val = interpolate(parameter_values[paramNumber],parameters2[paramNumber],morph);
+         if(paramNumber<128) 
+         {
+            frontPanel_sendData(MIDI_CC,(uint8_t)paramNumber,val);
+         } 
+         else 
+         {
+            frontPanel_sendData(CC_2,(uint8_t)(paramNumber-128),val);
+         }		
+         	
+         		
+         	//to omit front panel button/LED lag we have to process din dout and uart here
+         	//read next button
+         din_readNextInput();
+         	//update LEDs
+         dout_updateOutputs();
+         	//read uart messages from sequencer
+         uart_checkAndParse();
+      }	
+   }	
+     
+   if(voiceArray&(0x08))
+   {
+      parArray=voice4presetMask;
+      for(i=0;i<VOICE_PARAM_LENGTH;i++)
+      {
+         uint8_t paramNumber = parArray[i];
+         uint8_t val;
+         	
+         val = interpolate(parameter_values[paramNumber],parameters2[paramNumber],morph);
+         if(paramNumber<128) 
+         {
+            frontPanel_sendData(MIDI_CC,(uint8_t)paramNumber,val);
+         } 
+         else 
+         {
+            frontPanel_sendData(CC_2,(uint8_t)(paramNumber-128),val);
+         }		
+         	
+         		
+         	//to omit front panel button/LED lag we have to process din dout and uart here
+         	//read next button
+         din_readNextInput();
+         	//update LEDs
+         dout_updateOutputs();
+         	//read uart messages from sequencer
+         uart_checkAndParse();
+      }	
+   }	
+       
+   if(voiceArray&(0x10))
+   {
+      parArray=voice5presetMask;
+      for(i=0;i<VOICE_PARAM_LENGTH;i++)
+      {
+         uint8_t paramNumber = parArray[i];
+         uint8_t val;
+         	
+         val = interpolate(parameter_values[paramNumber],parameters2[paramNumber],morph);
+         if(paramNumber<128) 
+         {
+            frontPanel_sendData(MIDI_CC,(uint8_t)paramNumber,val);
+         } 
+         else 
+         {
+            frontPanel_sendData(CC_2,(uint8_t)(paramNumber-128),val);
+         }		
+         	
+         		
+         	//to omit front panel button/LED lag we have to process din dout and uart here
+         	//read next button
+         din_readNextInput();
+         	//update LEDs
+         dout_updateOutputs();
+         	//read uart messages from sequencer
+         uart_checkAndParse();
+      }	
+   }	
+      
+   if((voiceArray&(0x20))||(voiceArray&(0x40)))
+   {
+      parArray=voice6presetMask;
+      for(i=0;i<VOICE_PARAM_LENGTH;i++)
+      {
+         uint8_t paramNumber = parArray[i];
+         uint8_t val;
+         	
+         val = interpolate(parameter_values[paramNumber],parameters2[paramNumber],morph);
+         if(paramNumber<128) 
+         {
+            frontPanel_sendData(MIDI_CC,(uint8_t)paramNumber,val);
+         } 
+         else 
+         {
+            frontPanel_sendData(CC_2,(uint8_t)(paramNumber-128),val);
+         }		
+         	
+         		
+         	//to omit front panel button/LED lag we have to process din dout and uart here
+         	//read next button
+         din_readNextInput();
+         	//update LEDs
+         dout_updateOutputs();
+         	//read uart messages from sequencer
+         uart_checkAndParse();
+      }	
+   }	
+       
+
 }
 
 //----------------------------------------------------
@@ -1371,6 +1488,7 @@ void preset_voiceMorph(uint8_t voice, uint8_t morph)
 // and morph parameters and send the data to the back
 // if the morph value is 0 it will just send the parameter values
 // to the back
+/*
 void preset_morph(uint8_t morph)
 {
    int i;
@@ -1398,7 +1516,7 @@ void preset_morph(uint8_t morph)
       uart_checkAndParse();
    }		
 }
-
+*/
 //----------------------------------------------------
 uint8_t preset_getMorphValue(uint16_t index, uint8_t morph)
 {
@@ -1595,7 +1713,10 @@ void preset_loadAll(uint8_t presetNr, uint8_t isAll, uint8_t releaseLock, uint8_
    else
    {
       menu_kitLocked=0;
-      res=preset_readVoiceData(voiceArray,0);
+      if(voiceArray>=0x7f)
+         res=preset_readDrumsetData(0);
+      else
+         res=preset_readVoiceData(voiceArray,0);   
       if(res!=FR_OK)
          goto closeFile;
    
@@ -1624,7 +1745,10 @@ void preset_loadAll(uint8_t presetNr, uint8_t isAll, uint8_t releaseLock, uint8_
       }
       else
       {
-         res=preset_readVoiceData(voiceArray,1);
+         if(voiceArray>=0x7f)
+            res=preset_readDrumsetData(1);
+         else
+            res=preset_readVoiceData(voiceArray,1);   
          if(res!=FR_OK)
             goto closeFile;
       

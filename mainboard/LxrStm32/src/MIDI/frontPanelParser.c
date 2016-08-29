@@ -953,8 +953,13 @@ static void frontParser_handleSeqCC()
          }
          break;
          
-      case FRONT_SEQ_PATTERN_BEGIN:
+      case FRONT_SEQ_PATTERN_TRACKARRAY:
          seq_newPatternVoiceArray = frontParser_midiMsg.data2;
+         seq_newPatternPatArray = 0xff;
+         break;
+         
+      case FRONT_SEQ_PATTERN_PATARRAY:
+         seq_newPatternPatArray = frontParser_midiMsg.data2;
          break;
    
       case FRONT_SEQ_TRACK_LENGTH:

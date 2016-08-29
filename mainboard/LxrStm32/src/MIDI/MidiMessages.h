@@ -72,7 +72,7 @@ typedef struct MidiStruct {
 #define MIDI_PITCH_WHEEL	0xE0	// 2 data bytes
 #define MIDI_AT				0xA0	// 2 data bytes
 #define CHANNEL_PRESSURE	0xD0	// 2 data bytes
-
+#define PATCH_RESET		0xFF // reset patch to last loaded - no data bytes to follow.
 
 //-----------------------------------------------------------
 // CCs (2nd byte controller number)
@@ -664,8 +664,8 @@ byte3, data2 byte: xbbbbbbb : b=macro mod target value lower 7 bits or top level
 #define FRONT_SEQ_PC_TIME_MODE         0x3b // setting for change pattern on bar or step
 #define FRONT_SEQ_COPY_SRC            0x3d // added message for copy step
 #define FRONT_SEQ_COPY_DST            0x3e
-#define FRONT_SEQ_PATTERN_BEGIN	      0x3f  // let the mainboard know which
-					    // voices to care about for patterns
+
+
 
 #define FRONT_SEQ_ROLL_NOTE            0x40
 #define FRONT_SEQ_ROLL_VELOCITY        0x41
@@ -673,6 +673,10 @@ byte3, data2 byte: xbbbbbbb : b=macro mod target value lower 7 bits or top level
 #define FRONT_SEQ_TRANSPOSE            0x43
 #define FRONT_SEQ_TRANSPOSE_ON_OFF     0x44
 #define FRONT_SEQ_SET_LOOP             0x45
+
+#define FRONT_SEQ_PATTERN_TRACKARRAY	0x48  // let the mainboard know which
+#define FRONT_SEQ_PATTERN_PATARRAY    	0x49  // voices to care about for patterns
+#define FRONT_SEQ_LOCK_VOICES		0x4a  // lock voice param changes until next trigger
 
 //codec control messages
 #define EQ_ON_OFF						0x01

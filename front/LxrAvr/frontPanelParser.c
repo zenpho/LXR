@@ -33,6 +33,7 @@ volatile uint8_t frontParser_sysexBuffer[7];
 
 uint8_t frontParser_nameIndex = 0;
 uint8_t frontPanel_longOp;
+uint8_t frontPanel_morphArray;
 // case definitions for long ops that get dealt with once per main() loop
 // bitwise definitions to decide what to do for multiple ops
 #define BANK_1 0x01
@@ -204,18 +205,14 @@ void frontPanel_parseData(uint8_t data)
 		//reset the byte counter
 		frontParser_rxCnt = 0;
 		frontParser_midiMsg.status = data;
+      
+      if(frontParser_midiMsg.status == PATCH_RESET)
+      {
+         menu_reloadKit();
+         menu_repaintAll();
+          
+      }
 		
-		
-		/*
-		if(data==SYSEX_START  )
-			{
-				//we just entered the sysex mode - no data received yet
-			//	lcd_setcursor(5,2);
-			//	lcd_string("SYSSTART");
-			
-			}
-			*/
-			
 		
 	}
 	else
@@ -392,7 +389,7 @@ void frontPanel_parseData(uint8_t data)
 				}
 				else if(frontParser_midiMsg.status == VOICE_MORPH)
             {
-               preset_voiceMorph(frontParser_midiMsg.data1, frontParser_midiMsg.data2);
+               preset_morph(frontParser_midiMsg.data1, frontParser_midiMsg.data2);
             }
 				else if(frontParser_midiMsg.status == SEQ_CC)
 				{
@@ -613,6 +610,7 @@ void frontPanel_parseData(uint8_t data)
             
             }
             
+            
             // morph operation
             else if(frontParser_midiMsg.status == MORPH_CC&&!frontPanel_longOp)
             {  
@@ -623,6 +621,8 @@ void frontPanel_parseData(uint8_t data)
                // this is a time-consuming operation, cache it and deal
                // with only one per loop of main()
                frontPanel_longOp=MORPH_OP;
+               
+               frontPanel_morphArray = frontParser_midiMsg.data1;
                // bit shift from MIDI CC values
                frontPanel_longData=(uint8_t)(frontParser_midiMsg.data2<<1);
             }
@@ -806,7 +806,7 @@ void midiMsg_checkLongOps()
       else if (frontPanel_longOp==MORPH_OP)
       {
          parameter_values[PAR_MORPH]=frontPanel_longData;
-         preset_morph(frontPanel_longData);
+         preset_morph(frontPanel_morphArray,frontPanel_longData);
          morphValue=frontPanel_longData;
          menu_repaint();
          frontPanel_longOp=NULL_OP;

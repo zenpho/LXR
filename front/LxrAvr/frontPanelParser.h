@@ -32,7 +32,7 @@ extern uint8_t frontPanel_longData;
 
 #define SYSEX_START			0xF0
 #define SYSEX_END			0xF7
-
+#define PATCH_RESET			0xFF
 //control messages from cortex for leds
 //status, param changes
 
@@ -186,9 +186,9 @@ byte3, data2 byte: xbbbbbbb : b=macro mod target value lower 7 bits or top level
 #define SEQ_PC_TIME                    0x3b
 #define SEQ_COPY_STEP_SET_SRC          0x3d // added message for copy step
 #define SEQ_COPY_STEP_SET_DST          0x3e 
-#define SEQ_PATTERN_BEGIN	       0x3f // let the mainboard know which
-					    // voices to care about for patterns
-
+#define SEQ_PATTERN_TRACKARRAY	       0x48 // let the mainboard know which
+#define SEQ_PATTERN_PATARRAY	       0x49 // voices to care about for patterns
+#define SEQ_LOCK_VOICES			0x4a // lock voice params until next trigger
 //SysEx
 #define SYSEX_REQUEST_STEP_DATA			0x01
 #define SYSEX_SEND_STEP_DATA			0x02

@@ -85,7 +85,7 @@ int8_t seq_loopActiveStepPosition[NUM_TRACKS+1];
 int8_t seq_loopUpdateFlag=0;
 
 uint8_t seq_vMorphFlag=0;
-uint8_t seq_vMorphAmount[6];
+uint8_t seq_vMorphAmount[7];
 
 int8_t 	seq_stepIndex[NUM_TRACKS+1];	/**< we have 16 steps consisting of 8 sub steps = 128 steps.
 											     each track has its own counter to allow different pattern lengths */
@@ -178,6 +178,8 @@ uint8_t seq_transposeOnOff;
 
 uint8_t seq_newPatternAvailable = 0; //indicate that a new pattern has loaded in the background and we should switch
 uint8_t seq_newPatternVoiceArray = 0;
+uint8_t seq_newPatternPatArray = 0;
+uint8_t seq_lockVoiceArray = 0;
 //for the automation tracks each track needs 2 modNodes
 static AutomationNode seq_automationNodes[NUM_TRACKS][2];
 
@@ -400,18 +402,21 @@ static void seq_parseAutomationNodes(uint8_t track, Step* stepData)
    uint8_t param2 = stepData->param2Nr;
    uint8_t val1 = stepData->param1Val;
    uint8_t val2 = stepData->param2Val;
+   uint8_t voiceNum;
    if(param1)
    {
       if(param1>=PAR_MORPH_DRUM1&&param1<=PAR_MORPH_HIHAT)
       {
-         sequencer_sendVMorph(((uint8_t)(param1-PAR_MORPH_DRUM1)), val1);
+         voiceNum = (uint8_t)(0x01<<((uint8_t)(param1-PAR_MORPH_DRUM1)));
+         sequencer_sendVMorph(voiceNum, val1);
       }
    }
    if(param2)
    {
       if(param2>=PAR_MORPH_DRUM1&&param2<=PAR_MORPH_HIHAT)
       {
-         sequencer_sendVMorph(((uint8_t)(param1-PAR_MORPH_DRUM1)), val2);
+         voiceNum = (uint8_t)(0x01<<((uint8_t)(param1-PAR_MORPH_DRUM1)));
+         sequencer_sendVMorph(voiceNum, val2);
       }
    }
 
@@ -558,12 +563,11 @@ static void seq_nextStep()
    {
       if(seq_vMorphFlag)
       {
-         for (i=0;i<6;i++)
+         for (i=0;i<7;i++)
          {
-            if ( seq_vMorphFlag&(0x01<<i) )
-            {
-               sequencer_sendVMorph(i, seq_vMorphAmount[i]);
-            }
+            if (seq_vMorphFlag&(0x01<<i))
+               sequencer_sendVMorph((uint8_t)(0x01<<i), seq_vMorphAmount[i]);
+         
          }
          seq_vMorphFlag=0x00;
       }
@@ -2156,10 +2160,10 @@ void seq_realign()
    seq_midiNoteOff(0xff);
 }
 
-void sequencer_sendVMorph(uint8_t voice, uint8_t morphAmount)
+void sequencer_sendVMorph(uint8_t voiceArray, uint8_t morphAmount)
 {
    uart_sendFrontpanelByte(FRONT_SEQ_VOICE_MORPH);
-   uart_sendFrontpanelByte(voice);
+   uart_sendFrontpanelByte(voiceArray);
    uart_sendFrontpanelByte(morphAmount);
 
 }

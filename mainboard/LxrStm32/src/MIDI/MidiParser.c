@@ -53,7 +53,7 @@
 #define BANK_CHANGE_CC  0xad
 #define PARAM_CC        0xae
 #define PARAM_CC2       0xaf
-
+#define VOICE_CC			0xb4
    #define BANK_1 0x01
    #define BANK_2 0x02
    #define BANK_3 0x04
@@ -1462,6 +1462,8 @@ void midiParser_MIDIccHandler(MidiMsg msg, uint8_t updateOriginalValue)
    
    uint16_t LXRparamNr = I_DUNNO; // zero is undefined in LXR param numbers
  
+ // bc - bank change and morph are potentially time-consuming operations,
+ // accumulate all the voices that need this and send as one
    if (MIDIparamNr==BANK){
       midiChannelCode=0;
    // deal with this separately, because we can't have the mainboard overwhelming
@@ -1496,13 +1498,46 @@ void midiParser_MIDIccHandler(MidiMsg msg, uint8_t updateOriginalValue)
       }
       
    }
-   
+   else if (MIDIparamNr==MOD_WHEEL)
+   {  
+      midiChannelCode=0;
+   // deal with this separately, because we can't have the mainboard overwhelming
+   // the front with bank change messages
+   // this stripes the channels across a byte
+      if (chanonly==midi_MidiChannels[7]) // global channel - send global bank change to front
+         midiChannelCode=0x3F;
+      else{
+         if (chanonly==midi_MidiChannels[0])
+            midiChannelCode|=BANK_1;
+         if (chanonly==midi_MidiChannels[1])
+            midiChannelCode|=BANK_2;
+         if (chanonly==midi_MidiChannels[2])
+            midiChannelCode|=BANK_3;
+         if (chanonly==midi_MidiChannels[3])
+            midiChannelCode|=BANK_4;
+         if (chanonly==midi_MidiChannels[4])
+            midiChannelCode|=BANK_5;
+         if ( (chanonly==midi_MidiChannels[5])||(chanonly==midi_MidiChannels[6]) )
+         {
+            midiChannelCode|=BANK_6;
+            midiChannelCode|=BANK_7;
+         }
+      }
+           
+         
+      if (midiChannelCode!=0)
+      {
+         uart_sendFrontpanelByte(MORPH_CC); 
+         uart_sendFrontpanelByte(midiChannelCode); // voice numbers
+         uart_sendFrontpanelByte(msg.data2);
+      }
+      
+   }
    else {
       if (chanonly == midi_MidiChannels[0]) // DRUM1 voice is a target
       {
          switch(MIDIparamNr){
             case MOD_WHEEL:
-               sequencer_sendVMorph(0, msg.data2);
                break;
             case CHANNEL_VOL: // voice 1-6
                voiceArray[0].vol = msg.data2/127.f;
@@ -1759,7 +1794,6 @@ void midiParser_MIDIccHandler(MidiMsg msg, uint8_t updateOriginalValue)
       {
          switch(MIDIparamNr){
             case MOD_WHEEL:
-               sequencer_sendVMorph(1, msg.data2);
                break; 
             case CHANNEL_VOL: // voice 1-6
                voiceArray[1].vol = msg.data2/127.f;
@@ -2016,7 +2050,6 @@ void midiParser_MIDIccHandler(MidiMsg msg, uint8_t updateOriginalValue)
       {
          switch(MIDIparamNr){
             case MOD_WHEEL:
-               sequencer_sendVMorph(2, msg.data2);
                break;
             case CHANNEL_VOL: // voice 1-6
                voiceArray[2].vol = msg.data2/127.f;
@@ -2227,6 +2260,7 @@ void midiParser_MIDIccHandler(MidiMsg msg, uint8_t updateOriginalValue)
                }
                LXRparamNr=128+CC2_MUTE_3;
                break;
+         
             default:
                break;
          }
@@ -2273,7 +2307,6 @@ void midiParser_MIDIccHandler(MidiMsg msg, uint8_t updateOriginalValue)
       {
          switch(MIDIparamNr){
             case MOD_WHEEL:
-               sequencer_sendVMorph(3, msg.data2);
                break;
             case CHANNEL_VOL: // voice 1-6
                snareVoice.vol = msg.data2/127.f;
@@ -2532,7 +2565,6 @@ void midiParser_MIDIccHandler(MidiMsg msg, uint8_t updateOriginalValue)
       {
          switch(MIDIparamNr){ 
             case MOD_WHEEL:
-               sequencer_sendVMorph(4, msg.data2);
                break;
             case CHANNEL_VOL: // voice 1-6
                cymbalVoice.vol = msg.data2/127.f;
@@ -2792,7 +2824,6 @@ void midiParser_MIDIccHandler(MidiMsg msg, uint8_t updateOriginalValue)
       {
          switch(MIDIparamNr){
             case MOD_WHEEL:
-               sequencer_sendVMorph(5, msg.data2);
                break;
             case CHANNEL_VOL: // voice 1-6
                hatVoice.vol = msg.data2/127.f;
@@ -3047,7 +3078,6 @@ void midiParser_MIDIccHandler(MidiMsg msg, uint8_t updateOriginalValue)
       {
          switch(MIDIparamNr){
             case MOD_WHEEL:
-               sequencer_sendVMorph(6, msg.data2);
                break;
             case CHANNEL_VOL: // voice 1-6
                hatVoice.vol = msg.data2/127.f;
@@ -3302,9 +3332,6 @@ void midiParser_MIDIccHandler(MidiMsg msg, uint8_t updateOriginalValue)
       {
          switch(MIDIparamNr){
             case MOD_WHEEL:
-               uart_sendFrontpanelByte(MORPH_CC); // global mod wheel = morph
-               uart_sendFrontpanelByte(0); // doesn't get used
-               uart_sendFrontpanelByte(msg.data2); // bit shift from 0-127 to 0-255 happens on frontpanel
                break;
             case CHANNEL_VOL: // voice 1-6
                break;
@@ -3424,27 +3451,14 @@ void midiParser_MIDIccHandler(MidiMsg msg, uint8_t updateOriginalValue)
                   {
                      seq_setMute(MIDIparamNr-TRACK1_SOUND_OFF,1);
                   }
-               
                }
                LXRparamNr=128+CC2_MUTE_1+MIDIparamNr-TRACK1_SOUND_OFF;
                break;
-               /*
-            case ALL_SOUND_OFF: //120	//128+CC2_MUTE_* (1-6)
-               {
-               
-                  if(msg.data2 == 0)
-                  {
-                     seq_setMute(6,0);
-                  }
-                  else
-                  {
-                     seq_setMute(6,1);
-                  }
-               
+            case RESET_ALL_CONTROLLERS:
+               {// this should be the only circumstance in which VOICE_CC is sent back to front
+                  uart_sendFrontpanelByte(PATCH_RESET); 
                }
-               LXRparamNr=128+CC2_MUTE_7;
                break;
-               */
             default:
                break;
          }

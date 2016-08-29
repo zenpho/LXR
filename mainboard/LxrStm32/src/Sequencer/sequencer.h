@@ -140,6 +140,7 @@ typedef struct TempPatternStruct
 extern uint8_t seq_activePattern;
 extern uint8_t seq_newPatternAvailable;
 extern uint8_t seq_newPatternVoiceArray;
+extern uint8_t seq_newPatternPatArray;
 extern uint8_t seq_recordActive;				/**< set to 1 to activate the reording mode*/
 
 //extern PatternSet* seq_activePatternSetPtr;
@@ -161,10 +162,10 @@ extern uint8_t seq_rollVelocity;
 extern uint8_t seq_kitResetFlag;
 extern uint8_t seq_skipFirstRoll;
 
-extern uint8_t seq_vMorphAmount[6];
+extern uint8_t seq_vMorphAmount[7];
 extern uint8_t seq_vMorphFlag;
 
-void sequencer_sendVMorph(uint8_t voice, uint8_t morphAmount);
+void sequencer_sendVMorph(uint8_t voiceArray, uint8_t morphAmount);
 //------------------------------------------------------------------------------
 void seq_triggerVoice(uint8_t voiceNr, uint8_t vol, uint8_t note);
 //------------------------------------------------------------------------------
