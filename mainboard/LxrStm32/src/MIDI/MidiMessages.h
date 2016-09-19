@@ -703,7 +703,7 @@ byte3, data2 byte: xbbbbbbb : b=macro mod target value lower 7 bits or top level
 #define SYSEX_REQUEST_PATTERN_DATA		0x05
 #define SYSEX_RECEIVE_PAT_LEN_DATA		0x06
 #define SYSEX_RECEIVE_PAT_SCALE_DATA	0x07
-
+#define SYSEX_RECEIVE_PAT_CHAIN_DATA	0x0a
 // bc - added to parse individual track pattern changes
 #define SYSEX_BEGIN_PATTERN_TRANSMIT	0x08
 #define SYSEX_END_PATTERN_TRANSMIT	0x09

@@ -197,6 +197,7 @@ byte3, data2 byte: xbbbbbbb : b=macro mod target value lower 7 bits or top level
 #define SYSEX_REQUEST_PATTERN_DATA		0x05
 #define SYSEX_SEND_PAT_LEN_DATA			0x06
 #define SYSEX_SEND_PAT_SCALE_DATA		0x07
+#define SYSEX_SEND_PAT_CHAIN_DATA		0x0a
 // bc - added to deal with changing only some patterns. let the mainboard
 // know the pattern transmit is done and which voices should change
 #define SYSEX_BEGIN_PATTERN_TRANSMIT		0x08
@@ -211,6 +212,17 @@ typedef struct MidiStruct {
 	uint8_t data2;
 } MidiMsg;
 
+enum sysexCallBack
+{
+	NO_CALLBACK=0,
+	SCALE_CALLBACK,
+	LENGTH_CALLBACK,
+	PATCHAIN_CALLBACK,
+	MAINSTEP_CALLBACK,
+	STEP_CALLBACK,
+
+};
+
 /** parse incoming data from the cortex*/
 void frontPanel_parseData(uint8_t data);
 
@@ -224,7 +236,7 @@ void frontPanel_updateSubstepLeds();
 void frontPanel_sendMacro(uint8_t whichMacro,uint8_t value);
 
 extern volatile MidiMsg frontParser_midiMsg;
-
+extern uint8_t frontParser_sysexCallback; 
 extern void midiMsg_checkLongOps();
 
 #endif /* FRONTPANELPARSER_H_ */

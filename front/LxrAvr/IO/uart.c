@@ -208,7 +208,7 @@ void uart_checkAndParse()
 		frontPanel_parseData(data);
 	}
 #endif
-};
+}
 //----------------------------------------------------
 
 #endif

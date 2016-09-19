@@ -583,7 +583,6 @@ uint8_t menu_kitLockType = 0;
 uint8_t menu_instPerfLock = 0;
 uint8_t menu_instPerfLockPreset = 0;
 uint8_t menu_voiceArray = 0x7f;
-uint8_t menu_kitLockVoiceArray = 0x7f;
 
 /** buffer to minimize the display configuration.
 It holds a representation of the display content so only the changed cells have to be updated*/
@@ -1963,19 +1962,17 @@ void menu_handleLoadMenu(int8_t inc, uint8_t btnClicked)
             
             case SAVE_TYPE_PATTERN:
                preset_loadPattern(menu_currentPresetNr[SAVE_TYPE_PATTERN],menu_voiceArray);
-               menu_kitLockVoiceArray = menu_voiceArray;
                menu_resetSaveParameters();
                break;
             
             case SAVE_TYPE_PERFORMANCE:
-               preset_loadAll(menu_currentPresetNr[SAVE_TYPE_PERFORMANCE],0,0,menu_voiceArray);//last 0 is don't release kit lock
-               menu_kitLockVoiceArray = menu_voiceArray;
+               //preset_loadAll(menu_currentPresetNr[SAVE_TYPE_ALL],0,0,menu_voiceArray);//last 0 is don't release kit lock
+               preset_loadPerf(menu_currentPresetNr[SAVE_TYPE_PERFORMANCE],menu_voiceArray);//last 0 is don't release kit lock
                menu_resetSaveParameters();
                break;
             
             case SAVE_TYPE_ALL:
                preset_loadAll(menu_currentPresetNr[SAVE_TYPE_ALL],1,0,menu_voiceArray);//last 0 is don't release kit lock
-               menu_kitLockVoiceArray = menu_voiceArray;
                menu_resetSaveParameters();
                break;
             

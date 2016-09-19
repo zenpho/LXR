@@ -71,7 +71,7 @@ uint8_t frontParser_sysexActive=0;
 /** used to collect 2 7 bit messages and combine them to a 14 bit message*/
 uint16_t frontParser_twoByteData=0;
 
-uint8_t frontParser_sysexBuffer[7];
+uint8_t frontParser_sysexBuffer[16];
 
 /** used to count incoming sequencer step data packages*/
 uint16_t frontParser_sysexSeqStepNr=0;
@@ -166,9 +166,14 @@ void frontParser_parseUartData(unsigned char data)
       {
          frontParser_sysexActive = SYSEX_ACTIVE_MODE_NONE;
          uart_clearFrontFifo();
-      
+         
       	//send SYSEX_START as ACK
          uart_sendFrontpanelSysExByte(SYSEX_START);
+      }
+      else if(data==SYSEX_END)
+      {
+         uart_sendFrontpanelSysExByte(SYSEX_END);
+         frontParser_sysexActive = SYSEX_INACTIVE;
       }
       else
       {
@@ -302,13 +307,35 @@ static void frontParser_handleSysexData(unsigned char data)
          //inc the step counter
             frontParser_sysexSeqStepNr++;
             frontParser_rxCnt = 0;
-         
-         //signal new pattern
-         // -- AS we do this below after receiving pattern length data
-         //if( seq_isRunning()) {
-         //	seq_newPatternAvailable = 1;
-         //}
+            
+            uart_sendFrontpanelSysExByte(SYSEX_RECEIVE_MAIN_STEP_DATA);
          }
+         
+         break;
+      case SYSEX_RECEIVE_PAT_CHAIN_DATA:
+         if(frontParser_rxCnt<1)
+         {
+            frontParser_sysexBuffer[frontParser_rxCnt++] = data;
+         }
+         else
+         {
+            frontParser_sysexBuffer[frontParser_rxCnt++] = data;
+            //calculate the pattern index. we expect 'next', then all 'repeat' for pat 0-7
+            const uint8_t currentPattern	= frontParser_sysexSeqStepNr;
+            uint8_t next = frontParser_sysexBuffer[0];
+            uint8_t repeat = frontParser_sysexBuffer[1];
+            //first load into inactive track
+            PatternSet* patternSet = &seq_patternSet;
+         
+            patternSet->seq_patternSettings[currentPattern].nextPattern = next;
+            patternSet->seq_patternSettings[currentPattern].changeBar = repeat;
+         
+            //inc the step counter
+            frontParser_sysexSeqStepNr++;
+            frontParser_rxCnt = 0;
+         
+         }
+         uart_sendFrontpanelSysExByte(SYSEX_RECEIVE_PAT_CHAIN_DATA);
          break;
       case SYSEX_RECEIVE_PAT_LEN_DATA:
       // --AS same as above but we are receiving length data for each pattern
@@ -344,6 +371,7 @@ static void frontParser_handleSysexData(unsigned char data)
                seq_newPatternAvailable = 1;
             }
          }
+         uart_sendFrontpanelSysExByte(SYSEX_RECEIVE_PAT_LEN_DATA);
          break;
    
    
@@ -381,8 +409,9 @@ static void frontParser_handleSysexData(unsigned char data)
                seq_newPatternAvailable = 1;
             }
          }
+         uart_sendFrontpanelSysExByte(SYSEX_RECEIVE_PAT_SCALE_DATA);
          break;
-   
+      
    
       case SYSEX_RECEIVE_STEP_DATA:
       // we expect a bunch of 8 byte sysex message containing new step data for the sequencer
@@ -451,6 +480,74 @@ static void frontParser_handleSysexData(unsigned char data)
          }
          break;  
          
+      case SYSEX_BEGIN_PATTERN_TRANSMIT:
+        // we expect a bunch of 8 byte sysex message containing new step data for the sequencer
+        // beginning with step 0 up to NUMBER_STEPS*NUM_TRACKS*NUM_PATTERN = 128*7*8 = 7168 steps
+         if(frontParser_rxCnt<10)
+         {
+            frontParser_sysexBuffer[frontParser_rxCnt++] = data;
+         }
+         else
+         {
+            uint8_t currentTrack = frontParser_sysexBuffer[0];
+            uint8_t currentPattern = frontParser_sysexBuffer[1];
+            uint8_t currentStep = frontParser_sysexBuffer[2];
+            
+            //now we have to distribute the MSBs to the sysex data
+            uint8_t i;
+            for(i=0;i<7;i++)
+            {
+               frontParser_sysexBuffer[i] = frontParser_sysexBuffer[i+3];
+               frontParser_sysexBuffer[i] |= ((data&(1<<i))<<(7-i));
+            
+            }
+         
+            PatternSet* patternSet = &seq_patternSet;
+         
+            if((seq_newPatternVoiceArray&(0x01<<currentTrack))==0)
+            { // track is not in the array, use current step data instead
+               frontParser_sysexBuffer[0] = patternSet->seq_subStepPattern[currentPattern][currentTrack][currentStep].volume;
+               frontParser_sysexBuffer[1] = patternSet->seq_subStepPattern[currentPattern][currentTrack][currentStep].prob;
+               frontParser_sysexBuffer[2] = patternSet->seq_subStepPattern[currentPattern][currentTrack][currentStep].note;
+               frontParser_sysexBuffer[3] = patternSet->seq_subStepPattern[currentPattern][currentTrack][currentStep].param1Nr;
+               frontParser_sysexBuffer[4] = patternSet->seq_subStepPattern[currentPattern][currentTrack][currentStep].param1Val;
+               frontParser_sysexBuffer[5] = patternSet->seq_subStepPattern[currentPattern][currentTrack][currentStep].param2Nr;
+               frontParser_sysexBuffer[6] = patternSet->seq_subStepPattern[currentPattern][currentTrack][currentStep].param2Val;
+            }
+         
+         //do not overwrite playing pattern
+            if( (currentPattern == seq_activePattern)   && seq_isRunning())
+            {
+               seq_tmpPattern.seq_subStepPattern[currentTrack][currentStep].volume 	= frontParser_sysexBuffer[0];
+               seq_tmpPattern.seq_subStepPattern[currentTrack][currentStep].prob 	= frontParser_sysexBuffer[1];
+               seq_tmpPattern.seq_subStepPattern[currentTrack][currentStep].note 	= frontParser_sysexBuffer[2];
+               seq_tmpPattern.seq_subStepPattern[currentTrack][currentStep].param1Nr = frontParser_sysexBuffer[3];
+               seq_tmpPattern.seq_subStepPattern[currentTrack][currentStep].param1Val 	= frontParser_sysexBuffer[4];
+               seq_tmpPattern.seq_subStepPattern[currentTrack][currentStep].param2Nr 	= frontParser_sysexBuffer[5];
+               seq_tmpPattern.seq_subStepPattern[currentTrack][currentStep].param2Val 	= frontParser_sysexBuffer[6];
+            } 
+            else {
+            
+               patternSet->seq_subStepPattern[currentPattern][currentTrack][currentStep].volume 	= frontParser_sysexBuffer[0];
+               patternSet->seq_subStepPattern[currentPattern][currentTrack][currentStep].prob 	= frontParser_sysexBuffer[1];
+               patternSet->seq_subStepPattern[currentPattern][currentTrack][currentStep].note 	= frontParser_sysexBuffer[2];
+               patternSet->seq_subStepPattern[currentPattern][currentTrack][currentStep].param1Nr = frontParser_sysexBuffer[3];
+               patternSet->seq_subStepPattern[currentPattern][currentTrack][currentStep].param1Val 	= frontParser_sysexBuffer[4];
+               patternSet->seq_subStepPattern[currentPattern][currentTrack][currentStep].param2Nr 	= frontParser_sysexBuffer[5];
+               patternSet->seq_subStepPattern[currentPattern][currentTrack][currentStep].param2Val 	= frontParser_sysexBuffer[6];
+            }
+            //signal that a new data chunk is available
+            //frontParser_newSeqDataAvailable = 1;
+            //reset receive counter for next chunk
+            frontParser_rxCnt = 0;
+            
+            if(frontParser_sysexSeqStepNr<127)
+               frontParser_sysexSeqStepNr++;
+            else   
+               uart_sendFrontpanelSysExByte(SYSEX_BEGIN_PATTERN_TRANSMIT);
+         }
+         break;  
+      
       case SYSEX_ACTIVE_MODE_NONE:
       default:
       

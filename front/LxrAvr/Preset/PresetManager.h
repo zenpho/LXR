@@ -29,6 +29,7 @@ void preset_loadGlobals();
 
 void preset_saveAll(uint8_t presetNr, uint8_t isAll);
 void preset_loadAll(uint8_t presetNr, uint8_t isAll, uint8_t releaseLock, uint8_t voiceArray);
+void preset_loadPerf(uint8_t presetNr, uint8_t voiceArray);
 
 char* preset_loadName(uint8_t presetNr, uint8_t what, uint8_t loadSave);
 
