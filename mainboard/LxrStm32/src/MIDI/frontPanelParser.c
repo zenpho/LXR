@@ -483,21 +483,21 @@ static void frontParser_handleSysexData(unsigned char data)
       case SYSEX_BEGIN_PATTERN_TRANSMIT:
         // we expect a bunch of 8 byte sysex message containing new step data for the sequencer
         // beginning with step 0 up to NUMBER_STEPS*NUM_TRACKS*NUM_PATTERN = 128*7*8 = 7168 steps
-         if(frontParser_rxCnt<10)
+         if(frontParser_rxCnt<8)
          {
             frontParser_sysexBuffer[frontParser_rxCnt++] = data;
          }
          else
          {
-            uint8_t currentTrack = frontParser_sysexBuffer[0];
-            uint8_t currentPattern = frontParser_sysexBuffer[1];
-            uint8_t currentStep = frontParser_sysexBuffer[2];
+            uint8_t currentTrack = (frontParser_sysexBuffer[0]>>3)&0x07;
+            uint8_t currentPattern = (frontParser_sysexBuffer[0]&0x07);
+            uint8_t currentStep = frontParser_sysexSeqStepNr;//frontParser_sysexBuffer[2];
             
             //now we have to distribute the MSBs to the sysex data
             uint8_t i;
             for(i=0;i<7;i++)
             {
-               frontParser_sysexBuffer[i] = frontParser_sysexBuffer[i+3];
+               frontParser_sysexBuffer[i] = frontParser_sysexBuffer[i+1];
                frontParser_sysexBuffer[i] |= ((data&(1<<i))<<(7-i));
             
             }

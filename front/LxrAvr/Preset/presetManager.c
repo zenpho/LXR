@@ -380,15 +380,6 @@ void preset_readDrumsetData2(uint8_t isMorph)
       para=parameter_values;
    }
    
-   ////
-   ////
-   ////
-   ////
-   //// BC - preset_workingVoiceArray ISN'T GETTING PROPER COMPARISON TO BANK_1 ETC - DIAGNOSE HERE
-   //// all values are going to parameter_values as this is defined on line 271
-   //// offset 74 correct for main parameters
-   ////
-   ////
         
    if (preset_workingVoiceArray&BANK_1){
       for (i=0;i<37;i++)
@@ -668,7 +659,7 @@ static FRESULT preset_readVoiceData(uint8_t voiceArray, uint8_t isMorph)
 #endif
 }
 
-//----------------------------------------------------
+ //----------------------------------------------------
 uint8_t preset_loadDrumset(uint8_t presetNr, uint8_t isMorph)
 {
 #if USE_SD_CARD
@@ -811,7 +802,6 @@ error:
 }
 
 //----------------------------------------------------
-
 // send loaded parameters to back
 void preset_sendDrumsetParameters()
 {
@@ -1046,7 +1036,7 @@ static void preset_sendStepDataToSeq()
       					((frontParser_stepData.param2Val	& 0x80)>>1))
       					);
 }	
-//----------------------------------------------------
+ //----------------------------------------------------
 void preset_queryPatternInfoFromSeq(uint8_t patternNr, uint8_t* next, uint8_t* repeat)
 {
    frontParser_newSeqDataAvailable = 0;
@@ -1076,7 +1066,7 @@ void preset_queryPatternInfoFromSeq(uint8_t patternNr, uint8_t* next, uint8_t* r
    *next = frontParser_stepData.volume; 
    *repeat =  frontParser_stepData.prob;
 }
-//----------------------------------------------------
+ //----------------------------------------------------
 void preset_queryMainStepDataFromSeq(uint16_t stepNr, uint16_t *mainStepData, uint8_t *length, uint8_t *scale)
 {
    frontParser_newSeqDataAvailable = 0;
@@ -1112,8 +1102,7 @@ void preset_queryMainStepDataFromSeq(uint16_t stepNr, uint16_t *mainStepData, ui
    *length=frontParser_stepData.note;
    *scale=frontParser_stepData.param1Nr;
 };
-
-//----------------------------------------------------
+ //----------------------------------------------------
 static void preset_writePatternData()
 {
    uint16_t bytesWritten;
@@ -1245,8 +1234,7 @@ static void preset_writePatternData()
    frontParser_midiMsg.status = 0;
 
 }
-
-//----------------------------------------------------
+ //----------------------------------------------------
 void preset_savePattern(uint8_t presetNr)
 {
 #if USE_SD_CARD
@@ -1282,7 +1270,7 @@ void preset_savePattern(uint8_t presetNr)
 #else
 #endif
 }
-//----------------------------------------------------
+ //----------------------------------------------------
 static void preset_readPatternScale()
 {
    FIL scaleread_File;
@@ -1387,7 +1375,7 @@ static void preset_readPatternScale()
    
    
 }
-//----------------------------------------------------
+ //----------------------------------------------------
 static void preset_readPatternLength()
 {
    FIL lengthread_File;
@@ -1490,8 +1478,7 @@ static void preset_readPatternLength()
 
    
 }
-   
-//----------------------------------------------------
+ //----------------------------------------------------
 static void preset_readShuffle()
 {
    FIL shuffread_File;
@@ -1557,7 +1544,6 @@ static void preset_readShuffle()
    f_close((FIL*)&shuffread_File);  
 
 }
- 
  //----------------------------------------------------
 static void preset_readPatternChain()
 {
@@ -1685,7 +1671,6 @@ static void preset_readPatternChain()
 
    
 }
- 
  //----------------------------------------------------
 static void preset_readPatternMainStep()
 {
@@ -1789,9 +1774,8 @@ static void preset_readPatternMainStep()
 
    
 }
-   
  //----------------------------------------------------
-static void preset_readPatternStepData(uint8_t track, uint8_t pattern)
+static void preset_readPatternStepData2(uint8_t track, uint8_t pattern)
 {
    FIL stepRead_File;
    char step_filename[GEN_BUF_LEN];
@@ -1912,11 +1896,133 @@ static void preset_readPatternStepData(uint8_t track, uint8_t pattern)
       uart_checkAndParse();
    }
 }
+  
+ //----------------------------------------------------
+static void preset_readPatternStepData(uint8_t track, uint8_t pattern)
+{
+   FIL stepRead_File;
+   char step_filename[GEN_BUF_LEN];
+   UINT bytesRead;
+   FRESULT res;
+   uint16_t stepOffset=0;
+   volatile StepData preset_stepData;
+   uint8_t i;
    
-     
+   switch(preset_workingType)
+   {
+      case WTYPE_PERFORMANCE:
+         stepOffset=VERSION_4_PERF_STEPDATA_OFFSET
+            +(uint16_t)(track*(uint16_t)NUM_PATTERN*(uint16_t)STEPS_PER_PATTERN*(uint16_t)sizeof(StepData))
+            +(uint16_t)(pattern*(uint16_t)STEPS_PER_PATTERN*(uint16_t)sizeof(StepData));
+         preset_makeFileName(step_filename,preset_workingPreset,FEXT_PERF);
+         break;
+      default:
+         return;
+   }  
+   
+   res = f_open((FIL*)&stepRead_File,step_filename,FA_OPEN_EXISTING | FA_READ);
+   if(res)
+   {
+      //print received data on LCD
+      char text[2];
+      itoa(res,text,10);
+      lcd_clear();
+      lcd_home();
+      lcd_string_F(PSTR("stpopen err "));
+      lcd_string(text);
+      while(1){;}
+   }
+   res = f_lseek((FIL*)&stepRead_File,stepOffset);
+   if(res)
+   {
+      //print received data on LCD
+      char text[2];
+      itoa(res,text,10);
+      lcd_clear();
+      lcd_home();
+      lcd_string_F(PSTR("stpseek err "));
+      lcd_string(text);
+      while(1){;}
+   }
+   
+   frontParser_midiMsg.status = 0;
+   frontPanel_sendByte(SYSEX_START);
+   while(frontParser_midiMsg.status != SYSEX_START)
+   {
+      uart_checkAndParse();
+   }
+   
+   frontPanel_sendByte(SYSEX_BEGIN_PATTERN_TRANSMIT);
+   frontPanel_sysexMode = SYSEX_BEGIN_PATTERN_TRANSMIT;
+   frontParser_sysexCallback=NO_CALLBACK;
+   
+   for(i=0;i<128;i++)
+   {
+      res=f_read((FIL*)&stepRead_File,(void*)&preset_stepData,sizeof(StepData),&bytesRead);
+      if(res) {
+         {
+               //print received data on LCD
+            char text[2];
+            lcd_clear();
+            lcd_home();
+            lcd_string(text);
+            lcd_string_F(PSTR("step err "));
+            itoa(res,text,10);
+            lcd_string(text);
+            while(1){;}
+         }
+      }
+   
+   
+      // break step data down into 7-bit sysex messages and transmit
+      {
+         uint8_t infoByte = (uint8_t)((track&0x07)<<3);
+         infoByte = (uint8_t)( (infoByte)|(pattern&0x07) );
+         frontPanel_sendByte(infoByte);
+      
+         frontPanel_sendByte(preset_stepData.volume	& 0x7f);
+         frontPanel_sendByte(preset_stepData.prob	& 0x7f);
+         frontPanel_sendByte(preset_stepData.note	& 0x7f);
+      
+         frontPanel_sendByte(preset_stepData.param1Nr	& 0x7f);
+         frontPanel_sendByte(preset_stepData.param1Val	& 0x7f);
+      
+         frontPanel_sendByte(preset_stepData.param2Nr	& 0x7f);
+         frontPanel_sendByte(preset_stepData.param2Val	& 0x7f);
+      
+      //now the MSBs from all 7 values
+         frontPanel_sendByte((uint8_t)(
+                     ((preset_stepData.volume 	& 0x80)>>7) |
+            			((preset_stepData.prob	 	& 0x80)>>6) |
+            			((preset_stepData.note	 	& 0x80)>>5) |
+            			((preset_stepData.param1Nr	& 0x80)>>4) |
+            			((preset_stepData.param1Val	& 0x80)>>3) |
+            			((preset_stepData.param2Nr	& 0x80)>>2) |
+            			((preset_stepData.param2Val	& 0x80)>>1))
+            			);
+      }
+   }
+   f_close((FIL*)&stepRead_File); 
+   
+   // wait callback - step done on cortex
+   while(frontParser_sysexCallback!=STEP_CALLBACK)
+   {  
+      uart_checkAndParse();
+   }
+   frontParser_sysexCallback=NO_CALLBACK;
+   
+   // end sysex mode
+   frontParser_midiMsg.status = 0;
+   frontPanel_sendByte(SYSEX_END);
+   while(frontParser_midiMsg.status != SYSEX_END)
+   {
+      uart_checkAndParse();
+   }
+}
+   
+    
 //----------------------------------------------------
 // returns 1 on success
-
 static uint8_t preset_readPatternData2()
 {
 	//--AS note that the pattern length data is no longer stored in the same way.
@@ -1939,6 +2045,7 @@ static uint8_t preset_readPatternData2()
    frontParser_midiMsg.status=0;
    
 	// ---------- Send step data first
+   
    for (trkNum=0;trkNum<NUM_TRACKS;trkNum++)
    {
       for (patNum=0;patNum<NUM_PATTERN;patNum++)
@@ -1946,6 +2053,7 @@ static uint8_t preset_readPatternData2()
          preset_readPatternStepData(trkNum,patNum);
       }
    }
+   
    
 
    preset_readPatternMainStep();
@@ -2823,15 +2931,11 @@ closeFile:
 	//close the file handle
    f_close((FIL*)&preset_File);
    
-   
    preset_readDrumsetData2(0);
    
    preset_readDrumsetData2(1);
    
-   
    preset_readPatternData2();
-
-   //preset_morph(preset_workingVoiceArray,parameter_values[PAR_MORPH]);
    
    preset_sendDrumsetParameters();
    
@@ -2845,8 +2949,6 @@ closeFile:
 	frontPanel_sendData(PRESET,PRESET_LOAD,presetNr);
 #endif
 }
-
-
 
 //----------------------------------------------------
 static void preset_makeFileName(char *buf, uint8_t num, uint8_t type)
