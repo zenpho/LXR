@@ -2768,7 +2768,6 @@ closeFile:
    
    lcd_clear();
    lcd_home();
-   lcd_setcursor(0,2);
    lcd_string_F(PSTR("Loading perf"));
    
    for (trkNum=0;trkNum<NUM_TRACKS;trkNum++)
