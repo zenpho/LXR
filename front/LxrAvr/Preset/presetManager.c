@@ -2773,12 +2773,13 @@ closeFile:
    
    for (trkNum=0;trkNum<NUM_TRACKS;trkNum++)
    {
-      preset_workingVoiceArray=(0x01<<trkNum);
       preset_readPatternStepData(trkNum,menu_playedPattern);
-      preset_readDrumsetData2(0);
-      preset_readDrumsetData2(1);
-      preset_sendDrumsetParameters();
+      
    }
+   
+   preset_readDrumsetData2(0);
+   preset_readDrumsetData2(1);
+   preset_sendDrumsetParameters();
    
    for (trkNum=0;trkNum<NUM_TRACKS;trkNum++)
    {
