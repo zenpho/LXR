@@ -76,6 +76,10 @@ static uint16_t midiParser_activeNrpnNumber = 0;
 
 uint8_t midiParser_originalCcValues[0xff];
 
+MidiMsg midi_midiCache[256];
+uint8_t  midi_midiCacheAvailable[256];
+
+
 // this will be set to some value if we are ignoring all mtc messages until the next 0 message
 static uint8_t midiParser_mtcIgnore=1;
 static uint32_t volatile midiParser_lastMtcReceived=0x0;

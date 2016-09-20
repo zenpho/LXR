@@ -37,6 +37,7 @@
 #ifndef PARAMETERARRAY_H_
 #define PARAMETERARRAY_H_
 
+
 #define TYPE_UINT8 				0	// byte
 #define TYPE_FLT 				   1	// float
 #define TYPE_SPECIAL_F			2	// float value targeting modNodeValue (as opposed to actual parameter)
@@ -46,7 +47,8 @@
 #define TYPE_UINT8_VMORPH     6  // individual voice morph - change and queue to send to front
 
 // --AS **PATROT this list needs to correspond exactly with the sound parameters in the AVR side because
-// modulation targets are sent across and they have to match in this list
+// modulation targets are sent across and they have to match in this list 
+
 enum ParamEnums
 {
 

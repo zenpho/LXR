@@ -156,6 +156,8 @@ extern uint8_t seq_resetBarOnPatternChange;
 
 extern uint8_t switchOnNextStep;
 
+extern uint8_t seq_voicesLoading;
+
 extern uint8_t seq_rollMode;
 extern uint8_t seq_rollNote;
 extern uint8_t seq_rollVelocity;

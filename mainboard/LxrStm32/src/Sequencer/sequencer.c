@@ -73,6 +73,8 @@ uint8_t seq_rollCounter[NUM_TRACKS];       // runs a counter for every roll trig
 uint8_t seq_kitResetFlag=0;
 uint8_t seq_skipFirstRoll=0;
 
+uint8_t seq_voicesLoading=0;
+
 uint8_t seq_loopLength=0;
 uint8_t seq_pendingLoopLength=0;
 
@@ -211,6 +213,10 @@ void seq_init()
       autoNode_init(&seq_automationNodes[i][1]);
    }
 
+   for(i=0;i<256;i++)
+   {
+      midi_midiCacheAvailable[i]=0;
+   }
    memset(seq_stepIndex,0,NUM_TRACKS+1);
    memset(seq_lastMasterStep,0,NUM_TRACKS+1);
    memset(seq_transpose_voiceAmount,63,NUM_TRACKS);

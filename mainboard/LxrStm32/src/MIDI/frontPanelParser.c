@@ -56,6 +56,15 @@ static void frontParser_handleMidiMessage();
 static void frontParser_handleSysexData(unsigned char data);
 static void frontParser_handleSeqCC();
 
+
+#define VOICE_PARAM_LENGTH 37
+static uint8_t voice1presetMask[VOICE_PARAM_LENGTH]={1,8,9,20,      37,43,49,50,   62,70,74,78,  82,83,88,94,   102,108,115,121,     128,134,137,143,    149,155,161,167,    173,179,185,191,    197,203,209,215,221}; 
+static uint8_t voice2presetMask[VOICE_PARAM_LENGTH]={2,10,11,21,    38,44,51,52,   63,71,75,79,  84,85,89,95,   103,109,116,122,     129,135,138,144,    150,156,162,168,    174,180,186,192,    198,204,210,216,222}; 
+static uint8_t voice3presetMask[VOICE_PARAM_LENGTH]={3,12,13,22,    39,45,53,54,   64,72,76,80,  86,87,90,96,   104,110,117,123,     130,136,139,145,    151,157,163,169,    175,181,187,193,    199,205,211,217,223}; 
+static uint8_t voice4presetMask[VOICE_PARAM_LENGTH]={4,14,15,27,28, 40,46,55,      56,65,68,73,  77,81,91,99,   105,111,118,124,     131,140,146,152,        158,164,170,    176,182,188,194,    200,206,212,218,224}; 
+static uint8_t voice5presetMask[VOICE_PARAM_LENGTH]={6,16,17,23,    24,29,30,31,   32,41,47,57,  58,66,69,92,   100,106,112,119,125, 132,141,147,153,        159,165,171,    177,183,189,195,    201,207,213,219,225}; 
+static uint8_t voice6presetMask[VOICE_PARAM_LENGTH]={7,18,19,25,    26,33,34,35,   36,42,48,59,  60,61,67,93,   101,107,113,120,126, 133,142,148,154,        160,166,172,    178,184,190,196,    202,208,214,220,226};  
+
 //a counter for the received bytes
 //each message is made up from 3 bytes (status 0xb0, parameter nr and parameter value)
 uint8_t frontParser_rxCnt=0;
@@ -638,28 +647,139 @@ static void frontParser_handleMidiMessage()
    
    //MIDI SYNTH MESSAGES
       case MIDI_CC: //frontParser_midiMsg.status
-      // this is for parameters below 128
-      // fix offset between front an cortex
-      // front params start at 1, cortex at 2 (because of midi in mod wheel==0x1
-      // correct parameter number offset
-         frontParser_midiMsg.data1 += 1;
-      
-      //because hh slope on front is 127 and on cortex is 0 wrap data1 at 127
-         frontParser_midiMsg.data1 &= 0x7f;
-      
-         midiParser_ccHandler(frontParser_midiMsg,1);
-      
-      //record automation if record is turned on
-         seq_recordAutomation(frontParser_activeTrack, frontParser_midiMsg.data1, frontParser_midiMsg.data2);
+         // this is for parameters below 128
+         {
+         // are receiving a file transmit for voice?
+            uint8_t messageVoice=0; // bc - 0 is no voice detected
+            if(seq_voicesLoading)
+            {
+               uint8_t i;
+               for(i=0;i<VOICE_PARAM_LENGTH;i++)
+               {
+                  if(frontParser_midiMsg.data1==voice1presetMask[i])
+                  {
+                     messageVoice=1;
+                     break;
+                  }
+                  if(frontParser_midiMsg.data1==voice2presetMask[i])
+                  {
+                     messageVoice=2;
+                     break;
+                  }
+                  if(frontParser_midiMsg.data1==voice3presetMask[i])
+                  {
+                     messageVoice=3;
+                     break;
+                  }
+                  if(frontParser_midiMsg.data1==voice4presetMask[i])
+                  {
+                     messageVoice=4;
+                     break;
+                  }
+                  if(frontParser_midiMsg.data1==voice5presetMask[i])
+                  {
+                     messageVoice=5;
+                     break;
+                  }
+                  if(frontParser_midiMsg.data1==voice6presetMask[i])
+                  {
+                     messageVoice=6;
+                     break;
+                  }
+               }
+            }
+         
+         // message is for loading voice, or if all voices loading, always hold message
+            if( (seq_voicesLoading&(0x01<<(messageVoice-1))) || (seq_voicesLoading>=0x3f) )
+            {
+               uint8_t paramNr=frontParser_midiMsg.data1;
+            // fix offset between front an cortex
+            // front params start at 1, cortex at 2 (because of midi in mod wheel==0x1
+            // correct parameter number offset
+               frontParser_midiMsg.data1 += 1;
+            
+            //because hh slope on front is 127 and on cortex is 0 wrap data1 at 127
+               frontParser_midiMsg.data1 &= 0x7f;
+            
+            
+               midi_midiCache[paramNr]=frontParser_midiMsg;
+               midi_midiCacheAvailable[paramNr]=1;
+            // message is cached for voice release. 
+            // we can do: midiParser_ccHandler(seq_midiCache[voice1PresetMask[i]],1)
+            // for i=0:37 to release a voice. no need to split CC and CC2.
+            
+            }
+            else
+            {
+               frontParser_midiMsg.data1 += 1;
+               frontParser_midiMsg.data1 &= 0x7f;
+            
+               midiParser_ccHandler(frontParser_midiMsg,1);
+            
+            //record automation if record is turned on
+               seq_recordAutomation(frontParser_activeTrack, frontParser_midiMsg.data1, frontParser_midiMsg.data2);
+            }
+         }
          break;
    
    //CC2 above 127
       case FRONT_CC_2: // frontParser_midiMsg.status
          {
-            midiParser_ccHandler(frontParser_midiMsg,1);
-         
-         //record automation if record is turned on
-            seq_recordAutomation(frontParser_activeTrack, frontParser_midiMsg.data1+128, frontParser_midiMsg.data2);
+            // are receiving a file transmit for voice?
+            uint8_t messageVoice=0; // bc - 0 is no voice detected
+            if(seq_voicesLoading)
+            {
+               uint8_t i;
+               for(i=0;i<VOICE_PARAM_LENGTH;i++)
+               {
+                  if(frontParser_midiMsg.data1==voice1presetMask[i])
+                  {
+                     messageVoice=1;
+                     break;
+                  }
+                  if(frontParser_midiMsg.data1==voice2presetMask[i])
+                  {
+                     messageVoice=2;
+                     break;
+                  }
+                  if(frontParser_midiMsg.data1==voice3presetMask[i])
+                  {
+                     messageVoice=3;
+                     break;
+                  }
+                  if(frontParser_midiMsg.data1==voice4presetMask[i])
+                  {
+                     messageVoice=4;
+                     break;
+                  }
+                  if(frontParser_midiMsg.data1==voice5presetMask[i])
+                  {
+                     messageVoice=5;
+                     break;
+                  }
+                  if(frontParser_midiMsg.data1==voice6presetMask[i])
+                  {
+                     messageVoice=6;
+                     break;
+                  }
+               }
+            }
+            if( (seq_voicesLoading&(0x01<<(messageVoice-1))) || (seq_voicesLoading>=0x3f) )
+            {
+               midi_midiCache[frontParser_midiMsg.data1+128]=frontParser_midiMsg;
+               midi_midiCacheAvailable[frontParser_midiMsg.data1+128]=1;
+            // message is cached for voice release. 
+            // we can do: midiParser_ccHandler(seq_midiCache[voice1PresetMask[i]],1)
+            // for i=0:37 to release a voice. no need to split CC and CC2.               
+            
+            }
+            else
+            {
+               midiParser_ccHandler(frontParser_midiMsg,1);
+            
+            //record automation if record is turned on
+               seq_recordAutomation(frontParser_activeTrack, frontParser_midiMsg.data1+128, frontParser_midiMsg.data2);
+            }
          }
          break;
    
