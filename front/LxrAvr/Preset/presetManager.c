@@ -573,7 +573,6 @@ void preset_readKitToTemp(uint8_t isMorph)
 void preset_readDrumVoice(uint8_t track, uint8_t isMorph)
 {
    int8_t i;
-   uint8_t *para;
    uint8_t *paramMask;
    uint8_t value,upper,lower;
    
@@ -611,22 +610,16 @@ void preset_readDrumVoice(uint8_t track, uint8_t isMorph)
  // copy values from temp to where they are supposed to be - normal params or morph
    if(isMorph)
    {
-      para=parameters2;
       for (i=0;i<VOICE_PARAM_LENGTH;i++)
       {
-         para[paramMask[i]]=parameters2_temp[paramMask[i]];
-      
-      
+         parameters2[paramMask[i]]=parameters2_temp[paramMask[i]];
       }
    }
    else
    {
-      para=parameter_values;
       for (i=0;i<VOICE_PARAM_LENGTH;i++)
       {
-         para[paramMask[i]]=parameter_values_temp[paramMask[i]];
-      
-      
+         parameter_values[paramMask[i]]=parameter_values_temp[paramMask[i]];
       }
    }
     
@@ -671,7 +664,7 @@ void preset_readDrumsetMeta()
     
    for (i=0;i<END_OF_SOUND_PARAMETERS-END_OF_INDIVIDUAL_VOICE_PARAMS;i++)
    {
-      para[END_OF_INDIVIDUAL_VOICE_PARAMS+i]=
+      parameter_values[END_OF_INDIVIDUAL_VOICE_PARAMS+i]=
          parameter_values_temp[END_OF_INDIVIDUAL_VOICE_PARAMS+i];
    }
    
@@ -707,7 +700,8 @@ void preset_readDrumsetMeta()
    frontPanel_sendData(CC_2,(uint8_t)(PAR_MAC2_DST1_AMT-128),parameter_values[PAR_MAC2_DST1_AMT]);
    frontPanel_sendData(CC_2,(uint8_t)(PAR_MAC2_DST2_AMT-128),parameter_values[PAR_MAC2_DST2_AMT]);
    
-   preset_morph(0x7f,parameter_values[PAR_MORPH]);
+   // not sure this gets sent individually
+   frontPanel_sendData(CC_2,(uint8_t)(PAR_MIDI_NOTE7-128),parameter_values[PAR_MIDI_NOTE7]);
 }
 
 //----------------------------------------------------
@@ -2468,161 +2462,49 @@ static uint8_t interpolate(uint8_t a, uint8_t b, uint8_t x)
 // to the back
 void preset_morph(uint8_t voiceArray, uint8_t morph)
 {
-   int i;
+   uint8_t i, k;
    uint8_t *parArray;
    if (morph>=127)
       morph=255;
    else
       morph=(uint8_t)(morph<<1);
          
-   if(voiceArray&(0x01))
-   {
-      parArray=voice1presetMask;
-      for(i=0;i<VOICE_PARAM_LENGTH;i++)
-      {
-         uint8_t paramNumber = parArray[i];
-         uint8_t val;
-         	
-         val = interpolate(parameter_values[paramNumber],parameters2[paramNumber],morph);
-         if(paramNumber<128) 
-         {
-            frontPanel_sendData(MIDI_CC,(uint8_t)paramNumber,val);
-         } 
-         else 
-         {
-            frontPanel_sendData(CC_2,(uint8_t)(paramNumber-128),val);
-         }		
-         	
-         		
-         	//to omit front panel button/LED lag we have to process din dout and uart here
-         	//read next button
-         din_readNextInput();
-         	//update LEDs
-         dout_updateOutputs();
-         	//read uart messages from sequencer
-         uart_checkAndParse();
-      }	
-   }	
-      
-   if(voiceArray&(0x02))
-   {
-      parArray=voice2presetMask;
-      for(i=0;i<VOICE_PARAM_LENGTH;i++)
-      {
-         uint8_t paramNumber = parArray[i];
-         uint8_t val;
-         	
-         val = interpolate(parameter_values[paramNumber],parameters2[paramNumber],morph);
-         if(paramNumber<128) 
-         {
-            frontPanel_sendData(MIDI_CC,(uint8_t)paramNumber,val);
-         } 
-         else 
-         {
-            frontPanel_sendData(CC_2,(uint8_t)(paramNumber-128),val);
-         }		
-         	
-         		
-         	//to omit front panel button/LED lag we have to process din dout and uart here
-         	//read next button
-         din_readNextInput();
-         	//update LEDs
-         dout_updateOutputs();
-         	//read uart messages from sequencer
-         uart_checkAndParse();
-      }	
-   }	
+   for(k=0;k<NUM_TRACKS-1;k++)
+   {      
    
-   if(voiceArray&(0x04))
-   {
-      parArray=voice3presetMask;
-      for(i=0;i<VOICE_PARAM_LENGTH;i++)
+      if(voiceArray&(0x01))
       {
-         uint8_t paramNumber = parArray[i];
-         uint8_t val;
-         	
-         val = interpolate(parameter_values[paramNumber],parameters2[paramNumber],morph);
-         if(paramNumber<128) 
-         {
-            frontPanel_sendData(MIDI_CC,(uint8_t)paramNumber,val);
-         } 
-         else 
-         {
-            frontPanel_sendData(CC_2,(uint8_t)(paramNumber-128),val);
-         }		
-         	
-         		
-         	//to omit front panel button/LED lag we have to process din dout and uart here
-         	//read next button
-         din_readNextInput();
-         	//update LEDs
-         dout_updateOutputs();
-         	//read uart messages from sequencer
-         uart_checkAndParse();
-      }	
-   }	
-     
-   if(voiceArray&(0x08))
-   {
-      parArray=voice4presetMask;
-      for(i=0;i<VOICE_PARAM_LENGTH;i++)
+         parArray=voice1presetMask;
+         voiceArray &= (uint8_t)~(0x01);
+      } 
+      else if(voiceArray&(0x02))
       {
-         uint8_t paramNumber = parArray[i];
-         uint8_t val;
-         	
-         val = interpolate(parameter_values[paramNumber],parameters2[paramNumber],morph);
-         if(paramNumber<128) 
-         {
-            frontPanel_sendData(MIDI_CC,(uint8_t)paramNumber,val);
-         } 
-         else 
-         {
-            frontPanel_sendData(CC_2,(uint8_t)(paramNumber-128),val);
-         }		
-         	
-         		
-         	//to omit front panel button/LED lag we have to process din dout and uart here
-         	//read next button
-         din_readNextInput();
-         	//update LEDs
-         dout_updateOutputs();
-         	//read uart messages from sequencer
-         uart_checkAndParse();
-      }	
-   }	
-       
-   if(voiceArray&(0x10))
-   {
-      parArray=voice5presetMask;
-      for(i=0;i<VOICE_PARAM_LENGTH;i++)
+         parArray=voice2presetMask;
+         voiceArray &= (uint8_t)~(0x02);
+      }
+      else if(voiceArray&(0x04))
       {
-         uint8_t paramNumber = parArray[i];
-         uint8_t val;
-         	
-         val = interpolate(parameter_values[paramNumber],parameters2[paramNumber],morph);
-         if(paramNumber<128) 
-         {
-            frontPanel_sendData(MIDI_CC,(uint8_t)paramNumber,val);
-         } 
-         else 
-         {
-            frontPanel_sendData(CC_2,(uint8_t)(paramNumber-128),val);
-         }		
-         	
-         		
-         	//to omit front panel button/LED lag we have to process din dout and uart here
-         	//read next button
-         din_readNextInput();
-         	//update LEDs
-         dout_updateOutputs();
-         	//read uart messages from sequencer
-         uart_checkAndParse();
+         parArray=voice3presetMask;
+         voiceArray &= (uint8_t)~(0x04);
+      }
+      else if(voiceArray&(0x08))
+      {
+         parArray=voice4presetMask;
+         voiceArray &= (uint8_t)~(0x08);
       }	
-   }	
+      else if(voiceArray&(0x10))
+      {
+         parArray=voice5presetMask;
+         voiceArray &= (uint8_t)~(0x10);
+      }	
+      else if((voiceArray&(0x20))||(voiceArray&(0x40)))
+      {
+         parArray=voice6presetMask;
+         voiceArray &= (uint8_t)~(0x60);
+      }	
+      else 
+         goto EndLoop;
       
-   if((voiceArray&(0x20))||(voiceArray&(0x40)))
-   {
-      parArray=voice6presetMask;
       for(i=0;i<VOICE_PARAM_LENGTH;i++)
       {
          uint8_t paramNumber = parArray[i];
@@ -2647,8 +2529,10 @@ void preset_morph(uint8_t voiceArray, uint8_t morph)
          	//read uart messages from sequencer
          uart_checkAndParse();
       }	
+   EndLoop: ;
    }	
-       
+
+
 
 }
 
@@ -2974,6 +2858,7 @@ void preset_loadPerf(uint8_t presetNr, uint8_t voiceArray)
    uint8_t trkNum;
    uint8_t patNum;
 
+   frontParser_rxDisable=1;
    preset_workingPreset=presetNr;
    preset_workingType=WTYPE_PERFORMANCE;
    preset_workingVoiceArray = voiceArray;
@@ -3087,6 +2972,8 @@ void preset_loadPerf(uint8_t presetNr, uint8_t voiceArray)
       }
    }
 
+   frontPanel_sendData(SEQ_CC,SEQ_FILE_DONE,WTYPE_PERFORMANCE);
+   
 	//force complete repaint
    menu_repaintAll();
 
@@ -3097,6 +2984,8 @@ void preset_loadPerf(uint8_t presetNr, uint8_t voiceArray)
 closeFile:
 	//close the file handle
    f_close((FIL*)&preset_File);
+   
+   frontParser_rxDisable=0;
 }
 
 //----------------------------------------------------

@@ -157,6 +157,7 @@ extern uint8_t switchOnNextStep;
 extern uint8_t seq_voicesLoading;
 extern uint8_t seq_newVoiceAvailable;
 extern uint8_t seq_tracksLocked;
+extern uint8_t seq_loadFastMode;
 
 extern uint8_t seq_rollMode;
 extern uint8_t seq_rollNote;

@@ -233,7 +233,8 @@ const Name valueNames[NUM_NAMES] PROGMEM =
       
       {SHORT_TRANSPOSE, CAT_TRANSPOSE, LONG_TRANSPOSE},
       {SHORT_TRANSPOSE_ON_OFF, CAT_TRANSPOSE, LONG_TRANSPOSE_ON_OFF},
-
+      
+      {SHORT_FILE_LOAD_FAST, CAT_FILE, LONG_FILE_LOAD_FAST},
 };
 
 //---------------------------------------------------------------
@@ -550,6 +551,8 @@ const enum Datatypes PROGMEM parameter_dtypes[NUM_PARAMS] = {
 	   /*PAR_BUT_SHIFT_MODE*/ DTYPE_ON_OFF, // -bc- make shift a toggle
       /*PAR_LOAD_PERF_ON_BANK*/  DTYPE_ON_OFF, // -bc- load perfs instead of kits on bank change cc
       /*PAR_SKIP_FIRST_ROLL*/  DTYPE_ON_OFF,
+      /*PAR_FILE_LOAD_FAST*/  DTYPE_ON_OFF,
+         
 
 };
 
@@ -1970,7 +1973,7 @@ void menu_handleLoadMenu(int8_t inc, uint8_t btnClicked)
                break;
             
             case SAVE_TYPE_ALL:
-               preset_loadAll(menu_currentPresetNr[SAVE_TYPE_ALL],1,0,menu_voiceArray);//last 0 is don't release kit lock
+               //preset_loadAll(menu_currentPresetNr[SAVE_TYPE_ALL],1,0,menu_voiceArray);//last 0 is don't release kit lock
                menu_resetSaveParameters();
                break;
             
@@ -3617,6 +3620,10 @@ void menu_parseGlobalParam(uint16_t paramNr, uint8_t value)
       parameter_values[PAR_SKIP_FIRST_ROLL]=value; 
       frontPanel_sendData(SEQ_CC, SEQ_ROLL_MODE, (uint8_t)(value+5) );
       break;
+   case PAR_FILE_LOAD_FAST:
+      parameter_values[PAR_FILE_LOAD_FAST]=value; 
+      frontPanel_sendData(SEQ_CC, SEQ_LOAD_FAST,value);
+      break;
 	}
 }
 //-----------------------------------------------------------------
@@ -3952,6 +3959,7 @@ void menu_parseKnobValue(uint8_t potNr, uint8_t potValue)
 
 //-----------------------------------------------------------------
 // --AS TODO this looks to be unused. should it be removed?
+/*
 void menu_sendAllParameters()
 {
 	uint16_t i;
@@ -3976,15 +3984,18 @@ void menu_sendAllParameters()
 			_delay_ms(1);
 	}		
 }
+*/
 //----------------------------------------------------------------
 void menu_reloadKit()
 {
+/*
    uint8_t i;
    for(i=0;i<END_OF_SOUND_PARAMETERS;i++)
    {
       parameter_values[i]=parameter_values_kitReset[i];
    }
    menu_sendAllParameters();
+   */
 }
 //----------------------------------------------------------------
 uint8_t menu_getActivePage()

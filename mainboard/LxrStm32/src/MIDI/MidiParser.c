@@ -77,7 +77,14 @@ static uint16_t midiParser_activeNrpnNumber = 0;
 uint8_t midiParser_originalCcValues[0xff];
 
 MidiMsg midi_midiCache[256];
-uint8_t  midi_midiCacheAvailable[256];
+MidiMsg midi_midiKit[256];
+uint8_t midi_midiCacheAvailable[256];
+uint8_t midi_midiLfoCache[6];
+uint8_t midi_kitLfoCache[6];
+uint8_t midi_midiLfoCacheAvailable[6];
+uint8_t midi_midiVeloCache[6];
+uint8_t midi_kitVeloCache[6];
+uint8_t midi_midiVeloCacheAvailable[6];
 
 
 // this will be set to some value if we are ignoring all mtc messages until the next 0 message
@@ -91,6 +98,13 @@ void midi_clearCache()
    for (i=0;i<256;i++)
    {
       midi_midiCacheAvailable[i]=0;
+   }
+   for(i=0;i<6;i++)
+   {
+      midi_midiLfoCache[i]=0;
+      midi_midiLfoCacheAvailable[i]=0;
+      midi_midiVeloCache[i]=0;
+      midi_midiVeloCacheAvailable[i]=0;
    }
 }
 

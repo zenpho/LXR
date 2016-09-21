@@ -91,11 +91,12 @@ uint8_t frontParser_activeStep=0;
 
 uint8_t frontParser_stepCopySource=0;
 
-//------------------------------------------------------
-void frontParser_uncacheVoice(uint8_t voice)
+  //------------------------------------------------------
+void frontParser_unholdVoice(uint8_t voice)
 {  
    uint8_t *presetMask;
    uint8_t i;  
+   seq_newVoiceAvailable |= (0x01<<voice);
    
    switch(voice)
    {
@@ -114,12 +115,81 @@ void frontParser_uncacheVoice(uint8_t voice)
       case 4:
          presetMask=voice5presetMask;
          break;
-      case 5:
       case 6:
+         voice--;
+      case 5:
+         seq_newVoiceAvailable |= 0x60;
          presetMask=voice6presetMask;
          break;
       default:
          return;
+   }
+   
+   if(midi_midiLfoCacheAvailable[voice])
+      midi_kitLfoCache[voice]=midi_midiLfoCache[voice];
+   if(midi_midiVeloCacheAvailable[voice])
+      midi_kitVeloCache[voice]=midi_midiVeloCache[voice];
+   
+   for(i=0;i<VOICE_PARAM_LENGTH;i++)
+   {
+      if(midi_midiCacheAvailable[presetMask[i]])
+      {
+         midi_midiKit[presetMask[i]]=midi_midiCache[presetMask[i]];
+      }
+   }
+   
+}  
+//------------------------------------------------------
+void frontParser_uncacheVoice(uint8_t voice)
+{  
+   uint8_t *presetMask;
+   uint8_t i;  
+   
+   switch(voice)
+   {
+      case 0:
+         if(midi_midiLfoCacheAvailable[voice])
+            modNode_setDestination(&voiceArray[voice].lfo.modTarget, midi_midiLfoCache[voice]);
+         presetMask=voice1presetMask;
+         break;
+      case 1:
+         if(midi_midiLfoCacheAvailable[voice])
+            modNode_setDestination(&voiceArray[voice].lfo.modTarget, midi_midiLfoCache[voice]);
+         presetMask=voice2presetMask;
+         break;
+      case 2:
+         if(midi_midiLfoCacheAvailable[voice])
+            modNode_setDestination(&voiceArray[voice].lfo.modTarget, midi_midiLfoCache[voice]);
+         presetMask=voice3presetMask;
+         break;
+      case 3:
+         if(midi_midiLfoCacheAvailable[voice])
+            modNode_setDestination(&snareVoice.lfo.modTarget, midi_midiLfoCache[voice]);
+         presetMask=voice4presetMask;
+         break;
+      case 4:
+         if(midi_midiLfoCacheAvailable[voice])
+            modNode_setDestination(&cymbalVoice.lfo.modTarget, midi_midiLfoCache[voice]);
+         presetMask=voice5presetMask;
+         break;
+      case 6:
+         voice--;
+      case 5:
+         if(midi_midiLfoCacheAvailable[voice])
+            modNode_setDestination(&hatVoice.lfo.modTarget, midi_midiLfoCache[voice]);
+         seq_newVoiceAvailable &= ~(0x60);
+         seq_voicesLoading &= ~(0x60);
+         presetMask=voice6presetMask;
+         break;
+      default:
+         return;
+   }
+   if(midi_midiLfoCacheAvailable[voice])
+      midi_midiLfoCacheAvailable[voice]=0;
+   if(midi_midiVeloCacheAvailable[voice])
+   {
+      modNode_setDestination(&velocityModulators[voice], midi_midiVeloCache[voice]);
+      midi_midiVeloCacheAvailable[voice]=0;
    }
    
    for(i=0;i<VOICE_PARAM_LENGTH;i++)
@@ -130,6 +200,7 @@ void frontParser_uncacheVoice(uint8_t voice)
          midi_midiCacheAvailable[presetMask[i]]=0;
       }
    }
+   
 }   
 //------------------------------------------------------
 /**send all active step numbers to frontpanel to light up corresponding LEDs*/
@@ -340,7 +411,7 @@ static void frontParser_handleSysexData(unsigned char data)
             
             if( (currentPattern == seq_activePattern) && seq_isRunning() )
             {  
-               if(1)
+               if(seq_loadFastMode)
                {
                   seq_tracksLocked |= (0x01<<currentTrack);
                   patternSet->seq_mainSteps[currentPattern][currentTrack] = mainStepData;
@@ -398,13 +469,13 @@ static void frontParser_handleSysexData(unsigned char data)
          //first load into inactive track
             PatternSet* patternSet = &seq_patternSet;
          
-         /*
-            if( (currentPattern == seq_activePattern) && seq_isRunning() )
+         
+            if( (currentPattern == seq_activePattern) && seq_isRunning() && !seq_loadFastMode )
             {
                seq_tmpPattern.seq_patternLengthRotate[currentTrack].length = data;
             } 
             else 
-            */
+            
             {
                patternSet->seq_patternLengthRotate[currentPattern][currentTrack].length = data;
             }
@@ -435,13 +506,12 @@ static void frontParser_handleSysexData(unsigned char data)
          //first load into inactive track
             PatternSet* patternSet = &seq_patternSet;
          
-            /*
-            if( (currentPattern == seq_activePattern) && seq_isRunning() )
+            
+            if( (currentPattern == seq_activePattern) && seq_isRunning() && !seq_loadFastMode )
             {
                seq_tmpPattern.seq_patternLengthRotate[currentTrack].scale = data;
             } 
             else 
-            */
             {
                patternSet->seq_patternLengthRotate[currentPattern][currentTrack].scale = data;
             }
@@ -555,8 +625,8 @@ static void frontParser_handleSysexData(unsigned char data)
             PatternSet* patternSet = &seq_patternSet;
             
          //do not overwrite playing pattern
-         /*
-            if( (currentPattern == seq_activePattern)   && seq_isRunning())
+         
+            if( (currentPattern == seq_activePattern)   && seq_isRunning() && !seq_loadFastMode)
             {
                seq_tmpPattern.seq_subStepPattern[currentTrack][currentStep].volume 	= frontParser_sysexBuffer[0];
                seq_tmpPattern.seq_subStepPattern[currentTrack][currentStep].prob 	= frontParser_sysexBuffer[1];
@@ -566,7 +636,7 @@ static void frontParser_handleSysexData(unsigned char data)
                seq_tmpPattern.seq_subStepPattern[currentTrack][currentStep].param2Nr 	= frontParser_sysexBuffer[5];
                seq_tmpPattern.seq_subStepPattern[currentTrack][currentStep].param2Val 	= frontParser_sysexBuffer[6];
             } 
-            else */
+            else 
             {
             
                patternSet->seq_subStepPattern[currentPattern][currentTrack][currentStep].volume 	= frontParser_sysexBuffer[0];
@@ -587,11 +657,11 @@ static void frontParser_handleSysexData(unsigned char data)
             else
             {
                
-               if((currentPattern == seq_activePattern) && 1)
+               if((currentPattern == seq_activePattern) && seq_loadFastMode)
                {  
                   seq_tracksLocked &= ~(0x01<<currentTrack);
                }
-               else if (currentPattern == 7 && seq_isRunning())
+               else if (currentPattern == 7 && seq_isRunning() && !seq_loadFastMode)
                {
                   seq_newPatternAvailable=1;
                }
@@ -692,47 +762,9 @@ static void frontParser_handleMidiMessage()
       case MIDI_CC: //frontParser_midiMsg.status
          // this is for parameters below 128
          {
-         // are receiving a file transmit for voice?
-            uint8_t messageVoice=0; // bc - 0 is no voice detected
-            if(seq_voicesLoading)
-            {
-               uint8_t i;
-               for(i=0;i<VOICE_PARAM_LENGTH;i++)
-               {
-                  if(frontParser_midiMsg.data1==voice1presetMask[i])
-                  {
-                     messageVoice=1;
-                     break;
-                  }
-                  if(frontParser_midiMsg.data1==voice2presetMask[i])
-                  {
-                     messageVoice=2;
-                     break;
-                  }
-                  if(frontParser_midiMsg.data1==voice3presetMask[i])
-                  {
-                     messageVoice=3;
-                     break;
-                  }
-                  if(frontParser_midiMsg.data1==voice4presetMask[i])
-                  {
-                     messageVoice=4;
-                     break;
-                  }
-                  if(frontParser_midiMsg.data1==voice5presetMask[i])
-                  {
-                     messageVoice=5;
-                     break;
-                  }
-                  if(frontParser_midiMsg.data1==voice6presetMask[i])
-                  {
-                     messageVoice=6;
-                     break;
-                  }
-               }
-            }
+            // are receiving a file transmit for voice?
             // message is for loading voice, or if all voices loading, always hold message
-            if(messageVoice&&(seq_voicesLoading&(0x01<<(messageVoice-1))))
+            if(seq_voicesLoading)
             {
                uint8_t paramNr=frontParser_midiMsg.data1;
                // fix offset between front an cortex
@@ -767,45 +799,8 @@ static void frontParser_handleMidiMessage()
       case FRONT_CC_2: // frontParser_midiMsg.status
          {
             // are receiving a file transmit for voice?
-            uint8_t messageVoice=0; // bc - 0 is no voice detected
+            // message is for loading voice, or if all voices loading, always hold message
             if(seq_voicesLoading)
-            {
-               uint8_t i;
-               for(i=0;i<VOICE_PARAM_LENGTH;i++)
-               {
-                  if(frontParser_midiMsg.data1==voice1presetMask[i])
-                  {
-                     messageVoice=1;
-                     break;
-                  }
-                  if(frontParser_midiMsg.data1==voice2presetMask[i])
-                  {
-                     messageVoice=2;
-                     break;
-                  }
-                  if(frontParser_midiMsg.data1==voice3presetMask[i])
-                  {
-                     messageVoice=3;
-                     break;
-                  }
-                  if(frontParser_midiMsg.data1==voice4presetMask[i])
-                  {
-                     messageVoice=4;
-                     break;
-                  }
-                  if(frontParser_midiMsg.data1==voice5presetMask[i])
-                  {
-                     messageVoice=5;
-                     break;
-                  }
-                  if(frontParser_midiMsg.data1==voice6presetMask[i])
-                  {
-                     messageVoice=6;
-                     break;
-                  }
-               }
-            }
-            if(messageVoice&&(seq_voicesLoading&(0x01<<(messageVoice-1))))
             {
                midi_midiCache[frontParser_midiMsg.data1+128]=frontParser_midiMsg;
                midi_midiCacheAvailable[frontParser_midiMsg.data1+128]=1;
@@ -832,23 +827,30 @@ static void frontParser_handleMidiMessage()
             uint8_t value = ((upper&0x01)<<7) | lower;
          
             uint8_t lfoNr = (upper&0xfe)>>1;
-         
-            switch(lfoNr)
+            
+            if(seq_voicesLoading&(0x01<<(lfoNr)))
             {
-               case 0:
-               case 1:
-               case 2:	modNode_setDestination(&voiceArray[lfoNr].lfo.modTarget, value);
-                  break;
-               case 3:	modNode_setDestination(&snareVoice.lfo.modTarget,value);		
-                  break;
-               case 4:	modNode_setDestination(&cymbalVoice.lfo.modTarget, value);		
-                  break;
-               case 5:	modNode_setDestination(&hatVoice.lfo.modTarget, value);			
-                  break;
-               default:
-                  break;
+               midi_midiLfoCache[lfoNr]=value;
+               midi_midiLfoCacheAvailable[lfoNr]=1;
             }
-         
+            else
+            {
+               switch(lfoNr)
+               {
+                  case 0:
+                  case 1:
+                  case 2:	modNode_setDestination(&voiceArray[lfoNr].lfo.modTarget, value);
+                     break;
+                  case 3:	modNode_setDestination(&snareVoice.lfo.modTarget,value);		
+                     break;
+                  case 4:	modNode_setDestination(&cymbalVoice.lfo.modTarget, value);		
+                     break;
+                  case 5:	modNode_setDestination(&hatVoice.lfo.modTarget, value);			
+                     break;
+                  default:
+                     break;
+               }
+            }
          }
          break; // case FRONT_CC_LFO_TARGET
    
@@ -960,7 +962,15 @@ static void frontParser_handleMidiMessage()
          // the modTargets array in the AVR code
             uint8_t value = ((upper&0x01)<<7) | lower;
             uint8_t velModNr = (upper&0xfe)>>1;
-            modNode_setDestination(&velocityModulators[velModNr], value);
+            if(seq_voicesLoading&(0x01<<(velModNr)))
+            {
+               midi_midiVeloCache[velModNr]=value;
+               midi_midiLfoCacheAvailable[velModNr]=1;
+            }
+            else
+            {
+               modNode_setDestination(&velocityModulators[velModNr], value);
+            }
          }
          break;
    
@@ -1500,10 +1510,17 @@ static void frontParser_handleSeqCC()
          seq_voicesLoading |= (0x01<<frontParser_midiMsg.data2);
          break;
       case FRONT_SEQ_UNHOLD_VOICE:
-         seq_voicesLoading &= ~(0x01<<frontParser_midiMsg.data2);
-         seq_newVoiceAvailable |= (0x01<<frontParser_midiMsg.data2);
-         if(!seq_isRunning())
-            frontParser_uncacheVoice(frontParser_midiMsg.data2);
+         {
+            frontParser_unholdVoice(frontParser_midiMsg.data2);
+            if(!seq_isRunning())
+               frontParser_uncacheVoice(frontParser_midiMsg.data2);
+         }
+         break;
+      case FRONT_SEQ_LOAD_FAST:
+         seq_loadFastMode=frontParser_midiMsg.data2;
+         break;
+      case FRONT_SEQ_FILE_DONE:
+         seq_voicesLoading=0;
          break;
       default:
          break;

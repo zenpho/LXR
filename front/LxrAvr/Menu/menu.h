@@ -237,6 +237,7 @@ enum NamesEnum
    TEXT_ROLL_MODE,
    TEXT_TRANSPOSE,
    TEXT_TRANSPOSE_ON_OFF,
+   TEXT_FILE_LOAD_FAST,
 	NUM_NAMES
 };
 //-----------------------------------------------------------------
@@ -349,6 +350,8 @@ enum shortNamesEnum
    
    SHORT_TRANSPOSE,
    SHORT_TRANSPOSE_ON_OFF,
+   
+   SHORT_FILE_LOAD_FAST,
 
 	
 };
@@ -393,6 +396,7 @@ enum catNamesEnum
    CAT_MAC2D2,
    CAT_TRANSPOSE,
    CAT_MORPH_VOICE,
+   CAT_FILE,
 };
 //-----------------------------------------------------------------
 // these must correspond with longNames in MenuText.h
@@ -490,6 +494,7 @@ enum longNamesEnum
    LONG_ROLL_MODE,
    LONG_TRANSPOSE,
    LONG_TRANSPOSE_ON_OFF,
+   LONG_FILE_LOAD_FAST,
 	
 };
 

@@ -20,7 +20,7 @@ extern volatile StepData frontParser_stepData;
 extern uint8_t frontPanel_sysexMode;
 extern uint8_t frontPanel_longOp;
 extern uint8_t frontPanel_longData;
-
+extern uint8_t frontParser_rxDisable;
 
 
 #define NOTE_ON 			0x90	// 2 data bytes
@@ -182,6 +182,8 @@ byte3, data2 byte: xbbbbbbb : b=macro mod target value lower 7 bits or top level
 #define SEQ_SET_LOOP             0x45
 #define SEQ_LOAD_VOICE		 0x48
 #define SEQ_UNHOLD_VOICE             0x49
+#define SEQ_LOAD_FAST             0x50
+#define SEQ_FILE_DONE             0x51
 //bc adds
 
 #define SEQ_COPY_TRACK_PATTERN         0x3a

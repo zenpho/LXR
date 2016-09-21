@@ -676,6 +676,8 @@ byte3, data2 byte: xbbbbbbb : b=macro mod target value lower 7 bits or top level
 #define FRONT_SEQ_SET_LOOP             0x45
 #define FRONT_SEQ_LOAD_VOICE             0x48
 #define FRONT_SEQ_UNHOLD_VOICE             0x49
+#define FRONT_SEQ_LOAD_FAST             0x50
+#define FRONT_SEQ_FILE_DONE             0x51
 
 //codec control messages
 #define EQ_ON_OFF						0x01

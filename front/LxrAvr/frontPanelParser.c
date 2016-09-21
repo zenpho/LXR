@@ -27,6 +27,7 @@ static uint16_t frontParser_nrpnNr = 0;
 
 uint8_t frontPanel_sysexMode = 0;
 uint8_t frontParser_sysexCallback = 0;
+uint8_t frontParser_rxDisable=0;
 
 volatile uint8_t frontParser_newSeqDataAvailable = 0;
 volatile StepData frontParser_stepData;
@@ -208,13 +209,14 @@ void frontPanel_parseData(uint8_t data)
    	//reset the byte counter
       frontParser_rxCnt = 0;
       frontParser_midiMsg.status = data;
-      
+      /*
       if(frontParser_midiMsg.status == PATCH_RESET)
       {
          menu_reloadKit();
          menu_repaintAll();
           
       }
+      */
    
    }
    else
@@ -370,13 +372,13 @@ void frontPanel_parseData(uint8_t data)
                break;
          }
       }
-      else if(frontParser_rxCnt==0)
+      else if( (frontParser_rxCnt==0) && !frontParser_rxDisable)
       {
       	//parameter nr
          frontParser_midiMsg.data1 = data;
          frontParser_rxCnt++;
       }
-      else
+      else if (!frontParser_rxDisable)
       {
       	//parameter value
          frontParser_midiMsg.data2 = data;
