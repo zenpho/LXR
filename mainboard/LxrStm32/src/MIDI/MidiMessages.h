@@ -599,6 +599,7 @@ byte3, data2 byte: xbbbbbbb : b=macro mod target value lower 7 bits or top level
 
 #define FRONT_LED_SEQ_SUB_STEP_LOWER	0x44  // sending single substeps was slow - send as two messages of 4 leds each
 #define FRONT_LED_SEQ_SUB_STEP_UPPER	0x45  // nb - can't fit all 8 b/c midi data2 is only 7 bits
+#define FRONT_LCD_PRINT_SCREEN	0x46
 //--AS appears unused
 //#define VOICE_MIDI_CHAN					0x02
 
@@ -673,10 +674,8 @@ byte3, data2 byte: xbbbbbbb : b=macro mod target value lower 7 bits or top level
 #define FRONT_SEQ_TRANSPOSE            0x43
 #define FRONT_SEQ_TRANSPOSE_ON_OFF     0x44
 #define FRONT_SEQ_SET_LOOP             0x45
-
-#define FRONT_SEQ_PATTERN_TRACKARRAY	0x48  // let the mainboard know which
-#define FRONT_SEQ_PATTERN_PATARRAY    	0x49  // voices to care about for patterns
-#define FRONT_SEQ_LOCK_VOICES		0x4a  // lock voice param changes until next trigger
+#define FRONT_SEQ_LOAD_VOICE             0x48
+#define FRONT_SEQ_UNHOLD_VOICE             0x49
 
 //codec control messages
 #define EQ_ON_OFF						0x01

@@ -139,8 +139,6 @@ typedef struct TempPatternStruct
 
 extern uint8_t seq_activePattern;
 extern uint8_t seq_newPatternAvailable;
-extern uint8_t seq_newPatternVoiceArray;
-extern uint8_t seq_newPatternPatArray;
 extern uint8_t seq_recordActive;				/**< set to 1 to activate the reording mode*/
 
 //extern PatternSet* seq_activePatternSetPtr;
@@ -157,6 +155,8 @@ extern uint8_t seq_resetBarOnPatternChange;
 extern uint8_t switchOnNextStep;
 
 extern uint8_t seq_voicesLoading;
+extern uint8_t seq_newVoiceAvailable;
+extern uint8_t seq_tracksLocked;
 
 extern uint8_t seq_rollMode;
 extern uint8_t seq_rollNote;

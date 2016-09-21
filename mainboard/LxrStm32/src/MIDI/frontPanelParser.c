@@ -92,6 +92,46 @@ uint8_t frontParser_activeStep=0;
 uint8_t frontParser_stepCopySource=0;
 
 //------------------------------------------------------
+void frontParser_uncacheVoice(uint8_t voice)
+{  
+   uint8_t *presetMask;
+   uint8_t i;  
+   
+   switch(voice)
+   {
+      case 0:
+         presetMask=voice1presetMask;
+         break;
+      case 1:
+         presetMask=voice2presetMask;
+         break;
+      case 2:
+         presetMask=voice3presetMask;
+         break;
+      case 3:
+         presetMask=voice4presetMask;
+         break;
+      case 4:
+         presetMask=voice5presetMask;
+         break;
+      case 5:
+      case 6:
+         presetMask=voice6presetMask;
+         break;
+      default:
+         return;
+   }
+   
+   for(i=0;i<VOICE_PARAM_LENGTH;i++)
+   {
+      if(midi_midiCacheAvailable[presetMask[i]])
+      {
+         midiParser_ccHandler(midi_midiCache[presetMask[i]],1);
+         midi_midiCacheAvailable[presetMask[i]]=0;
+      }
+   }
+}   
+//------------------------------------------------------
 /**send all active step numbers to frontpanel to light up corresponding LEDs*/
 void frontParser_updateTrackLeds(const uint8_t trackNr, uint8_t patternNr)
 {
@@ -297,30 +337,26 @@ static void frontParser_handleSysexData(unsigned char data)
          
          //first load into inactive track
             PatternSet* patternSet = &seq_patternSet;
-         
-            if((seq_newPatternVoiceArray&(0x01<<currentTrack))==0)
             
-            { // track is not in the array, use current MainSteps instead
-               mainStepData = patternSet->seq_mainSteps[currentPattern][currentTrack];
-            }
-         /*
             if( (currentPattern == seq_activePattern) && seq_isRunning() )
-            {
-               seq_tmpPattern.seq_mainSteps[currentTrack] = mainStepData;
+            {  
+               if(1)
+               {
+                  seq_tracksLocked |= (0x01<<currentTrack);
+                  patternSet->seq_mainSteps[currentPattern][currentTrack] = mainStepData;
+               }
+               else
+                  seq_tmpPattern.seq_mainSteps[currentTrack] = mainStepData;
             } 
-            else */
+            else
             {
                patternSet->seq_mainSteps[currentPattern][currentTrack] = mainStepData;
             }
          
-         
-         //inc the step counter
-            frontParser_sysexSeqStepNr++;
-            frontParser_rxCnt = 0;
             
+            frontParser_rxCnt = 0;
             uart_sendFrontpanelSysExByte(SYSEX_RECEIVE_MAIN_STEP_DATA);
          }
-         
          break;
       case SYSEX_RECEIVE_PAT_CHAIN_DATA:
          if(frontParser_rxCnt<1)
@@ -349,19 +385,19 @@ static void frontParser_handleSysexData(unsigned char data)
          break;
       case SYSEX_RECEIVE_PAT_LEN_DATA:
       // --AS same as above but we are receiving length data for each pattern
+         if(frontParser_rxCnt<1)
          {
+            frontParser_sysexBuffer[frontParser_rxCnt++] = data;
+         }
+         else
+         {
+            frontParser_sysexBuffer[frontParser_rxCnt++] = data;
          //calculate the step pattern and track indices
-            const uint8_t currentPattern	= frontParser_sysexSeqStepNr / 7;
-            const uint8_t currentTrack  	= frontParser_sysexSeqStepNr - currentPattern*7;
-         
+            uint8_t currentTrack = (frontParser_sysexBuffer[0]>>3)&0x07;
+            uint8_t currentPattern = (frontParser_sysexBuffer[0]&0x07);
          //first load into inactive track
             PatternSet* patternSet = &seq_patternSet;
          
-            if((seq_newPatternVoiceArray&(0x01<<currentTrack))==0)
-            
-            { // track is not in the array, use current length instead
-               data = patternSet->seq_patternLengthRotate[currentPattern][currentTrack].length;
-            }
          /*
             if( (currentPattern == seq_activePattern) && seq_isRunning() )
             {
@@ -372,51 +408,46 @@ static void frontParser_handleSysexData(unsigned char data)
             {
                patternSet->seq_patternLengthRotate[currentPattern][currentTrack].length = data;
             }
-         
-         
-         //inc the step counter
-            frontParser_sysexSeqStepNr++;
+            
             frontParser_rxCnt = 0;
-         
-         // signal new pattern after receiving all the data
-         /*
-            if( seq_isRunning() && (frontParser_sysexSeqStepNr == NUM_TRACKS*NUM_PATTERN)) {
-               seq_newPatternAvailable = 1;
-            }
-            */
+            uart_sendFrontpanelSysExByte(SYSEX_RECEIVE_PAT_LEN_DATA);
          }
-         uart_sendFrontpanelSysExByte(SYSEX_RECEIVE_PAT_LEN_DATA);
          break;
-   
-   
+         
       case SYSEX_RECEIVE_PAT_SCALE_DATA:
-      // --BC same as above but we are receiving scale data for each pattern
+       // --BC same as above but we are receiving scale data for each pattern
+         if(frontParser_rxCnt<1)
          {
+            frontParser_sysexBuffer[frontParser_rxCnt++] = data;
+         }
+         else
+         {
+         
+            frontParser_sysexBuffer[frontParser_rxCnt++] = data;
          //calculate the step pattern and track indices
+            uint8_t currentTrack = (frontParser_sysexBuffer[0]>>3)&0x07;
+            uint8_t currentPattern = (frontParser_sysexBuffer[0]&0x07);
+            /*
             const uint8_t currentPattern	= frontParser_sysexSeqStepNr / 7;
             const uint8_t currentTrack  	= frontParser_sysexSeqStepNr - currentPattern*7;
+            */
          
          //first load into inactive track
             PatternSet* patternSet = &seq_patternSet;
          
-            if((seq_newPatternVoiceArray&(0x01<<currentTrack))==0)
-            
-            { // track is not in the array, use current scale instead
-               data = patternSet->seq_patternLengthRotate[currentPattern][currentTrack].scale;
-            }
-         
-         /*
+            /*
             if( (currentPattern == seq_activePattern) && seq_isRunning() )
             {
                seq_tmpPattern.seq_patternLengthRotate[currentTrack].scale = data;
             } 
-            else */
+            else 
+            */
             {
                patternSet->seq_patternLengthRotate[currentPattern][currentTrack].scale = data;
             }
          
          
-         //inc the step counter
+            //inc the step counter
             frontParser_sysexSeqStepNr++;
             frontParser_rxCnt = 0;
          
@@ -426,8 +457,9 @@ static void frontParser_handleSysexData(unsigned char data)
                seq_newPatternAvailable = 1;
             }
             */
+            uart_sendFrontpanelSysExByte(SYSEX_RECEIVE_PAT_SCALE_DATA);
          }
-         uart_sendFrontpanelSysExByte(SYSEX_RECEIVE_PAT_SCALE_DATA);
+         
          break;
       
    
@@ -455,7 +487,7 @@ static void frontParser_handleSysexData(unsigned char data)
             const uint8_t currentStep		= frontParser_sysexSeqStepNr - absPat*128;
          
             PatternSet* patternSet = &seq_patternSet;
-         
+         /*
             if((seq_newPatternVoiceArray&(0x01<<currentTrack))==0)
             { // track is not in the array, use current step data instead
                frontParser_sysexBuffer[0] = patternSet->seq_subStepPattern[currentPattern][currentTrack][currentStep].volume;
@@ -466,7 +498,7 @@ static void frontParser_handleSysexData(unsigned char data)
                frontParser_sysexBuffer[5] = patternSet->seq_subStepPattern[currentPattern][currentTrack][currentStep].param2Nr;
                frontParser_sysexBuffer[6] = patternSet->seq_subStepPattern[currentPattern][currentTrack][currentStep].param2Val;
             }
-         
+         */
          //do not overwrite playing pattern
             if( (currentPattern == seq_activePattern)   && seq_isRunning())
             {
@@ -552,8 +584,19 @@ static void frontParser_handleSysexData(unsigned char data)
             
             if(frontParser_sysexSeqStepNr<127)
                frontParser_sysexSeqStepNr++;
-            else   
+            else
+            {
+               
+               if((currentPattern == seq_activePattern) && 1)
+               {  
+                  seq_tracksLocked &= ~(0x01<<currentTrack);
+               }
+               else if (currentPattern == 7 && seq_isRunning())
+               {
+                  seq_newPatternAvailable=1;
+               }
                uart_sendFrontpanelSysExByte(SYSEX_BEGIN_PATTERN_TRANSMIT);
+            }
          }
          break;  
       
@@ -688,26 +731,24 @@ static void frontParser_handleMidiMessage()
                   }
                }
             }
-         
-         // message is for loading voice, or if all voices loading, always hold message
-            if( (seq_voicesLoading&(0x01<<(messageVoice-1))) || (seq_voicesLoading>=0x3f) )
+            // message is for loading voice, or if all voices loading, always hold message
+            if(messageVoice&&(seq_voicesLoading&(0x01<<(messageVoice-1))))
             {
                uint8_t paramNr=frontParser_midiMsg.data1;
-            // fix offset between front an cortex
-            // front params start at 1, cortex at 2 (because of midi in mod wheel==0x1
-            // correct parameter number offset
+               // fix offset between front an cortex
+               // front params start at 1, cortex at 2 (because of midi in mod wheel==0x1
+               // correct parameter number offset
                frontParser_midiMsg.data1 += 1;
-            
-            //because hh slope on front is 127 and on cortex is 0 wrap data1 at 127
+               
+               //because hh slope on front is 127 and on cortex is 0 wrap data1 at 127
                frontParser_midiMsg.data1 &= 0x7f;
-            
-            
+               
+               
                midi_midiCache[paramNr]=frontParser_midiMsg;
                midi_midiCacheAvailable[paramNr]=1;
-            // message is cached for voice release. 
-            // we can do: midiParser_ccHandler(seq_midiCache[voice1PresetMask[i]],1)
-            // for i=0:37 to release a voice. no need to split CC and CC2.
-            
+               // message is cached for voice release. 
+               // we can do: midiParser_ccHandler(seq_midiCache[voice1PresetMask[i]],1)
+               // for i=0:37 to release a voice. no need to split CC and CC2.
             }
             else
             {
@@ -764,20 +805,18 @@ static void frontParser_handleMidiMessage()
                   }
                }
             }
-            if( (seq_voicesLoading&(0x01<<(messageVoice-1))) || (seq_voicesLoading>=0x3f) )
+            if(messageVoice&&(seq_voicesLoading&(0x01<<(messageVoice-1))))
             {
                midi_midiCache[frontParser_midiMsg.data1+128]=frontParser_midiMsg;
                midi_midiCacheAvailable[frontParser_midiMsg.data1+128]=1;
             // message is cached for voice release. 
             // we can do: midiParser_ccHandler(seq_midiCache[voice1PresetMask[i]],1)
-            // for i=0:37 to release a voice. no need to split CC and CC2.               
-            
+            // for i=0:37 to release a voice. no need to split CC and CC2.     
             }
             else
             {
                midiParser_ccHandler(frontParser_midiMsg,1);
-            
-            //record automation if record is turned on
+               //record automation if record is turned on
                seq_recordAutomation(frontParser_activeTrack, frontParser_midiMsg.data1+128, frontParser_midiMsg.data2);
             }
          }
@@ -1169,15 +1208,6 @@ static void frontParser_handleSeqCC()
             seq_copySubStep(frontParser_stepCopySource,frontParser_midiMsg.data2,frontParser_activeTrack);
          }
          break;
-         
-      case FRONT_SEQ_PATTERN_TRACKARRAY:
-         seq_newPatternVoiceArray = frontParser_midiMsg.data2;
-         seq_newPatternPatArray = 0xff;
-         break;
-         
-      case FRONT_SEQ_PATTERN_PATARRAY:
-         seq_newPatternPatArray = frontParser_midiMsg.data2;
-         break;
    
       case FRONT_SEQ_TRACK_LENGTH:
          seq_setTrackLength(frontParser_activeTrack,frontParser_midiMsg.data2);
@@ -1466,7 +1496,15 @@ static void frontParser_handleSeqCC()
       case FRONT_SEQ_SET_LOOP:
          seq_setLoop(frontParser_midiMsg.data2);
          break;
-   
+      case FRONT_SEQ_LOAD_VOICE:
+         seq_voicesLoading |= (0x01<<frontParser_midiMsg.data2);
+         break;
+      case FRONT_SEQ_UNHOLD_VOICE:
+         seq_voicesLoading &= ~(0x01<<frontParser_midiMsg.data2);
+         seq_newVoiceAvailable |= (0x01<<frontParser_midiMsg.data2);
+         if(!seq_isRunning())
+            frontParser_uncacheVoice(frontParser_midiMsg.data2);
+         break;
       default:
          break;
    }

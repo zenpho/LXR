@@ -41,5 +41,6 @@ uint8_t preset_loadPattern(uint8_t presetNr, uint8_t voiceArray);
 void preset_morph(uint8_t voiceArray, uint8_t morph);
 uint8_t preset_getMorphValue(uint16_t index, uint8_t morph);
 void preset_sendDrumsetParameters();
+void preset_sendDrumsetParameters2(uint8_t track);
 
 #endif /* PRESETMANAGER_H_ */

@@ -297,7 +297,10 @@ enum ParamEnums
 	PAR_MIDI_NOTE4,
 	PAR_MIDI_NOTE5,
 	PAR_MIDI_NOTE6,
-	PAR_MIDI_NOTE7,
+
+	END_OF_INDIVIDUAL_VOICE_PARAMS,	
+
+	PAR_MIDI_NOTE7=END_OF_INDIVIDUAL_VOICE_PARAMS,
    
    PAR_KIT_VERSION,
    
@@ -411,6 +414,8 @@ enum ParamEnums
 	PAR_BUT_SHIFT_MODE,              // 0 normal shift operation, 1 shift button is a toggle
    PAR_LOAD_PERF_ON_BANK,           // 0, incoming bank changes select kit, 1 bank changes select perf
    PAR_SKIP_FIRST_ROLL,
+
+   PAR_FILE_LOAD_FAST,
    
    NUM_PARAMS
 };

@@ -101,6 +101,7 @@ byte3, data2 byte: xbbbbbbb : b=macro mod target value lower 7 bits or top level
 
 #define LED_SEQ_SUB_STEP_LOWER 0x44
 #define LED_SEQ_SUB_STEP_UPPER 0x45
+#define LCD_PRINT_SCREEN	0x46
 
 //#define LED_TRIGGER_VOICE	0x05	/**< send by the sequencer whenever a voice is triggered*/
 
@@ -179,16 +180,15 @@ byte3, data2 byte: xbbbbbbb : b=macro mod target value lower 7 bits or top level
 #define SEQ_TRANSPOSE            0x43
 #define SEQ_TRANSPOSE_ON_OFF     0x44
 #define SEQ_SET_LOOP             0x45
-
+#define SEQ_LOAD_VOICE		 0x48
+#define SEQ_UNHOLD_VOICE             0x49
 //bc adds
 
 #define SEQ_COPY_TRACK_PATTERN         0x3a
 #define SEQ_PC_TIME                    0x3b
 #define SEQ_COPY_STEP_SET_SRC          0x3d // added message for copy step
 #define SEQ_COPY_STEP_SET_DST          0x3e 
-#define SEQ_PATTERN_TRACKARRAY	       0x48 // let the mainboard know which
-#define SEQ_PATTERN_PATARRAY	       0x49 // voices to care about for patterns
-#define SEQ_LOCK_VOICES			0x4a // lock voice params until next trigger
+
 //SysEx
 #define SYSEX_REQUEST_STEP_DATA			0x01
 #define SYSEX_SEND_STEP_DATA			0x02

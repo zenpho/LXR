@@ -76,7 +76,7 @@ extern uint8_t midiParser_originalCcValues[0xff];
 
 extern MidiMsg midi_midiCache[256];
 extern uint8_t midi_midiCacheAvailable[256];
-
+void midi_clearCache();
 
 extern uint8_t midi_MidiChannels[8]; // last element is global channel
 extern uint8_t midi_NoteOverride[7];

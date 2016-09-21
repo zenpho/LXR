@@ -85,6 +85,15 @@ static uint8_t midiParser_mtcIgnore=1;
 static uint32_t volatile midiParser_lastMtcReceived=0x0;
 static uint8_t midiParser_mtcIsRunning=0;
 
+void midi_clearCache()
+{
+   uint16_t i;
+   for (i=0;i<256;i++)
+   {
+      midi_midiCacheAvailable[i]=0;
+   }
+}
+
 static union {
    uint8_t value;
    struct {

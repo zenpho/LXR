@@ -18,6 +18,7 @@
 #include "Hardware/lcd.h"
 #include <util/atomic.h>
 #include "Preset/PresetManager.h"
+#include <util/delay.h>
 //--
 
 static uint8_t frontParser_rxCnt=0;
@@ -805,7 +806,19 @@ void frontPanel_parseData(uint8_t data)
                      }		
                   
                      break;
-                  
+                  case LCD_PRINT_SCREEN:
+                     {
+                        
+                        char text[8];
+                        lcd_clear();
+                        lcd_home();
+                        lcd_string_F(PSTR("cortex says"));
+                        lcd_setcursor(0,2);
+                        itoa((int)frontParser_midiMsg.data2,text,10);
+                        lcd_string(text);
+                        _delay_ms(2000);
+                     }
+                     break;
                }						
             }								
             else if(frontParser_midiMsg.status == NOTE_ON)
@@ -820,7 +833,7 @@ void frontPanel_parseData(uint8_t data)
       }
    }
 }
-
+//------------------------------------------------------------
 void midiMsg_checkLongOps()
 {
    if (frontPanel_longOp){

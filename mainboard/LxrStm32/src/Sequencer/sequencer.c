@@ -54,7 +54,7 @@
 #include "SomGenerator.h"
 #include "TriggerOut.h"
 
-
+#define VOICE_PARAM_LENGTH 37
 #define SEQ_PRESCALER_MASK 	0x03
 #define MIDI_PRESCALER_MASK	0x04
 
@@ -74,6 +74,8 @@ uint8_t seq_kitResetFlag=0;
 uint8_t seq_skipFirstRoll=0;
 
 uint8_t seq_voicesLoading=0;
+uint8_t seq_newVoiceAvailable=0;
+uint8_t seq_tracksLocked=0;
 
 uint8_t seq_loopLength=0;
 uint8_t seq_pendingLoopLength=0;
@@ -179,9 +181,7 @@ uint8_t seq_transpose_voiceAmount[7];
 uint8_t seq_transposeOnOff;
 
 uint8_t seq_newPatternAvailable = 0; //indicate that a new pattern has loaded in the background and we should switch
-uint8_t seq_newPatternVoiceArray = 0;
-uint8_t seq_newPatternPatArray = 0;
-uint8_t seq_lockVoiceArray = 0;
+
 //for the automation tracks each track needs 2 modNodes
 static AutomationNode seq_automationNodes[NUM_TRACKS][2];
 
@@ -220,7 +220,7 @@ void seq_init()
    memset(seq_stepIndex,0,NUM_TRACKS+1);
    memset(seq_lastMasterStep,0,NUM_TRACKS+1);
    memset(seq_transpose_voiceAmount,63,NUM_TRACKS);
-   
+   midi_clearCache();
    seq_transposeOnOff = 0;
 
 
@@ -240,8 +240,6 @@ void seq_activateTmpPattern()
    memcpy(&seq_patternSet.seq_mainSteps[seq_activePattern],&seq_tmpPattern.seq_mainSteps,sizeof(uint16_t)*NUM_TRACKS);
    memcpy(&seq_patternSet.seq_patternSettings[seq_activePattern],&seq_tmpPattern.seq_patternSettings,sizeof(PatternSetting));
    memcpy(&seq_patternSet.seq_patternLengthRotate[seq_activePattern],&seq_tmpPattern.seq_patternLengthRotate,sizeof(LengthRotate)*NUM_TRACKS);
-
-   seq_newPatternVoiceArray=0;
 }
 //------------------------------------------------------------------------------
 void seq_setShuffle(float shuffle)
@@ -444,6 +442,16 @@ void seq_triggerVoice(uint8_t voiceNr, uint8_t vol, uint8_t note)
    if(voiceNr > 6) 
       return;
 
+   if(seq_tracksLocked&(0x01<<voiceNr))
+      return;
+   
+   if(seq_newVoiceAvailable&(0x01<<voiceNr))
+   {
+      frontParser_uncacheVoice(voiceNr);
+      seq_newVoiceAvailable &= ~(0x01<<voiceNr);
+   }
+   
+   
    seq_parseAutomationNodes(voiceNr, &seq_patternSet.seq_subStepPattern[seq_perTrackActivePattern[voiceNr]][voiceNr][seq_stepIndex[voiceNr]]);
 
 	//turn the trigger off before sending the next one
@@ -667,7 +675,6 @@ static void seq_nextStep()
          if(seq_newPatternAvailable)
          {
             seq_activateTmpPattern();
-            seq_newPatternVoiceArray = 0;
             seq_newPatternAvailable = 0;
          }
          
