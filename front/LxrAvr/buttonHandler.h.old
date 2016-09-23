@@ -17,7 +17,6 @@ extern uint8_t buttonHandler_originalValue;
 extern uint8_t buttonHandler_resetLock;
 extern uint8_t shiftMode;
 extern uint8_t shiftState;
-extern uint8_t buttonHandler_loadingFunction;
 
 #define BUTTON_TIMEOUT (38) //~500[ms]
 #define NO_STEP_SELECTED -1

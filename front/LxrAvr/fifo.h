@@ -21,6 +21,8 @@ typedef struct FifoStruct {
   volatile uint8_t write;
   } FifoBuffer;
 //----------------------------------------------------------------------------
+void fifo_clear(FifoBuffer* fifo);
+//----------------------------------------------------------------------------
 void fifo_init(FifoBuffer* fifo);
 //----------------------------------------------------------------------------
 uint8_t fifo_bufferIn(FifoBuffer* fifo, uint8_t byte);

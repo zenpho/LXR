@@ -599,6 +599,12 @@ void preset_readDrumVoice(uint8_t track, uint8_t isMorph)
          {
             parameter_values[PAR_MIDI_NOTE7]=parameter_values_temp[PAR_MIDI_NOTE7];
          }
+         else
+         {
+            parameter_values[PAR_MIDI_NOTE7]=parameter_values_temp[PAR_MIDI_NOTE7];
+            // midi note for hihat open is not in the voice array
+            frontPanel_sendData(CC_2,(uint8_t)(PAR_MIDI_NOTE7-128),parameter_values[PAR_MIDI_NOTE7]);
+         }
       case 5:
          paramMask=voice6presetMask;
          break;
@@ -654,19 +660,31 @@ void preset_readDrumVoice(uint8_t track, uint8_t isMorph)
 
 //----------------------------------------------------
 // read from temp any kit data not associated with a voice.
-void preset_readDrumsetMeta()
+void preset_readDrumsetMeta(uint8_t isMorph)
 {
    int16_t i;
    uint8_t value;
-   uint8_t *para=parameter_values;
    
- // copy values from temp to where they are supposed to be - normal params or morph
-    
-   for (i=0;i<END_OF_SOUND_PARAMETERS-END_OF_INDIVIDUAL_VOICE_PARAMS;i++)
+   if(isMorph)
    {
-      parameter_values[END_OF_INDIVIDUAL_VOICE_PARAMS+i]=
-         parameter_values_temp[END_OF_INDIVIDUAL_VOICE_PARAMS+i];
+      // bc: extra morph data not associated with a voice. Not sure anything other
+      // than voice decimation and version matters, but kept here for file parity
+      parameters2[PAR_VOICE_DECIMATION_ALL]=parameters2_temp[PAR_VOICE_DECIMATION_ALL];
+      parameters2[NRPN_FINE]=parameters2_temp[NRPN_FINE];
+      parameters2[NRPN_COARSE]=parameters2_temp[NRPN_COARSE];
+      parameters2[NRPN_DATA_ENTRY_COARSE]=parameters2_temp[NRPN_DATA_ENTRY_COARSE];
+      parameters2[PAR_KIT_VERSION]=preset_workingVersion; // version is updated in readToTemp
+      
    }
+   else
+   {
+   // copy values from temp to where they are supposed to be - normal params or morph
+    
+      for (i=0;i<END_OF_SOUND_PARAMETERS-END_OF_INDIVIDUAL_VOICE_PARAMS;i++)
+      {
+         parameter_values[END_OF_INDIVIDUAL_VOICE_PARAMS+i]=
+            parameter_values_temp[END_OF_INDIVIDUAL_VOICE_PARAMS+i];
+      }
    
    // bc: special case macro targets - re-send targets on kit load
    /* MACRO_CC message structure
@@ -680,28 +698,26 @@ void preset_readDrumsetMeta()
                                  
    byte3, data2 byte: xbbb bbbb : b=macro mod target value lower 7 bits or top level value full
    */
-   for(i=0;i<7; i=(uint8_t)(i+2) ) // 0,2,4,6
-   {
-      value =  (uint8_t)pgm_read_word(&modTargets[parameter_values[PAR_MAC1_DST1+i]].param); // the value of the mod target
-      uint8_t lower = value&0x7f;
-      uint8_t upper = (uint8_t)
+      for(i=0;i<7; i=(uint8_t)(i+2) ) // 0,2,4,6
+      {
+         value =  (uint8_t)pgm_read_word(&modTargets[parameter_values[PAR_MAC1_DST1+i]].param); // the value of the mod target
+         uint8_t lower = value&0x7f;
+         uint8_t upper = (uint8_t)
                       ( ( ( ( i ) //  MAC1_DST1=0, M1D2=2, M2D1=4, M2D2=6
                            >>1 )  //  MAC1_DST1=0, M1D2=1, M2D1=2, M2D2=3
                            <<2 )  //  shift over 2 to make room for upper mod target bit
                            |(value>>7) );
                            
-      frontPanel_sendData(MACRO_CC,upper,lower);
-   }
+         frontPanel_sendData(MACRO_CC,upper,lower);
+      }
    
          
    // send macro amounts as special cases
-   frontPanel_sendData(CC_2,(uint8_t)(PAR_MAC1_DST1_AMT-128),parameter_values[PAR_MAC1_DST1_AMT]);
-   frontPanel_sendData(CC_2,(uint8_t)(PAR_MAC1_DST2_AMT-128),parameter_values[PAR_MAC1_DST2_AMT]);
-   frontPanel_sendData(CC_2,(uint8_t)(PAR_MAC2_DST1_AMT-128),parameter_values[PAR_MAC2_DST1_AMT]);
-   frontPanel_sendData(CC_2,(uint8_t)(PAR_MAC2_DST2_AMT-128),parameter_values[PAR_MAC2_DST2_AMT]);
-   
-   // not sure this gets sent individually
-   frontPanel_sendData(CC_2,(uint8_t)(PAR_MIDI_NOTE7-128),parameter_values[PAR_MIDI_NOTE7]);
+      frontPanel_sendData(CC_2,(uint8_t)(PAR_MAC1_DST1_AMT-128),parameter_values[PAR_MAC1_DST1_AMT]);
+      frontPanel_sendData(CC_2,(uint8_t)(PAR_MAC1_DST2_AMT-128),parameter_values[PAR_MAC1_DST2_AMT]);
+      frontPanel_sendData(CC_2,(uint8_t)(PAR_MAC2_DST1_AMT-128),parameter_values[PAR_MAC2_DST1_AMT]);
+      frontPanel_sendData(CC_2,(uint8_t)(PAR_MAC2_DST2_AMT-128),parameter_values[PAR_MAC2_DST2_AMT]);
+   }
 }
 
 //----------------------------------------------------
@@ -2858,7 +2874,9 @@ void preset_loadPerf(uint8_t presetNr, uint8_t voiceArray)
    uint8_t trkNum;
    uint8_t patNum;
 
+   uart_clearFifo();
    frontParser_rxDisable=1;
+   
    preset_workingPreset=presetNr;
    preset_workingType=WTYPE_PERFORMANCE;
    preset_workingVoiceArray = voiceArray;
@@ -2958,7 +2976,10 @@ void preset_loadPerf(uint8_t presetNr, uint8_t voiceArray)
    frontPanel_sendData(SEQ_CC,SEQ_UNHOLD_VOICE,5); 
    
    if( (voiceArray>=0x7f) || (voiceArray==0) )
-      preset_readDrumsetMeta();
+   {
+      preset_readDrumsetMeta(0);
+      preset_readDrumsetMeta(1);
+   }
    
    for (trkNum=0;trkNum<NUM_TRACKS;trkNum++)
    {
@@ -2986,6 +3007,7 @@ closeFile:
    f_close((FIL*)&preset_File);
    
    frontParser_rxDisable=0;
+   uart_clearFifo();
 }
 
 //----------------------------------------------------
