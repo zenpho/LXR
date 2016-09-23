@@ -1973,6 +1973,7 @@ void menu_handleLoadMenu(int8_t inc, uint8_t btnClicked)
                break;
             
             case SAVE_TYPE_ALL:
+               preset_loadAll2(menu_currentPresetNr[SAVE_TYPE_ALL],menu_voiceArray);
                //preset_loadAll(menu_currentPresetNr[SAVE_TYPE_ALL],1,0,menu_voiceArray);//last 0 is don't release kit lock
                menu_resetSaveParameters();
                break;

@@ -2864,6 +2864,157 @@ closeFile:
 }
 
 //----------------------------------------------------
+void preset_loadAll2(uint8_t presetNr, uint8_t voiceArray)
+{
+
+   #if USE_SD_CARD
+	//filename in 8.3  format
+   
+   UINT bytesRead;
+   uint8_t version=0;
+   uint8_t trkNum;
+   uint8_t patNum;
+   uint8_t i;
+
+   uart_clearFifo();
+   frontParser_rxDisable=1;
+   
+   preset_workingPreset=presetNr;
+   preset_workingType=WTYPE_PERFORMANCE;
+   preset_workingVoiceArray = voiceArray;
+
+   preset_makeFileName(filename,presetNr,FEXT_PERF);
+   
+   //open the file
+   FRESULT res = f_open((FIL*)&preset_File,filename,FA_OPEN_EXISTING | FA_READ);
+   if(res!=FR_OK)
+      return; //file open error... maybe the file does not exist?
+   
+	//first the preset name
+   f_read((FIL*)&preset_File,(void*)preset_currentName,8,&bytesRead);
+   if(!bytesRead)
+      goto closeFile;
+   
+	// read version number and make sure its valid
+   f_read((FIL*)&preset_File,&version,1,&bytesRead);
+   if(!bytesRead || version > FILE_VERSION)
+      goto closeFile;
+   
+   preset_workingVersion = version;
+   
+   if( (preset_workingVoiceArray>=0x7f) || (preset_workingVoiceArray==0x7f) )
+   {
+      #if USE_SD_CARD
+      for(i=0;(i<(NUM_PARAMS-PAR_BEGINNING_OF_GLOBALS)) &&( bytesRead!=0);i++) 
+      {
+         f_read((FIL*)&preset_File,&parameter_values[(PAR_BEGINNING_OF_GLOBALS+i)],1,&bytesRead);
+         totalBytes+=bytesRead;
+         if(!bytesRead)
+            goto closeFile;
+         // if anything other than bpm is 0xff, we are reading filler
+         // set global to 0 by default
+         else if((parameter_values[(PAR_BEGINNING_OF_GLOBALS+i)]==0xff) && i)
+            parameter_values[(PAR_BEGINNING_OF_GLOBALS+i)]=0;
+            
+      }
+      #endif
+      
+      // send global params
+      menu_sendAllGlobals();
+   }
+ //close the file handle
+   f_close((FIL*)&preset_File);
+   
+   lcd_clear();
+   lcd_home();
+   lcd_string_F(PSTR("Loading All"));
+   
+   frontPanel_sendData(SEQ_CC,SEQ_EUKLID_RESET,0x01);
+   
+   // bc - NB: if enabled, this will lock the track
+   preset_readPatternMainStep();
+   
+   if( (preset_workingVoiceArray>=0x7f) || (preset_workingVoiceArray==0x7f) )
+   {
+      preset_readShuffle();
+   }
+      
+   preset_readPatternLength();
+   preset_readPatternScale();
+   
+   if( (preset_workingVoiceArray>=0x7f) || (preset_workingVoiceArray==0x7f) )
+   {
+      preset_readPatternChain();
+   }
+   // calling this twice ensures pattern realign
+   menu_setShownPattern(menu_playedPattern);
+   menu_setShownPattern(menu_playedPattern);
+   
+   preset_readKitToTemp(1);
+   preset_readKitToTemp(0);
+   
+   for (trkNum=0;trkNum<NUM_TRACKS;trkNum++)
+   {
+      if(voiceArray&(0x01<<trkNum))
+      {
+         
+         if(trkNum<6)
+         {
+            frontPanel_sendData(SEQ_CC,SEQ_LOAD_VOICE,trkNum); 
+            preset_readDrumVoice(trkNum, 1);
+            preset_readDrumVoice(trkNum, 0);
+         }
+         
+         // if track is locked, this will also unlock it for playing
+         preset_readPatternStepData(trkNum,menu_playedPattern);
+         
+         if(trkNum<5)
+            frontPanel_sendData(SEQ_CC,SEQ_UNHOLD_VOICE,trkNum);
+            
+      }
+      
+   }
+   
+   frontPanel_sendData(SEQ_CC,SEQ_UNHOLD_VOICE,5); 
+   
+   if( (voiceArray>=0x7f) || (voiceArray==0) )
+   {
+      preset_readDrumsetMeta(0);
+      preset_readDrumsetMeta(1);
+   }
+   
+   for (trkNum=0;trkNum<NUM_TRACKS;trkNum++)
+   {
+      if(preset_workingVoiceArray&(0x01<<trkNum))
+      {
+         for (patNum=0;patNum<NUM_PATTERN;patNum++)
+         {
+            if(patNum!=menu_playedPattern)
+               preset_readPatternStepData(trkNum,patNum);
+         }
+      }
+   }
+
+   frontPanel_sendData(SEQ_CC,SEQ_FILE_DONE,WTYPE_PERFORMANCE);
+   
+	//force complete repaint
+   menu_repaintAll();
+
+#else
+	frontPanel_sendData(PRESET,PRESET_LOAD,presetNr);
+#endif
+
+closeFile:
+	//close the file handle
+   f_close((FIL*)&preset_File);
+   
+   _delay_ms(50);
+   frontParser_rxDisable=0;
+   uart_clearFifo();
+}
+
+
+//----------------------------------------------------
 void preset_loadPerf(uint8_t presetNr, uint8_t voiceArray)
 {
    #if USE_SD_CARD
