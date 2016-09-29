@@ -731,6 +731,7 @@ static void seq_nextStep()
          seq_kitResetFlag=0;
          
          seq_loadPendigFlag = 0;
+         seq_realign(); // realign at every pattern change
       }
    }
 
