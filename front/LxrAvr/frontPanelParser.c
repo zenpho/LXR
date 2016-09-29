@@ -543,11 +543,11 @@ void frontPanel_parseData(uint8_t data)
                         menu_kitLocked = 0;
                         if(menu_kitLockType)
                         {
-                           preset_loadAll(menu_kitLockPreset,1,1,0x7f);
+                           //preset_loadAll(menu_kitLockPreset,1,1,0x7f);
                         }
                         else
                         {
-                           preset_loadPerf(menu_kitLockPreset,0x7f);
+                           //preset_loadPerf(menu_kitLockPreset,0x7f);
                         }
                      }
                      else if(menu_instPerfLock)
@@ -848,7 +848,7 @@ void midiMsg_checkLongOps()
             frontPanel_longOp=NULL_OP;            
          }
          else {
-            preset_loadDrumset(frontPanel_longData,0);
+            preset_loadDrumset(frontPanel_longData,0x7f,0);
             menu_repaint();
             frontPanel_longOp=NULL_OP;
          }
@@ -871,7 +871,7 @@ void midiMsg_checkLongOps()
             frontPanel_longOp=NULL_OP;            
          }
          else {
-            preset_loadVoice(frontPanel_longData,frontPanel_longOp,0);
+            preset_loadDrumset(frontPanel_longData,frontPanel_longOp,0);
             menu_repaint();
             frontPanel_longOp=NULL_OP; 
          }

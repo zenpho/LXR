@@ -1841,38 +1841,38 @@ void menu_handleLoadScreenKnobValue(uint8_t potNr, uint8_t value)
             case SAVE_TYPE_KIT:
                menu_currentPresetNr[menu_saveOptions.what]=x;
                if(editModeActive){
-                  preset_loadDrumset(menu_currentPresetNr[menu_saveOptions.what],0);
+                  preset_loadDrumset(menu_currentPresetNr[menu_saveOptions.what],0x7f, 0);
                   menu_TargetVoiceGapIndex = getModTargetGapIndex(parameter_values[PAR_TARGET_LFO1 + menu_activeVoice]);
                }
                break;
             case SAVE_TYPE_DRUM1:
                menu_currentPresetNr[menu_saveOptions.what]=x;
                if(editModeActive){
-                  preset_loadVoice(menu_currentPresetNr[menu_saveOptions.what],0x01,0);
+                  preset_loadDrumset(menu_currentPresetNr[menu_saveOptions.what],0x01,0);
                }
                break;
             case SAVE_TYPE_DRUM2:
                menu_currentPresetNr[menu_saveOptions.what]=x;
                if(editModeActive){
-                  preset_loadVoice(menu_currentPresetNr[menu_saveOptions.what],0x02,0);
+                  preset_loadDrumset(menu_currentPresetNr[menu_saveOptions.what],0x02,0);
                }
                break;
             case SAVE_TYPE_DRUM3:
                menu_currentPresetNr[menu_saveOptions.what]=x;
                if(editModeActive){
-                  preset_loadVoice(menu_currentPresetNr[menu_saveOptions.what],0x04,0);
+                  preset_loadDrumset(menu_currentPresetNr[menu_saveOptions.what],0x04,0);
                }
                break;
             case SAVE_TYPE_SNARE:
                menu_currentPresetNr[menu_saveOptions.what]=x;
                if(editModeActive){
-                  preset_loadVoice(menu_currentPresetNr[menu_saveOptions.what],0x08,0);
+                  preset_loadDrumset(menu_currentPresetNr[menu_saveOptions.what],0x08,0);
                }
                break;
             case SAVE_TYPE_CYM:
                menu_currentPresetNr[menu_saveOptions.what]=x;
                if(editModeActive){
-                  preset_loadVoice(menu_currentPresetNr[menu_saveOptions.what],0x10,0);
+                  preset_loadDrumset(menu_currentPresetNr[menu_saveOptions.what],0x10,0);
                }
                break;
             case SAVE_TYPE_HIHAT:
@@ -1880,14 +1880,14 @@ void menu_handleLoadScreenKnobValue(uint8_t potNr, uint8_t value)
                      // closed and open hi-hat voices
                menu_currentPresetNr[menu_saveOptions.what]=x;
                if(editModeActive){
-                  preset_loadVoice(menu_currentPresetNr[menu_saveOptions.what],0x60,0);
+                  preset_loadDrumset(menu_currentPresetNr[menu_saveOptions.what],0x60,0);
                }
                break;
             case SAVE_TYPE_MORPH:
                      //load to morph buffer
                menu_currentPresetNr[menu_saveOptions.what]=x;
                if(editModeActive){
-                  preset_loadDrumset(menu_currentPresetNr[menu_saveOptions.what],1);
+                  preset_loadDrumset(menu_currentPresetNr[menu_saveOptions.what],0x7f,1);
                }
                break;
             case SAVE_TYPE_PERFORMANCE:
@@ -1973,7 +1973,7 @@ void menu_handleLoadMenu(int8_t inc, uint8_t btnClicked)
                break;
             
             case SAVE_TYPE_ALL:
-               preset_loadAll2(menu_currentPresetNr[SAVE_TYPE_ALL],menu_voiceArray);
+               preset_loadAll(menu_currentPresetNr[SAVE_TYPE_ALL],menu_voiceArray);
                //preset_loadAll(menu_currentPresetNr[SAVE_TYPE_ALL],1,0,menu_voiceArray);//last 0 is don't release kit lock
                menu_resetSaveParameters();
                break;
@@ -2072,32 +2072,32 @@ void menu_handleLoadMenu(int8_t inc, uint8_t btnClicked)
                // if loading and type is kit and morph do an insta-load
                   switch(menu_saveOptions.what) {
                      case SAVE_TYPE_KIT:
-                        preset_loadDrumset(menu_currentPresetNr[menu_saveOptions.what],0);
+                        preset_loadDrumset(menu_currentPresetNr[menu_saveOptions.what],0x7f, 0);
                         menu_TargetVoiceGapIndex = getModTargetGapIndex(parameter_values[PAR_TARGET_LFO1 + menu_activeVoice]);
                         break;
                      case SAVE_TYPE_DRUM1:
-                        preset_loadVoice(menu_currentPresetNr[menu_saveOptions.what],0x01,0);
+                        preset_loadDrumset(menu_currentPresetNr[menu_saveOptions.what],0x01,0);
                         break;
                      case SAVE_TYPE_DRUM2:
-                        preset_loadVoice(menu_currentPresetNr[menu_saveOptions.what],0x02,0);
+                        preset_loadDrumset(menu_currentPresetNr[menu_saveOptions.what],0x02,0);
                         break;
                      case SAVE_TYPE_DRUM3:
-                        preset_loadVoice(menu_currentPresetNr[menu_saveOptions.what],0x04,0);
+                        preset_loadDrumset(menu_currentPresetNr[menu_saveOptions.what],0x04,0);
                         break;
                      case SAVE_TYPE_SNARE:
-                        preset_loadVoice(menu_currentPresetNr[menu_saveOptions.what],0x08,0);
+                        preset_loadDrumset(menu_currentPresetNr[menu_saveOptions.what],0x08,0);
                         break;
                      case SAVE_TYPE_CYM:
-                        preset_loadVoice(menu_currentPresetNr[menu_saveOptions.what],0x10,0);
+                        preset_loadDrumset(menu_currentPresetNr[menu_saveOptions.what],0x10,0);
                         break;
                      case SAVE_TYPE_HIHAT:
                      // special case - instead of a bank we send literal bits to change both
                      // closed and open hi-hat voices
-                        preset_loadVoice(menu_currentPresetNr[menu_saveOptions.what],0x60,0);
+                        preset_loadDrumset(menu_currentPresetNr[menu_saveOptions.what],0x60,0);
                         break;
                      case SAVE_TYPE_MORPH:
                      //load to morph buffer
-                        preset_loadDrumset(menu_currentPresetNr[menu_saveOptions.what],1);
+                        preset_loadDrumset(menu_currentPresetNr[menu_saveOptions.what],0x7f, 1);
                         break;
                   }
                
