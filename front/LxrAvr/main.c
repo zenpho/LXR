@@ -146,7 +146,7 @@ sei();
 
 #if USE_SD_CARD		
 	//load init preset
-	if(!preset_loadDrumset(0,0x7f,0)) {
+	if(preset_loadDrumset(0,0x7f,0)) {
 		lcd_home();
 		lcd_string_F(PSTR("Kit read error"));
 		_delay_ms(2000);
