@@ -32,7 +32,7 @@ extern uint8_t frontParser_rxDisable;
 
 #define SYSEX_START			0xF0
 #define SYSEX_END			0xF7
-#define PATCH_RESET			0xFF
+#define PATCH_RESET			0xFE
 //control messages from cortex for leds
 //status, param changes
 

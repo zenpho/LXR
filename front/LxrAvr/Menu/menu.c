@@ -3985,7 +3985,13 @@ void menu_sendAllParameters()
 //----------------------------------------------------------------
 void menu_reloadKit()
 {
+   uint8_t i;
    frontPanel_sendByte(PATCH_RESET);
+   for(i=0;i<END_OF_MORPH_PARAMETERS;i++)
+   {
+      parameter_values[i]=parameter_values_temp[i];
+   }
+   
 }
 //----------------------------------------------------------------
 uint8_t menu_getActivePage()

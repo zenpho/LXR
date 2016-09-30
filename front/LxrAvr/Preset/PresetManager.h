@@ -10,9 +10,13 @@
 #define PRESETMANAGER_H_
 
 #include <avr/io.h>
+#include "../Menu/menu.h"
+
 
 extern char preset_currentName[8];
 extern char preset_currentSaveMenuName[8];
+
+extern uint8_t parameter_values_temp[END_OF_SOUND_PARAMETERS];
 
 void preset_init();
 
@@ -39,6 +43,7 @@ void preset_savePattern(uint8_t presetNr);
 uint8_t preset_loadPattern(uint8_t presetNr, uint8_t voiceArray);
 /** morph pattern linear to üpattern buffer 2*/
 
+void preset_readDrumVoice(uint8_t track, uint8_t isMorph);
 void preset_morph(uint8_t voiceArray, uint8_t morph);
 uint8_t preset_getMorphValue(uint16_t index, uint8_t morph);
 

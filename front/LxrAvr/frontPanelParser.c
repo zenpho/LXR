@@ -208,9 +208,22 @@ void frontPanel_parseData(uint8_t data)
 	// if high byte set a new message starts
    if(data&0x80)
    {	
-   	//reset the byte counter
-      frontParser_rxCnt = 0;
-      frontParser_midiMsg.status = data;
+      if(data==PATCH_RESET)
+      {
+            
+         uint8_t i;
+         for(i=0;i<END_OF_MORPH_PARAMETERS;i++)
+         {
+            parameter_values[i]=parameter_values_temp[i];
+         }
+         menu_repaintAll();
+      }
+      else
+      {
+      	//reset the byte counter
+         frontParser_rxCnt = 0;
+         frontParser_midiMsg.status = data;
+      }
    
    }
    else

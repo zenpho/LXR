@@ -10,7 +10,7 @@
 #include "../Hardware/SD/ff.h"
 #include <stdio.h>
 #include "../Menu/CcNr2Text.h"
-#include "../Menu/menu.h"
+
 #include <util/delay.h>
 #include "../Hardware/lcd.h"
 #include <avr/pgmspace.h>

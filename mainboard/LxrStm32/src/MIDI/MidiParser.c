@@ -3482,10 +3482,11 @@ void midiParser_MIDIccHandler(MidiMsg msg, uint8_t updateOriginalValue)
                LXRparamNr=128+CC2_MUTE_1+MIDIparamNr-TRACK1_SOUND_OFF;
                break;
             case RESET_ALL_CONTROLLERS:
-               {// this should be the only circumstance in which VOICE_CC is sent back to front
-                  seq_newVoiceAvailable=0x7f;
-               }
-               break;
+            {// this should be the only circumstance in which VOICE_CC is sent back to front
+               seq_newVoiceAvailable=0x7f;
+               uart_sendFrontpanelSysExByte(PATCH_RESET);
+            }
+            break;
             default:
                break;
          }
