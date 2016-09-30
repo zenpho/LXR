@@ -185,11 +185,29 @@ void frontParser_uncacheVoice(uint8_t voice)
          return;
    }
    if(midi_midiLfoCacheAvailable[voice])
-      midi_midiLfoCacheAvailable[voice]=0;
+   {
+      switch(voice)
+      {
+         case 0:
+         case 1:
+         case 2:	modNode_setDestination(&voiceArray[voice].lfo.modTarget, midi_midiLfoCache[voice]);
+            break;
+         case 3:	modNode_setDestination(&snareVoice.lfo.modTarget,midi_midiLfoCache[voice]);		
+            break;
+         case 4:	modNode_setDestination(&cymbalVoice.lfo.modTarget, midi_midiLfoCache[voice]);		
+            break;
+         case 5:
+         case 6:	modNode_setDestination(&hatVoice.lfo.modTarget, midi_midiLfoCache[voice]);			
+            break;
+         default:
+            break;
+      }
+      //midi_midiLfoCacheAvailable[voice]=0;
+   }
    if(midi_midiVeloCacheAvailable[voice])
    {
       modNode_setDestination(&velocityModulators[voice], midi_midiVeloCache[voice]);
-      midi_midiVeloCacheAvailable[voice]=0;
+      //midi_midiVeloCacheAvailable[voice]=0;
    }
    
    for(i=0;i<VOICE_PARAM_LENGTH;i++)
@@ -197,7 +215,7 @@ void frontParser_uncacheVoice(uint8_t voice)
       if(midi_midiCacheAvailable[presetMask[i]])
       {
          midiParser_ccHandler(midi_midiCache[presetMask[i]],1);
-         midi_midiCacheAvailable[presetMask[i]]=0;
+         //midi_midiCacheAvailable[presetMask[i]]=0;
       }
    }
    
@@ -294,6 +312,10 @@ void frontParser_parseUartData(unsigned char data)
       {
          uart_sendFrontpanelSysExByte(SYSEX_END);
          frontParser_sysexActive = SYSEX_INACTIVE;
+      }
+      else if(data==PATCH_RESET)
+      {
+         seq_newVoiceAvailable=0x7f;
       }
       else
       {

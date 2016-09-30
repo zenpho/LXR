@@ -3483,7 +3483,7 @@ void midiParser_MIDIccHandler(MidiMsg msg, uint8_t updateOriginalValue)
                break;
             case RESET_ALL_CONTROLLERS:
                {// this should be the only circumstance in which VOICE_CC is sent back to front
-                  uart_sendFrontpanelByte(PATCH_RESET); 
+                  seq_newVoiceAvailable=0x7f;
                }
                break;
             default:

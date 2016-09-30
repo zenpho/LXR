@@ -604,7 +604,7 @@ static uint8_t parameterFetch = 0b00011111;	/**< the lower 4 bits define a lock 
 
 /** array holding all the available parameter values*/
 uint8_t parameter_values[NUM_PARAMS];
-uint8_t parameter_values_kitReset[END_OF_SOUND_PARAMETERS];
+
 uint8_t parameters2[END_OF_SOUND_PARAMETERS];/**< a second array for sound x-fade to another preset*/
 
 uint8_t menu_lastVoiceIndex=0;
@@ -616,7 +616,7 @@ uint8_t menu_selectedStepLed=LED_STEP1;
 //-----------------------------------------------------------------
 void menu_init()
 {
-   uint16_t i;
+
 	lcd_clear();
 
 	paramToModTargetInit();
@@ -625,7 +625,7 @@ void menu_init()
 
 	memset(parameter_values, 0, sizeof(uint8_t) * NUM_PARAMS);
 
-   memset(parameter_values_kitReset, 0, sizeof(uint8_t) * END_OF_SOUND_PARAMETERS);
+
 
 	parameter_values[PAR_EUKLID_LENGTH] = 16;
 	parameter_values[PAR_EUKLID_STEPS] = 16;
@@ -663,10 +663,6 @@ void menu_init()
    led_setActiveSelectButton(0);
    menu_enterVoiceMode();
    
-   for(i=0;i<END_OF_SOUND_PARAMETERS;i++)
-   {
-      parameter_values_kitReset[i]=parameter_values[i];
-   }
    
 }
 //-----------------------------------------------------------------
@@ -3989,14 +3985,7 @@ void menu_sendAllParameters()
 //----------------------------------------------------------------
 void menu_reloadKit()
 {
-/*
-   uint8_t i;
-   for(i=0;i<END_OF_SOUND_PARAMETERS;i++)
-   {
-      parameter_values[i]=parameter_values_kitReset[i];
-   }
-   menu_sendAllParameters();
-   */
+   frontPanel_sendByte(PATCH_RESET);
 }
 //----------------------------------------------------------------
 uint8_t menu_getActivePage()
