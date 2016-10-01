@@ -372,6 +372,7 @@ const char shortNames[][4] PROGMEM  =
    {"xps"}, // TEXT_TRANSPOSE,
    {"xps"}, // TEXT_TRANSPOSE_ON_OFF,
    {"flf"}, // TEXT_FILE_LOAD_FAST,
+   {"egp"}, // TEXT_ENVELOPE_POSITION
 };
 //-----------------------------------------------------------------
 // These correspond with the catNamesEnum in menu.h
@@ -517,6 +518,7 @@ const char longNames[][16] PROGMEM =
    {"NoteAmt"},   // TEXT_TRANSPOSE
    {"Sequence"}, // TEXT_TRANSPOSE_ON_OFF,
    {"LoadFast"}, // TEXT_FILE_LOAD_FAST,
+   {"Position"}, // TEXT_ENVELOPE_POSITION
 };
 
 

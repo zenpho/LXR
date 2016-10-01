@@ -54,6 +54,12 @@ void setPan(const uint8_t voiceNr, const uint8_t pan)
 	voiceArray[voiceNr].pan = pan;
 }
 //---------------------------------------------------
+void drumVoice_setEnvelope(const uint8_t voiceNr, const uint8_t envPos)
+{
+	
+}
+
+//---------------------------------------------------
 void drum_setPhase(const uint8_t phase, const uint8_t voiceNr)
 {
 	const uint32_t startPhase = (phase/127.f)*0xffffffff;

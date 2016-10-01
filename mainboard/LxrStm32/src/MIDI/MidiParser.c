@@ -86,6 +86,9 @@ uint8_t midi_midiVeloCache[6];
 uint8_t midi_kitVeloCache[6];
 uint8_t midi_midiVeloCacheAvailable[6];
 
+uint8_t midi_envPosition[6];
+
+uint8_t midi_unused;
 
 // this will be set to some value if we are ignoring all mtc messages until the next 0 message
 static uint8_t midiParser_mtcIgnore=1;
@@ -1098,16 +1101,16 @@ void midiParser_ccHandler(MidiMsg msg, uint8_t updateOriginalValue)
             break;
       
       //--AS
-         case CC2_MIDI_NOTE1:
-         case CC2_MIDI_NOTE2:
-         case CC2_MIDI_NOTE3:
-         case CC2_MIDI_NOTE4:
-         case CC2_MIDI_NOTE5:
-         case CC2_MIDI_NOTE6:
-         case CC2_MIDI_NOTE7:
+         case CC2_ENVELOPE_POSITION_1:
+         case CC2_ENVELOPE_POSITION_2:
+         case CC2_ENVELOPE_POSITION_3:
+         case CC2_ENVELOPE_POSITION_4:
+         case CC2_ENVELOPE_POSITION_5:
+         case CC2_ENVELOPE_POSITION_6:
          //--AS set the note override for the voice. 0 means use the note value, anything else means
          // that the note will always play with that note
-            midi_NoteOverride[msg.data1-CC2_MIDI_NOTE1] = msg.data2;
+            midi_envPosition[msg.data1-CC2_ENVELOPE_POSITION_1] = msg.data2;
+            drumVoice_setEnvelope(msg.data1-CC2_ENVELOPE_POSITION_1,msg.data2);
             break;
       
          case CC2_MUTE_1:
@@ -1726,11 +1729,11 @@ void midiParser_MIDIccHandler(MidiMsg msg, uint8_t updateOriginalValue)
                mixer_audioRouting[0] = msg.data2;
                LXRparamNr=128+CC2_AUDIO_OUT1;
                break;
-            case UNDEF_90: // 128+CC2_MIDI_NOTE* (1-6)
-            //--AS set the note override for the voice. 0 means use the note value, anything else means
-            // that the note will always play with that note
-               midi_NoteOverride[0] = msg.data2;
-               LXRparamNr=128+CC2_MIDI_NOTE1;
+            case UNDEF_90: // 128+CC2_ENVELOPE_POSITION_* (1-6)
+            // reset envelope for voice
+               midi_envPosition[0] = msg.data2;
+               LXRparamNr=128+CC2_ENVELOPE_POSITION_1;
+               drumVoice_setEnvelope(0,midi_envPosition[0]);
                break;
             case UNDEF_102: // MOD_WAVE_DRUM* (1-3 only)
                voiceArray[0].modOsc.waveform = msg.data2;
@@ -1982,11 +1985,11 @@ void midiParser_MIDIccHandler(MidiMsg msg, uint8_t updateOriginalValue)
                mixer_audioRouting[1] = msg.data2;
                LXRparamNr=128+CC2_AUDIO_OUT2;
                break;
-            case UNDEF_90: // 128+CC2_MIDI_NOTE* (1-6)
-            //--AS set the note override for the voice. 0 means use the note value, anything else means
-            // that the note will always play with that note
-               midi_NoteOverride[1] = msg.data2;
-               LXRparamNr=128+CC2_MIDI_NOTE2;
+            case UNDEF_90: // 128+CC2_ENVELOPE_POSITION_* (1-6)
+            // reset envelope for voice
+               midi_envPosition[1] = msg.data2;
+               LXRparamNr=128+CC2_ENVELOPE_POSITION_2;
+               drumVoice_setEnvelope(1,midi_envPosition[1]);
                break;
             case UNDEF_102: // MOD_WAVE_DRUM* (1-3 only)
                voiceArray[1].modOsc.waveform = msg.data2;
@@ -2238,11 +2241,11 @@ void midiParser_MIDIccHandler(MidiMsg msg, uint8_t updateOriginalValue)
                mixer_audioRouting[2] = msg.data2;
                LXRparamNr=128+CC2_AUDIO_OUT3;
                break;
-            case UNDEF_90: // 128+CC2_MIDI_NOTE* (1-6)
-            //--AS set the note override for the voice. 0 means use the note value, anything else means
-            // that the note will always play with that note
-               midi_NoteOverride[2] = msg.data2;
-               LXRparamNr=128+CC2_MIDI_NOTE3;
+            case UNDEF_90: // 128+CC2_ENVELOPE_POSITION_* (1-6)
+            // reset envelope for voice
+               midi_envPosition[2] = msg.data2;
+               LXRparamNr=128+CC2_ENVELOPE_POSITION_3;
+               drumVoice_setEnvelope(2,midi_envPosition[2]);
                break;
             case UNDEF_102: // MOD_WAVE_DRUM* (1-3 only)
                voiceArray[2].modOsc.waveform = msg.data2;
@@ -2507,11 +2510,11 @@ void midiParser_MIDIccHandler(MidiMsg msg, uint8_t updateOriginalValue)
                mixer_audioRouting[3] = msg.data2;
                LXRparamNr=128+CC2_AUDIO_OUT4;
                break;
-            case UNDEF_90: // 128+CC2_MIDI_NOTE* (1-6)
-            //--AS set the note override for the voice. 0 means use the note value, anything else means
-            // that the note will always play with that note
-               midi_NoteOverride[3] = msg.data2;
-               LXRparamNr=128+CC2_MIDI_NOTE4;
+            case UNDEF_90: // 128+CC2_ENVELOPE_POSITION_* (1-6)
+            // reset envelope for voice
+               midi_envPosition[3] = msg.data2;
+               LXRparamNr=128+CC2_ENVELOPE_POSITION_4;
+               drumVoice_setEnvelope(3,midi_envPosition[3]);
                break;
             case UNDEF_102: // MOD_WAVE_DRUM* (1-3 only)
                break;
@@ -2745,11 +2748,11 @@ void midiParser_MIDIccHandler(MidiMsg msg, uint8_t updateOriginalValue)
                mixer_audioRouting[4] = msg.data2;
                LXRparamNr=128+CC2_AUDIO_OUT5;
                break;
-            case UNDEF_90: // 128+CC2_MIDI_NOTE* (1-6)
-            //--AS set the note override for the voice. 0 means use the note value, anything else means
-            // that the note will always play with that note
-               midi_NoteOverride[4] = msg.data2;
-               LXRparamNr=128+CC2_MIDI_NOTE5;
+            case UNDEF_90: // 128+CC2_ENVELOPE_POSITION_* (1-6)
+            // reset envelope for voice
+               midi_envPosition[4] = msg.data2;
+               LXRparamNr=128+CC2_ENVELOPE_POSITION_5;
+               drumVoice_setEnvelope(4,midi_envPosition[4]);
                break;
             case UNDEF_102: // MOD_WAVE_DRUM* (1-3 only)
                break;
@@ -3000,11 +3003,11 @@ void midiParser_MIDIccHandler(MidiMsg msg, uint8_t updateOriginalValue)
                mixer_audioRouting[5] = msg.data2;
                LXRparamNr=128+CC2_AUDIO_OUT6;
                break;
-            case UNDEF_90: // 128+CC2_MIDI_NOTE* (1-6)
-            //--AS set the note override for the voice. 0 means use the note value, anything else means
-            // that the note will always play with that note
-               midi_NoteOverride[5] = msg.data2;
-               LXRparamNr=128+CC2_MIDI_NOTE6;
+            case UNDEF_90: // 128+CC2_ENVELOPE_POSITION_* (1-6)
+            // reset envelope for voice
+               midi_envPosition[5] = msg.data2;
+               LXRparamNr=128+CC2_ENVELOPE_POSITION_6;
+               drumVoice_setEnvelope(5,midi_envPosition[5]);
                break;
             case UNDEF_102: // MOD_WAVE_DRUM* (1-3 only)
                break;
@@ -3254,11 +3257,11 @@ void midiParser_MIDIccHandler(MidiMsg msg, uint8_t updateOriginalValue)
                mixer_audioRouting[5] = msg.data2;
                LXRparamNr=128+CC2_AUDIO_OUT6;
                break;
-            case UNDEF_90: // 128+CC2_MIDI_NOTE* (1-6)
-            //--AS set the note override for the voice. 0 means use the note value, anything else means
-            // that the note will always play with that note
-               midi_NoteOverride[5] = msg.data2;
-               LXRparamNr=128+CC2_MIDI_NOTE6;
+            case UNDEF_90: // 128+CC2_ENVELOPE_POSITION_* (1-6)
+            // reset envelope for voice
+               midi_envPosition[5] = msg.data2;
+               LXRparamNr=128+CC2_ENVELOPE_POSITION_6;
+               drumVoice_setEnvelope(5,midi_envPosition[5]);
                break;
             case UNDEF_102: // MOD_WAVE_DRUM* (1-3 only)
                break;
@@ -3436,11 +3439,7 @@ void midiParser_MIDIccHandler(MidiMsg msg, uint8_t updateOriginalValue)
                break;
             case UNDEF_89: // 128+CC2_AUDIO_OUT* (1-6)
                break;
-            case UNDEF_90: // 128+CC2_MIDI_NOTE* (1-6)
-            //--AS set the note override for the voice. 0 means use the note value, anything else means
-            // that the note will always play with that note
-               midi_NoteOverride[6] = msg.data2;
-               LXRparamNr=128+CC2_MIDI_NOTE7;
+            case UNDEF_90: 
                break;
             case UNDEF_102: // MOD_WAVE_DRUM* (1-3 only)
                break;
@@ -3482,11 +3481,11 @@ void midiParser_MIDIccHandler(MidiMsg msg, uint8_t updateOriginalValue)
                LXRparamNr=128+CC2_MUTE_1+MIDIparamNr-TRACK1_SOUND_OFF;
                break;
             case RESET_ALL_CONTROLLERS:
-            {// this should be the only circumstance in which VOICE_CC is sent back to front
-               seq_newVoiceAvailable=0x7f;
-               uart_sendFrontpanelSysExByte(PATCH_RESET);
-            }
-            break;
+               {// this should be the only circumstance in which VOICE_CC is sent back to front
+                  seq_newVoiceAvailable=0x7f;
+                  uart_sendFrontpanelSysExByte(PATCH_RESET);
+               }
+               break;
             default:
                break;
          }

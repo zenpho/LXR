@@ -501,13 +501,13 @@ enum
 	CC2_AUDIO_OUT6,
 
 	// --AS
-	CC2_MIDI_NOTE1,
-	CC2_MIDI_NOTE2,
-	CC2_MIDI_NOTE3,
-	CC2_MIDI_NOTE4,
-	CC2_MIDI_NOTE5,
-	CC2_MIDI_NOTE6,
-	CC2_MIDI_NOTE7, // s/b 111 i think
+	CC2_ENVELOPE_POSITION_1,
+	CC2_ENVELOPE_POSITION_2,
+	CC2_ENVELOPE_POSITION_3,
+	CC2_ENVELOPE_POSITION_4,
+	CC2_ENVELOPE_POSITION_5,
+	CC2_ENVELOPE_POSITION_6,
+	CC2_UNUSED01, // s/b 111 i think
 	
 	//<<insert new parameters here>>
    
@@ -678,6 +678,13 @@ byte3, data2 byte: xbbbbbbb : b=macro mod target value lower 7 bits or top level
 #define FRONT_SEQ_UNHOLD_VOICE             0x49
 #define FRONT_SEQ_LOAD_FAST             0x50
 #define FRONT_SEQ_FILE_DONE             0x51
+#define FRONT_SEQ_TRACK_NOTE1		0x52
+#define FRONT_SEQ_TRACK_NOTE2		0x53
+#define FRONT_SEQ_TRACK_NOTE3		0x54
+#define FRONT_SEQ_TRACK_NOTE4		0x55
+#define FRONT_SEQ_TRACK_NOTE5		0x56
+#define FRONT_SEQ_TRACK_NOTE6		0x57
+#define FRONT_SEQ_TRACK_NOTE7		0x58
 
 //codec control messages
 #define EQ_ON_OFF						0x01

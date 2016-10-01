@@ -321,13 +321,14 @@ enum ParamEnums
 	PAR_AUDIO_OUT6,
 
 	//--AS
-   PAR_MIDI_NOTE1,
-	PAR_MIDI_NOTE2,
-	PAR_MIDI_NOTE3,
-	PAR_MIDI_NOTE4,
-	PAR_MIDI_NOTE5,
-	PAR_MIDI_NOTE6,
-	PAR_MIDI_NOTE7,      // 110 - beware going over 127, can't fit into midi data, will need another msg
+   PAR_ENVELOPE_POSITION_1,
+   PAR_ENVELOPE_POSITION_2,
+   PAR_ENVELOPE_POSITION_3,
+   PAR_ENVELOPE_POSITION_4,
+   PAR_ENVELOPE_POSITION_5,
+   PAR_ENVELOPE_POSITION_6,
+
+	PAR_UNUSED01,      // 110 - beware going over 127, can't fit into midi data, will need another msg
    PAR_KIT_VERSION,
    
    PAR_MORPH_DRUM1,     // bc: adding these for individual voice morph

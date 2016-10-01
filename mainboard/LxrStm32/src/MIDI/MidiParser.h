@@ -83,6 +83,11 @@ extern uint8_t midi_midiLfoCacheAvailable[6];
 extern uint8_t midi_midiVeloCache[6];
 extern uint8_t midi_kitVeloCache[6];
 extern uint8_t midi_midiVeloCacheAvailable[6];
+
+extern uint8_t midi_envPosition[6];
+
+extern uint8_t midi_unused;
+
 void midi_clearCache();
 
 extern uint8_t midi_MidiChannels[8]; // last element is global channel

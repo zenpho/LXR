@@ -235,6 +235,8 @@ const Name valueNames[NUM_NAMES] PROGMEM =
       {SHORT_TRANSPOSE_ON_OFF, CAT_TRANSPOSE, LONG_TRANSPOSE_ON_OFF},
       
       {SHORT_FILE_LOAD_FAST, CAT_FILE, LONG_FILE_LOAD_FAST},
+      
+      {SHORT_ENVELOPE_POSITION, CAT_VELO_EG, LONG_ENVELOPE_POSITION},
 };
 
 //---------------------------------------------------------------
@@ -462,13 +464,13 @@ const enum Datatypes PROGMEM parameter_dtypes[NUM_PARAMS] = {
 	    /*PAR_AUDIO_OUT5*/ 		DTYPE_MENU | (MENU_AUDIO_OUT<<4),
 	    /*PAR_AUDIO_OUT6*/ 		DTYPE_MENU | (MENU_AUDIO_OUT<<4),		//220
 	    //--AS these 7
-	    /*PAR_MIDI_NOTE1*/		DTYPE_NOTE_NAME,
-	    /*PAR_MIDI_NOTE2*/		DTYPE_NOTE_NAME,
-	    /*PAR_MIDI_NOTE3*/		DTYPE_NOTE_NAME,
-	    /*PAR_MIDI_NOTE4*/		DTYPE_NOTE_NAME,
-	    /*PAR_MIDI_NOTE5*/		DTYPE_NOTE_NAME,
-	    /*PAR_MIDI_NOTE6*/		DTYPE_NOTE_NAME,
-	    /*PAR_MIDI_NOTE7*/		DTYPE_NOTE_NAME,
+	    /*PAR_ENVELOPE_POSITION_1*/		DTYPE_0B127,
+	    /*PAR_ENVELOPE_POSITION_2*/		DTYPE_0B127,
+	    /*PAR_ENVELOPE_POSITION_3*/		DTYPE_0B127,
+	    /*PAR_ENVELOPE_POSITION_4*/		DTYPE_0B127,
+	    /*PAR_ENVELOPE_POSITION_5*/		DTYPE_0B127,
+	    /*PAR_ENVELOPE_POSITION_6*/		DTYPE_0B127,
+	    /*PARAM_UNUSED_01*/		DTYPE_0B127,
        /*PAR_KIT_VERSION*/    DTYPE_0B255,
        
        /*PAR_MORPH_DRUM1*/		DTYPE_0B127,
@@ -552,6 +554,16 @@ const enum Datatypes PROGMEM parameter_dtypes[NUM_PARAMS] = {
       /*PAR_LOAD_PERF_ON_BANK*/  DTYPE_ON_OFF, // -bc- load perfs instead of kits on bank change cc
       /*PAR_SKIP_FIRST_ROLL*/  DTYPE_ON_OFF,
       /*PAR_FILE_LOAD_FAST*/  DTYPE_ON_OFF,
+      
+      /*PAR_GLOBAL_SETTINGS_VERSION*/  DTYPE_0B127,
+      
+      /*PAR_MIDI_NOTE1*/		DTYPE_NOTE_NAME,
+	    /*PAR_MIDI_NOTE2*/		DTYPE_NOTE_NAME,
+	    /*PAR_MIDI_NOTE3*/		DTYPE_NOTE_NAME,
+	    /*PAR_MIDI_NOTE4*/		DTYPE_NOTE_NAME,
+	    /*PAR_MIDI_NOTE5*/		DTYPE_NOTE_NAME,
+	    /*PAR_MIDI_NOTE6*/     DTYPE_NOTE_NAME,
+       /*PAR_MIDI_NOTE7*/     DTYPE_NOTE_NAME,
          
 
 };
@@ -3437,42 +3449,8 @@ void menu_parseGlobalParam(uint16_t paramNr, uint8_t value)
 		frontPanel_sendData(VOICE_CC,VOICE_DECIMATION,value);
 		break;
 
-		/*
-		case PAR_AUDIO_OUT1:
-		case PAR_AUDIO_OUT2:
-		case PAR_AUDIO_OUT3:
-		case PAR_AUDIO_OUT4:
-		case PAR_AUDIO_OUT5:
-		case PAR_AUDIO_OUT6:
-		//select the track nr
-		frontPanel_sendData(SEQ_CC,SEQ_SET_ACTIVE_TRACK,paramNr-PAR_AUDIO_OUT1);
-		//send the new output channel
-		frontPanel_sendData(VOICE_CC,VOICE_AUDIO_OUT,value);
-		break;
-		 */
-
 	case PAR_ROLL:
 	{
-		/*roll rates
-      
-			0 - one shot immediate trigger
-         1 - dotted bar (196 steps)
-			2 - 1/1
-         3 - dotted half (96 steps)
-			4 - 1/2
-         5 - dotted quarter (48 steps)
-			6 - 1/4
-			7 - dotted 8th (24 steps)
-			8 - 1/8
-			9 - dotted 16th (12 steps)
-			10 - 1/16
-			11 - dotted 32nd (6 steps)
-			12 - 1/32
-			13 - dotted 64th (3 steps)
-			14 - 1/64
-			15 - 1/128
-         
-		 */
 		frontPanel_sendData(SEQ_CC,SEQ_ROLL_RATE,value);
 	}
    break;
@@ -3620,6 +3598,16 @@ void menu_parseGlobalParam(uint16_t paramNr, uint8_t value)
    case PAR_FILE_LOAD_FAST:
       parameter_values[PAR_FILE_LOAD_FAST]=value; 
       frontPanel_sendData(SEQ_CC, SEQ_LOAD_FAST,value);
+      break;
+   case PAR_MIDI_NOTE1:
+   case PAR_MIDI_NOTE2:
+   case PAR_MIDI_NOTE3:
+   case PAR_MIDI_NOTE4:
+   case PAR_MIDI_NOTE5:
+   case PAR_MIDI_NOTE6:
+   case PAR_MIDI_NOTE7:
+      frontPanel_sendData(SEQ_CC, (uint8_t)(SEQ_TRACK_NOTE1+(paramNr-PAR_MIDI_NOTE1)), (uint8_t)(value) );
+   
       break;
 	}
 }

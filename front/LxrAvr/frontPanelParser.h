@@ -184,6 +184,13 @@ byte3, data2 byte: xbbbbbbb : b=macro mod target value lower 7 bits or top level
 #define SEQ_UNHOLD_VOICE             0x49
 #define SEQ_LOAD_FAST             0x50
 #define SEQ_FILE_DONE             0x51
+#define SEQ_TRACK_NOTE1           0x52
+#define SEQ_TRACK_NOTE2           0x53
+#define SEQ_TRACK_NOTE3           0x54
+#define SEQ_TRACK_NOTE4           0x55
+#define SEQ_TRACK_NOTE5           0x56
+#define SEQ_TRACK_NOTE6           0x57
+#define SEQ_TRACK_NOTE7           0x58
 //bc adds
 
 #define SEQ_COPY_TRACK_PATTERN         0x3a

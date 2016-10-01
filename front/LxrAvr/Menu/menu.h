@@ -238,6 +238,7 @@ enum NamesEnum
    TEXT_TRANSPOSE,
    TEXT_TRANSPOSE_ON_OFF,
    TEXT_FILE_LOAD_FAST,
+   TEXT_ENVELOPE_POSITION,
 	NUM_NAMES
 };
 //-----------------------------------------------------------------
@@ -352,6 +353,8 @@ enum shortNamesEnum
    SHORT_TRANSPOSE_ON_OFF,
    
    SHORT_FILE_LOAD_FAST,
+   
+   SHORT_ENVELOPE_POSITION,
 
 	
 };
@@ -495,6 +498,7 @@ enum longNamesEnum
    LONG_TRANSPOSE,
    LONG_TRANSPOSE_ON_OFF,
    LONG_FILE_LOAD_FAST,
+   LONG_ENVELOPE_POSITION,
 	
 };
 

@@ -60,7 +60,7 @@
 #define NUM_TRACKS 7
 #define NUM_PATTERN 8
 #define STEPS_PER_PATTERN 128
-#define VOICE_PARAM_LENGTH 37
+#define VOICE_PARAM_LENGTH 36
 #define FEXT_SOUND 	0
 #define FEXT_PAT 	1
 #define FEXT_ALL 	2
@@ -110,12 +110,12 @@ char preset_currentSaveMenuName[8];
 uint8_t parameter_values_temp[END_OF_SOUND_PARAMETERS];
 uint8_t parameters2_temp[END_OF_SOUND_PARAMETERS];
 
-static uint8_t voice1presetMask[VOICE_PARAM_LENGTH]={1,8,9,20,      37,43,49,50,   62,70,74,78,  82,83,88,94,   102,108,115,121,     128,134,137,143,    149,155,161,167,    173,179,185,191,    197,203,209,215,221}; 
-static uint8_t voice2presetMask[VOICE_PARAM_LENGTH]={2,10,11,21,    38,44,51,52,   63,71,75,79,  84,85,89,95,   103,109,116,122,     129,135,138,144,    150,156,162,168,    174,180,186,192,    198,204,210,216,222}; 
-static uint8_t voice3presetMask[VOICE_PARAM_LENGTH]={3,12,13,22,    39,45,53,54,   64,72,76,80,  86,87,90,96,   104,110,117,123,     130,136,139,145,    151,157,163,169,    175,181,187,193,    199,205,211,217,223}; 
-static uint8_t voice4presetMask[VOICE_PARAM_LENGTH]={4,14,15,27,28, 40,46,55,      56,65,68,73,  77,81,91,99,   105,111,118,124,     131,140,146,152,        158,164,170,    176,182,188,194,    200,206,212,218,224}; 
-static uint8_t voice5presetMask[VOICE_PARAM_LENGTH]={6,16,17,23,    24,29,30,31,   32,41,47,57,  58,66,69,92,   100,106,112,119,125, 132,141,147,153,        159,165,171,    177,183,189,195,    201,207,213,219,225}; 
-static uint8_t voice6presetMask[VOICE_PARAM_LENGTH]={7,18,19,25,    26,33,34,35,   36,42,48,59,  60,61,67,93,   101,107,113,120,126, 133,142,148,154,        160,166,172,    178,184,190,196,    202,208,214,220,226};         
+static uint8_t voice1presetMask[VOICE_PARAM_LENGTH]={1,8,9,20,      37,43,49,50,   62,70,74,78,  82,83,88,94,   102,108,115,121,     128,134,137,143,    149,155,161,167,    173,179,185,191,    197,203,209,215}; 
+static uint8_t voice2presetMask[VOICE_PARAM_LENGTH]={2,10,11,21,    38,44,51,52,   63,71,75,79,  84,85,89,95,   103,109,116,122,     129,135,138,144,    150,156,162,168,    174,180,186,192,    198,204,210,216}; 
+static uint8_t voice3presetMask[VOICE_PARAM_LENGTH]={3,12,13,22,    39,45,53,54,   64,72,76,80,  86,87,90,96,   104,110,117,123,     130,136,139,145,    151,157,163,169,    175,181,187,193,    199,205,211,217}; 
+static uint8_t voice4presetMask[VOICE_PARAM_LENGTH]={4,14,15,27,28, 40,46,55,      56,65,68,73,  77,81,91,99,   105,111,118,124,     131,140,146,152,        158,164,170,    176,182,188,194,    200,206,212,218}; 
+static uint8_t voice5presetMask[VOICE_PARAM_LENGTH]={6,16,17,23,    24,29,30,31,   32,41,47,57,  58,66,69,92,   100,106,112,119,125, 132,141,147,153,        159,165,171,    177,183,189,195,    201,207,213,219}; 
+static uint8_t voice6presetMask[VOICE_PARAM_LENGTH]={7,18,19,25,    26,33,34,35,   36,42,48,59,  60,61,67,93,   101,107,113,120,126, 133,142,148,154,        160,166,172,    178,184,190,196,    202,208,214,220};         
 
 static void preset_makeFileName(char *buf, uint8_t num, uint8_t type);
 
@@ -230,9 +230,8 @@ static uint8_t preset_readGlobalData()
    UINT bytesRead;
    for(i=PAR_BEGINNING_OF_GLOBALS;(i<NUM_PARAMS) &&( bytesRead!=0);i++) {
       f_read((FIL*)&preset_File,&parameter_values[i],1,&bytesRead);
-      totalBytes+=bytesRead;
       if(!bytesRead)
-         return 0;
+         parameter_values[i]=0; // set to 0 by default
          
    }
    return 1;
@@ -244,6 +243,7 @@ void preset_loadGlobals()
 {
 #if USE_SD_CARD
 	//open the file
+   uint8_t i;
    FRESULT res = f_open((FIL*)&preset_File,"glo.cfg",FA_OPEN_EXISTING | FA_READ);
    totalBytes=0;
    if(res!=FR_OK)
@@ -251,11 +251,37 @@ void preset_loadGlobals()
 
    preset_readGlobalData();
    f_close((FIL*)&preset_File);
+   
+   switch(parameter_values[PAR_GLOBAL_SETTINGS_VERSION])
+   {
+      case 0: // config file created before setting versions. set macro to defaults
+              // get midi note values from kit 0 file
+         preset_loadDrumset(0,0x7f,0);
+         
+         // track MIDI was not contained in globals - get them from drumkit 0
+         for(i=0;i<7;i++)
+         {
+            parameter_values[PAR_MIDI_NOTE1+i]=parameter_values_temp[PAR_ENVELOPE_POSITION_1+i];
+         }
+         
+         lcd_clear();
+         lcd_home();
+         lcd_string_F(PSTR("old config!"));
+         lcd_setcursor(0,2);
+         lcd_string_F(PSTR("re-save settings"));
+         _delay_ms(2000);
+         
+         break;
+      default:
+         break;
+   }
+      
+   parameter_values[PAR_GLOBAL_SETTINGS_VERSION]=FILE_VERSION;
+   
    menu_sendAllGlobals();
 	
 #endif	
 }
-
 //----------------------------------------------------
 // read the whole kit data from file to appropriate temp, fix values   
 void preset_readKitToTemp(uint8_t isMorph)
@@ -423,16 +449,6 @@ void preset_readDrumVoice(uint8_t track, uint8_t isMorph)
          break;
       case 6:
          track--;
-         if(!isMorph)
-         {
-            parameter_values[PAR_MIDI_NOTE7]=parameter_values_temp[PAR_MIDI_NOTE7];
-         }
-         else
-         {
-            parameter_values[PAR_MIDI_NOTE7]=parameter_values_temp[PAR_MIDI_NOTE7];
-            // midi note for hihat open is not in the voice array
-            frontPanel_sendData(CC_2,(uint8_t)(PAR_MIDI_NOTE7-128),parameter_values[PAR_MIDI_NOTE7]);
-         }
       case 5:
          paramMask=voice6presetMask;
          break;
