@@ -23,7 +23,9 @@
 #include "../Hardware/timebase.h"
 
 
-#define FILE_VERSION 4
+#define FILE_VERSION 5
+
+// bc - version 4 offsets remain valid for version 5
 #define VERSION_4_PERF_SCALE_OFFSET 51459    // (56)
 #define VERSION_4_PERF_LENGTH_OFFSET 51403   // (56)
 #define VERSION_4_PERF_SHUFFLE_OFFSET 51402  // (1)
@@ -46,6 +48,7 @@
 #define VERSION_1_ALL_KIT_OFFSET 73
 #define VERSION_4_ALL_MORPH_OFFSET 585
 
+// version 0 offsets remain valid for version 5
 #define VERSION_0_PAT_SCALE_OFFSET 50369    // (56)
 #define VERSION_0_PAT_LENGTH_OFFSET 50313   // (56)
 #define VERSION_0_PAT_SHUFFLE_OFFSET 50312  // (1)
@@ -1968,8 +1971,18 @@ void preset_saveAll(uint8_t presetNr, uint8_t isAll)
       f_write((FIL*)&preset_File, &parameter_values[PAR_BAR_RESET_MODE], 1, &bytesWritten);
       // pattern change time
       f_write((FIL*)&preset_File, &parameter_values[PAR_SEQ_PC_TIME], 1, &bytesWritten);
-   
-      remain=	64 - (1+1);
+      // track midi channel settings
+      f_write((FIL*)&preset_File, &parameter_values[PAR_MIDI_CHAN_1], 1, &bytesWritten);
+      f_write((FIL*)&preset_File, &parameter_values[PAR_MIDI_CHAN_2], 1, &bytesWritten);
+      f_write((FIL*)&preset_File, &parameter_values[PAR_MIDI_CHAN_3], 1, &bytesWritten);
+      f_write((FIL*)&preset_File, &parameter_values[PAR_MIDI_CHAN_4], 1, &bytesWritten);
+      f_write((FIL*)&preset_File, &parameter_values[PAR_MIDI_CHAN_5], 1, &bytesWritten);
+      f_write((FIL*)&preset_File, &parameter_values[PAR_MIDI_CHAN_6], 1, &bytesWritten);
+      f_write((FIL*)&preset_File, &parameter_values[PAR_MIDI_CHAN_7], 1, &bytesWritten);
+      // track midi note settings
+      f_write((FIL*)&preset_File, &parameter_values[PAR_MIDI_NOTE1], 7, &bytesWritten);
+      
+      remain=	64 - (1+1)-14;
    }
 
 	// write padding after globals/perf data
@@ -2237,11 +2250,47 @@ uint8_t preset_loadPerf(uint8_t presetNr, uint8_t voiceArray)
          if(!bytesRead)
             goto closeFile;
       }
-      
-      // send global params
-      menu_sendAllGlobals();
+       
    }
    
+   if(preset_workingVersion>4) {
+      uint8_t noteData;
+      // versions 5+ store MIDI channel and note for the voices
+      
+      // 7 channels for the 7 tracks are stored first
+      for(trkNum=0;trkNum<NUM_TRACKS;trkNum++)
+      {
+         if(preset_workingVoiceArray&(0x01<<trkNum))
+         {
+            if(trkNum==6)// nb, chan7 is non-contiguous parameter
+            {
+               f_read((FIL*)&preset_File,&noteData,1,&bytesRead);
+               if(bytesRead&&(noteData!=0xff))
+                  parameter_values[PAR_MIDI_CHAN_7]=noteData;
+            }
+            else
+            {
+               f_read((FIL*)&preset_File,&noteData,1,&bytesRead);
+               if(bytesRead&&(noteData!=0xff))
+                  parameter_values[PAR_MIDI_CHAN_1+trkNum]=noteData;
+            }
+         }
+      }
+      
+      // 7 note settings are stored second
+      for(trkNum=0;trkNum<NUM_TRACKS;trkNum++)
+      {
+         if(preset_workingVoiceArray&(0x01<<trkNum))
+         {
+            f_read((FIL*)&preset_File,&noteData,1,&bytesRead);
+            if(bytesRead&&(noteData!=0xff))
+               parameter_values[PAR_MIDI_NOTE1+trkNum]=noteData;
+         }
+      }
+   }
+   
+   // send global params
+   menu_sendAllGlobals();
 	//close the file handle
    f_close((FIL*)&preset_File);
    
