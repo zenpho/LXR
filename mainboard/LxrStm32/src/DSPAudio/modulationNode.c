@@ -253,6 +253,20 @@ void modNode_updateValue(ModulationNode* vm, float val)
    
    	}
    }
+   
+   if(vm->destination==PAR_ENVELOPE_POSITION_1&&midi_envPosition[0])
+      drumVoice_setEnvelope(0,midi_envPosition[0]); 
+   else if(vm->destination==PAR_ENVELOPE_POSITION_2&&midi_envPosition[1])
+      drumVoice_setEnvelope(1,midi_envPosition[1]);
+   else if(vm->destination==PAR_ENVELOPE_POSITION_3&&midi_envPosition[2])
+      drumVoice_setEnvelope(2,midi_envPosition[2]);
+   else if(vm->destination==PAR_ENVELOPE_POSITION_4&&midi_envPosition[3])
+      snare_setEnvelope(midi_envPosition[3]);
+   else if(vm->destination==PAR_ENVELOPE_POSITION_5&&midi_envPosition[4])
+      cymbal_setEnvelope(midi_envPosition[4]);
+   else if(vm->destination==PAR_ENVELOPE_POSITION_6&&midi_envPosition[5])
+      hihat_setEnvelope(midi_envPosition[5]);
+   
 }
 //-----------------------------------------------------------------------
 void modNode_vMorph(ModulationNode* vm, float val)

@@ -213,6 +213,7 @@ void seq_init()
    for(i=0;i<NUM_TRACKS;i++) {
       autoNode_init(&seq_automationNodes[i][0]);
       autoNode_init(&seq_automationNodes[i][1]);
+      midi_envPosition[i]=0;
    }
 
    for(i=0;i<256;i++)
@@ -1676,18 +1677,22 @@ void seq_recordAutomation(uint8_t voice, uint8_t dest, uint8_t value)
       uint8_t quantizedStep = seq_quantize(seq_stepIndex[voice], voice);
    
    	//only record to active steps
-      if( seq_intIsMainStepActive(voice,quantizedStep/8,seq_perTrackActivePattern[voice]) &&
+      /*if( seq_intIsMainStepActive(voice,quantizedStep/8,seq_perTrackActivePattern[voice]) &&
       		seq_intIsStepActive(voice,quantizedStep,seq_perTrackActivePattern[voice]))
-      {
-         if(seq_activeAutomTrack == 0) {
-            seq_patternSet.seq_subStepPattern[seq_perTrackActivePattern[voice]][voice][quantizedStep].param1Nr = dest;
-            seq_patternSet.seq_subStepPattern[seq_perTrackActivePattern[voice]][voice][quantizedStep].param1Val = value;
-         } 
-         else {
-            seq_patternSet.seq_subStepPattern[seq_perTrackActivePattern[voice]][voice][quantizedStep].param2Nr = dest;
-            seq_patternSet.seq_subStepPattern[seq_perTrackActivePattern[voice]][voice][quantizedStep].param2Val = value;
-         }
+      {*/
+      if(seq_activeAutomTrack == 0) {
+         seq_patternSet.seq_subStepPattern[seq_perTrackActivePattern[voice]][voice][quantizedStep].param1Nr = dest;
+         seq_patternSet.seq_subStepPattern[seq_perTrackActivePattern[voice]][voice][quantizedStep].param1Val = value;
+      } 
+      else {
+         seq_patternSet.seq_subStepPattern[seq_perTrackActivePattern[voice]][voice][quantizedStep].param2Nr = dest;
+         seq_patternSet.seq_subStepPattern[seq_perTrackActivePattern[voice]][voice][quantizedStep].param2Val = value;
       }
+      
+      if(!seq_intIsStepActive(voice,quantizedStep,seq_perTrackActivePattern[voice])&&(quantizedStep%8))
+         seq_patternSet.seq_subStepPattern[seq_perTrackActivePattern[voice]][voice][quantizedStep].volume=0;
+         
+      //}
    }
 
    if( (seq_armedArmedAutomationStep	!= -1) && (seq_armedArmedAutomationTrack != -1) )

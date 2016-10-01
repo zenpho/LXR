@@ -56,7 +56,20 @@ void setPan(const uint8_t voiceNr, const uint8_t pan)
 //---------------------------------------------------
 void drumVoice_setEnvelope(const uint8_t voiceNr, const uint8_t envPos)
 {
-	
+   if(envPos==0)
+   {
+      DecayEg_trigger(&voiceArray[voiceNr].oscPitchEg);
+	   slopeEg2_trigger(&voiceArray[voiceNr].oscVolEg);
+   }
+	else if(envPos==1)
+   {
+      DecayEg_trigger(&voiceArray[voiceNr].oscPitchEg);
+      slopeEg2_setEnvPos(&voiceArray[voiceNr].oscVolEg, envPos);
+   }
+   else
+   {
+      slopeEg2_setEnvPos(&voiceArray[voiceNr].oscVolEg, envPos);
+   }
 }
 
 //---------------------------------------------------

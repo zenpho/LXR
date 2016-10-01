@@ -2518,7 +2518,7 @@ void midiParser_MIDIccHandler(MidiMsg msg, uint8_t updateOriginalValue)
             // reset envelope for voice
                midi_envPosition[3] = msg.data2;
                LXRparamNr=128+CC2_ENVELOPE_POSITION_4;
-               drumVoice_setEnvelope(3,midi_envPosition[3]);
+               snare_setEnvelope(midi_envPosition[3]);
                break;
             case UNDEF_102: // MOD_WAVE_DRUM* (1-3 only)
                break;
@@ -2756,7 +2756,7 @@ void midiParser_MIDIccHandler(MidiMsg msg, uint8_t updateOriginalValue)
             // reset envelope for voice
                midi_envPosition[4] = msg.data2;
                LXRparamNr=128+CC2_ENVELOPE_POSITION_5;
-               drumVoice_setEnvelope(4,midi_envPosition[4]);
+               cymbal_setEnvelope(midi_envPosition[4]);
                break;
             case UNDEF_102: // MOD_WAVE_DRUM* (1-3 only)
                break;
@@ -3011,7 +3011,7 @@ void midiParser_MIDIccHandler(MidiMsg msg, uint8_t updateOriginalValue)
             // reset envelope for voice
                midi_envPosition[5] = msg.data2;
                LXRparamNr=128+CC2_ENVELOPE_POSITION_6;
-               drumVoice_setEnvelope(5,midi_envPosition[5]);
+               hihat_setEnvelope(midi_envPosition[5]);
                break;
             case UNDEF_102: // MOD_WAVE_DRUM* (1-3 only)
                break;
