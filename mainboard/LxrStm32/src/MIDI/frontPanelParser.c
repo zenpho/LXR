@@ -1180,13 +1180,21 @@ static void frontParser_handleSeqCC()
    
       case FRONT_SEQ_MIDI_CHAN:
          {
-            uint8_t voice = frontParser_midiMsg.data2 >> 4;
-            uint8_t channel = frontParser_midiMsg.data2 & 0x0f;
-         // --AS if midi channel changed, and a note was playing on old channel, turn it off
+            uint8_t voice = (frontParser_midiMsg.data2 >> 4)&0x07;
+            uint8_t channel = (frontParser_midiMsg.data2&0x0f)+1;
+            
+            // --AS if midi channel changed, and a note was playing on old channel, turn it off
             if(voice < 7 && midi_MidiChannels[voice] != channel)
                voiceControl_noteOff(voice);
-         
+               
             midi_MidiChannels[voice] = channel;
+            
+         }
+         break;
+         
+      case FRONT_SEQ_MIDI_CHAN_OFF:
+         {
+            midi_MidiChannels[frontParser_midiMsg.data2]=0;
          }
          break;
    

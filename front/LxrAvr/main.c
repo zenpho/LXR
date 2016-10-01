@@ -130,7 +130,6 @@ sei();
 	
 	//init menu
 	menu_init();
-	
 	//init sd card, fat and preset manager
 	//has to be called after sei() because it sends uart data via interrupts
 #if USE_SD_CARD
@@ -160,6 +159,8 @@ sei();
 	frontPanel_sendData(SAMPLE_CC,SAMPLE_COUNT,0x00);
 
    void led_clearSequencerLeds();
+   
+   menu_sendAllGlobals();
 
 	//main loop
 	for(;;) // this usually results in less instructions than while(1)

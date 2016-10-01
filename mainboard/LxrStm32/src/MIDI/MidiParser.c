@@ -61,7 +61,7 @@
    #define BANK_5 0x10
    #define BANK_6 0x20
    #define BANK_7 0x40
-   #define BANK_GLOBAL 0x80
+   #define BANK_GLOBAL 0x7F
 // banks 1-6 plus global stack to allow for multiple voices stacked on the same
 // MIDI channel to respond to the same bank change command
 
@@ -1235,7 +1235,8 @@ static void midiParser_noteOn(uint8_t voice, uint8_t note, uint8_t vel, uint8_t 
 //Recording Mode - record the note to sequencer and echo to channel of that voice
 // (we'd want to hear what's being recorded)
    if(do_rec) {
-      const uint8_t chan=midi_MidiChannels[voice];
+   
+      
    
    // record note if rec is on
       seq_addNote(voice,vel, note);
@@ -1247,7 +1248,11 @@ static void midiParser_noteOn(uint8_t voice, uint8_t note, uint8_t vel, uint8_t 
    // --AS todo a user played note will end up being turned off if a pattern switch happens.
    //           to fix this we'd have to differentiate between a user played note and a
    //           note triggered from sequencer, and also recognize note off on user played note and send it.
-      seq_sendMidiNoteOn(chan, note, vel);
+      if(midi_MidiChannels[voice])
+      {
+         const uint8_t chan=midi_MidiChannels[voice]-1;
+         seq_sendMidiNoteOn(chan, note, vel);
+      }
    }
 
 
@@ -1376,7 +1381,7 @@ void midiParser_parseMidiMessage(MidiMsg msg)
    } 
    else { // channel specific message
       const uint8_t msgonly =msg.status & 0xF0;
-      const uint8_t chanonly=msg.status & 0x0F;
+      const uint8_t chanonly=(msg.status&0x0F)+1;
    
       if((msgonly & 0xE0) == 0x80) {
       // note on or note off message (one of these two only)
@@ -1434,6 +1439,7 @@ void midiParser_parseMidiMessage(MidiMsg msg)
       } 
       else if(msgonly==PROG_CHANGE) 
       {
+         
       // --AS respond to prog change and change patterns. This responds only when global channel matches the PC message's channel.
          //send the ack message to tell the front that a new pattern starts playing
          if(midiParser_txRxFilter & 0x08)
@@ -1442,13 +1448,11 @@ void midiParser_parseMidiMessage(MidiMsg msg)
             {
                if(msg.data1<16)
                {
-                  uint8_t patMsg = (msg.data1&0x07);
-                  seq_setNextPattern(patMsg,0x0f);
-                  seq_kitResetFlag=((msg.data1&0x08)>>3); //if PC with 8-15, reset kit
-                  
-                  //uart_sendFrontpanelByte(FRONT_SEQ_CC);
-                  //uart_sendFrontpanelByte(FRONT_SEQ_CHANGE_PAT);
-                  //uart_sendFrontpanelByte(patMsg|(seq_kitResetFlag<<3));
+                  seq_setNextPattern(msg.data1&0x07,0x7f);
+                  if(msg.data1>7)
+                  {
+                     seq_newVoiceAvailable=0x7f;
+                  }
                }   
             }
             uint8_t i;
@@ -1456,9 +1460,8 @@ void midiParser_parseMidiMessage(MidiMsg msg)
             {
                if(chanonly == midi_MidiChannels[i])
                {
-                  uint8_t patMsg = (msg.data1&0x07);
-                  seq_setNextPattern(patMsg,i);
-                   
+                  seq_setNextPattern(msg.data1&0x07,i);
+                  seq_newVoiceAvailable&=(0x01<<i);
                }
             }   
          }
@@ -1485,7 +1488,7 @@ void midiParser_MIDIccHandler(MidiMsg msg, uint8_t updateOriginalValue)
 {
 
 // const uint8_t msgonly = msg.status & 0xF0;
-   const uint8_t chanonly = msg.status & 0x0F;
+   const uint8_t chanonly = (msg.status & 0x0F)+1;
    const uint16_t MIDIparamNr = msg.data1;
 // const uint16_t msgVal = msg.data2;
    uint8_t midiChannelCode=0;
@@ -1495,6 +1498,7 @@ void midiParser_MIDIccHandler(MidiMsg msg, uint8_t updateOriginalValue)
  // bc - bank change and morph are potentially time-consuming operations,
  // accumulate all the voices that need this and send as one
    if (MIDIparamNr==BANK){
+      
       midiChannelCode=0;
    // deal with this separately, because we can't have the mainboard overwhelming
    // the front with bank change messages

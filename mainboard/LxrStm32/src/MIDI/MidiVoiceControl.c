@@ -94,8 +94,11 @@ void voiceControl_noteOff(uint8_t voice)
       active_voices &= (~(1<<voice));
    
    	//send midi note off
-      midiChan = midi_MidiChannels[voice];
-      seq_midiNoteOff(midiChan);
+      if(midi_MidiChannels[voice])
+      {
+         midiChan = midi_MidiChannels[voice]-1;
+         seq_midiNoteOff(midiChan);
+      }
    }
 }
 //----------------------------------------------------------------

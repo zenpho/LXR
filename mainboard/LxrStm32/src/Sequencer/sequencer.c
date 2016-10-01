@@ -242,7 +242,6 @@ void seq_activateTmpPattern()
    memcpy(&seq_patternSet.seq_mainSteps[seq_activePattern],&seq_tmpPattern.seq_mainSteps,sizeof(uint16_t)*NUM_TRACKS);
    memcpy(&seq_patternSet.seq_patternSettings[seq_activePattern],&seq_tmpPattern.seq_patternSettings,sizeof(PatternSetting));
    memcpy(&seq_patternSet.seq_patternLengthRotate[seq_activePattern],&seq_tmpPattern.seq_patternLengthRotate,sizeof(LengthRotate)*NUM_TRACKS);
-   seq_newPatternExecuted=1;
 }
 //------------------------------------------------------------------------------
 void seq_setShuffle(float shuffle)
@@ -479,18 +478,21 @@ void seq_triggerVoice(uint8_t voiceNr, uint8_t vol, uint8_t note)
    //Trigger internal synth voice
       voiceControl_noteOn(voiceNr, note, vol);
    }
-   midiChan = midi_MidiChannels[voiceNr];
-
-	//--AS the note that is played will be whatever is received unless we have a note override set
-	// A note override is any non-zero value for this parameter
-   if(midi_NoteOverride[voiceNr] == 0)
-      midiNote = note;
-   else
-      midiNote = midi_NoteOverride[voiceNr];
-
-	//send the new note to midi/usb out
-   seq_sendMidiNoteOn(midiChan, midiNote,
-      	seq_patternSet.seq_subStepPattern[seq_perTrackActivePattern[voiceNr]][voiceNr][seq_stepIndex[voiceNr]].volume&STEP_VOLUME_MASK);
+   if(midi_MidiChannels[voiceNr])
+   {
+      midiChan = midi_MidiChannels[voiceNr]-1;
+   
+   //--AS the note that is played will be whatever is received unless we have a note override set
+   // A note override is any non-zero value for this parameter
+      if(midi_NoteOverride[voiceNr] == 0)
+         midiNote = note;
+      else
+         midiNote = midi_NoteOverride[voiceNr];
+   
+   //send the new note to midi/usb out
+      seq_sendMidiNoteOn(midiChan, midiNote,
+         seq_patternSet.seq_subStepPattern[seq_perTrackActivePattern[voiceNr]][voiceNr][seq_stepIndex[voiceNr]].volume&STEP_VOLUME_MASK);
+   }
 }
 //------------------------------------------------------------------------------
 uint8_t seq_getTransposedNote(uint8_t voice, uint8_t note)
@@ -687,6 +689,7 @@ static void seq_nextStep()
          }
          
          seq_activePattern = seq_pendingPattern&0x07;
+         seq_newPatternExecuted=1;
          if (seq_loadPendigFlag)
          {
             // manual switching - button switch sets all per track pending
@@ -727,8 +730,7 @@ static void seq_nextStep()
          
          uart_sendFrontpanelByte(FRONT_SEQ_CC);
          uart_sendFrontpanelByte(FRONT_SEQ_CHANGE_PAT);
-         uart_sendFrontpanelByte(seq_activePattern|(seq_kitResetFlag<<3));
-         seq_kitResetFlag=0;
+         uart_sendFrontpanelByte(seq_activePattern);
          
          seq_loadPendigFlag = 0;
          seq_realign(); // realign at every pattern change
@@ -1238,7 +1240,8 @@ void seq_setMute(uint8_t trackNr, uint8_t isMuted)
          seq_mutedTracks = 0xFF;
          for (idx=0;idx<7;idx++)
          {
-            voiceControl_noteOff(midi_MidiChannels[idx]);
+            if(midi_MidiChannels[idx])
+               voiceControl_noteOff(midi_MidiChannels[idx]-1);
          }
       }
       else
@@ -1253,7 +1256,8 @@ void seq_setMute(uint8_t trackNr, uint8_t isMuted)
       	//mute track
          seq_mutedTracks |= (1<<trackNr);
       	// --AS turn off the midi note that may be playing on that track
-         voiceControl_noteOff(midi_MidiChannels[trackNr]);
+         if(midi_MidiChannels[trackNr])
+            voiceControl_noteOff(midi_MidiChannels[trackNr]-1);
       } 
       else {
       	//unmute track
@@ -2105,16 +2109,19 @@ void seq_sendMidiNoteOn(const uint8_t channel, const uint8_t note, const uint8_t
  */
 static void seq_sendProgChg(const uint8_t ptn)
 {
-   static MidiMsg msg = {0,0,0, {0,0,1}};
-
-	// --AS FILT filter out PC msgs if appropriate
-   if((midiParser_txRxFilter & 0x80)==0)
-      return;
-
-   msg.status = PROG_CHANGE | midi_MidiChannels[7];
-   msg.data1=ptn;
-   msg.bits.length=1;
-   seq_sendMidi(msg);
+   if(midi_MidiChannels[7])
+   {
+      static MidiMsg msg = {0,0,0, {0,0,1}};
+   
+   // --AS FILT filter out PC msgs if appropriate
+      if((midiParser_txRxFilter & 0x80)==0)
+         return;
+   
+      msg.status = PROG_CHANGE | (midi_MidiChannels[7]-1);
+      msg.data1=ptn;
+      msg.bits.length=1;
+      seq_sendMidi(msg);
+   }
 }
 
 /* **PATROT set the step starting index to the position where the pattern rotation would have it start.

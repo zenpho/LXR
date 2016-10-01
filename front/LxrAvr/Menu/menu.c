@@ -3320,26 +3320,54 @@ void menu_parseGlobalParam(uint16_t paramNr, uint8_t value)
 	//	frontPanel_sendData(SEQ_CC,SEQ_MIDI_MODE,parameter_values[PAR_MIDI_MODE]);
 	//	break;
 
-	case PAR_MIDI_CHAN_7:
-		paramNr -= 5; //because they are not after one another in the param list
 	case PAR_MIDI_CHAN_1:
+      if(value==0)
+         frontPanel_sendData(SEQ_CC,SEQ_MIDI_CHAN_OFF,0x00);
+      else
+         frontPanel_sendData(SEQ_CC,SEQ_MIDI_CHAN,(uint8_t)((0x00<<4) | ((value-1)&0x0f) ));
+      break;
 	case PAR_MIDI_CHAN_2:
+      if(value==0)
+         frontPanel_sendData(SEQ_CC,SEQ_MIDI_CHAN_OFF,0x01);
+      else
+         frontPanel_sendData(SEQ_CC,SEQ_MIDI_CHAN,(uint8_t)((0x01<<4) | ((value-1)&0x0f) ));
+      break;
 	case PAR_MIDI_CHAN_3:
+      if(value==0)
+         frontPanel_sendData(SEQ_CC,SEQ_MIDI_CHAN_OFF,0x02);
+      else
+         frontPanel_sendData(SEQ_CC,SEQ_MIDI_CHAN,(uint8_t)((0x02<<4) | ((value-1)&0x0f) ));
+      break;
 	case PAR_MIDI_CHAN_4:
+      if(value==0)
+         frontPanel_sendData(SEQ_CC,SEQ_MIDI_CHAN_OFF,0x03);
+      else
+         frontPanel_sendData(SEQ_CC,SEQ_MIDI_CHAN,(uint8_t)((0x03<<4) | ((value-1)&0x0f) ));
+      break;
 	case PAR_MIDI_CHAN_5:
+      if(value==0)
+         frontPanel_sendData(SEQ_CC,SEQ_MIDI_CHAN_OFF,0x04);
+      else
+         frontPanel_sendData(SEQ_CC,SEQ_MIDI_CHAN,(uint8_t)((0x04<<4) | ((value-1)&0x0f) ));
+      break;
 	case PAR_MIDI_CHAN_6:
+      if(value==0)
+         frontPanel_sendData(SEQ_CC,SEQ_MIDI_CHAN_OFF,0x05);
+      else
+         frontPanel_sendData(SEQ_CC,SEQ_MIDI_CHAN,(uint8_t)((0x05<<4) | ((value-1)&0x0f) ));
+      break;
+   case PAR_MIDI_CHAN_7:
+      if(value==0)
+         frontPanel_sendData(SEQ_CC,SEQ_MIDI_CHAN_OFF,0x06);
+      else
+         frontPanel_sendData(SEQ_CC,SEQ_MIDI_CHAN,(uint8_t)((0x06<<4) | ((value-1)&0x0f) ));
+      break;
 	case PAR_MIDI_CHAN_GLOBAL:
-	{
-		uint8_t voice;
-		uint8_t channel = (uint8_t)(value-1);
-		if(paramNr==PAR_MIDI_CHAN_GLOBAL)
-			voice= 7; // will be 7 for global channel
-		else
-			voice=(uint8_t)(paramNr - PAR_MIDI_CHAN_1); // will be 0-6 for voice channels
-		frontPanel_sendData(SEQ_CC,SEQ_MIDI_CHAN,(uint8_t)((voice<<4) | channel ));
-	}
-	break;
-
+      if(value==0)
+         frontPanel_sendData(SEQ_CC,SEQ_MIDI_CHAN_OFF,0x07);
+      else
+         frontPanel_sendData(SEQ_CC,SEQ_MIDI_CHAN,(uint8_t)((0x07<<4) | ((value-1)&0x0f) ));
+      break;
 
 	case PAR_POS_X:
 		frontPanel_sendData(SEQ_CC,SEQ_SET_ACTIVE_TRACK,menu_getActiveVoice());

@@ -538,9 +538,9 @@ void frontPanel_parseData(uint8_t data)
                         return;
                   	//ack message that the sequencer changed to the requested pattern
                      uint8_t patMsg = frontParser_midiMsg.data2&0x07;
-                     uint8_t kitRst = frontParser_midiMsg.data2&0x08;
                   	// if a 'perf' or 'all' load locked the kit, un-lock and load
-                  
+                     
+                     /*
                      if(menu_kitLocked)
                      {
                         menu_kitLocked = 0;
@@ -557,8 +557,8 @@ void frontPanel_parseData(uint8_t data)
                      {
                         //preset_loadInstPerf(menu_instPerfLockPreset, menu_instPerfLock,1);
                         menu_instPerfLock = 0;
-                     }
-                     else if(kitRst)
+                     }*/
+                     if(frontParser_midiMsg.data2>7)
                      {
                         menu_reloadKit(); 
                      }                     
@@ -647,12 +647,11 @@ void frontPanel_parseData(uint8_t data)
                {
                   // we have a valid message and we're not waiting for a pattern change to finish
                   // all bits in data1 are set - global bank change operation
-                  if ( !(frontParser_midiMsg.data1^0x3F) ) 
+                  if ( frontParser_midiMsg.data1==0x7f ) 
                   // global bank change request or, all voice channels set the same
                   {
                      // this is a time-consuming operation, cache it and deal
                      // with only one per loop of main()
-                    
                      frontPanel_longOp=BANK_GLOBAL;
                      frontPanel_longData=frontParser_midiMsg.data2;
                      
@@ -670,7 +669,6 @@ void frontPanel_parseData(uint8_t data)
                   
                   }
                }
-            
             }
             
             

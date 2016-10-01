@@ -191,6 +191,7 @@ byte3, data2 byte: xbbbbbbb : b=macro mod target value lower 7 bits or top level
 #define SEQ_TRACK_NOTE5           0x56
 #define SEQ_TRACK_NOTE6           0x57
 #define SEQ_TRACK_NOTE7           0x58
+#define SEQ_MIDI_CHAN_OFF         0x59
 //bc adds
 
 #define SEQ_COPY_TRACK_PATTERN         0x3a

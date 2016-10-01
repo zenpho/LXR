@@ -685,6 +685,7 @@ byte3, data2 byte: xbbbbbbb : b=macro mod target value lower 7 bits or top level
 #define FRONT_SEQ_TRACK_NOTE5		0x56
 #define FRONT_SEQ_TRACK_NOTE6		0x57
 #define FRONT_SEQ_TRACK_NOTE7		0x58
+#define FRONT_SEQ_MIDI_CHAN_OFF         0x59
 
 //codec control messages
 #define EQ_ON_OFF						0x01
