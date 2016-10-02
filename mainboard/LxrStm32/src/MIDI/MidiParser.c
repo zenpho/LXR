@@ -1422,12 +1422,18 @@ void midiParser_parseMidiMessage(MidiMsg msg)
             for(v=0;v<7;v++) {
                if(midi_MidiChannels[v]==chanonly) { // if channel match and we haven't sent it already for the voice
                   if(msgonly==NOTE_ON/* && msg.data2*/) {
-                     midiParser_noteOn(v, msg.data1, msg.data2, 0);
+                     if(v==frontParser_activeTrack)
+                        midiParser_noteOn(v, msg.data1, msg.data2, 1);
+                     else
+                        midiParser_noteOn(v, msg.data1, msg.data2, 0);
                      //Also used in sequencer trigger note function
                   } 
                   else if (msgonly==NOTE_OFF)
                   { 
-                     midiParser_noteOff(v, msg.data1, msg.data2, 0);
+                     if(v==frontParser_activeTrack)
+                        midiParser_noteOff(v, msg.data1, msg.data2, 1);
+                     else
+                        midiParser_noteOff(v, msg.data1, msg.data2, 0);
                   }
                } // if channel matches
             } // for each voice

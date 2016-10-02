@@ -2235,7 +2235,7 @@ uint8_t preset_loadPerf(uint8_t presetNr, uint8_t voiceArray)
    
    preset_workingVersion = version;
    
-   if( (preset_workingVoiceArray>=0x7f) || (preset_workingVoiceArray==0x7f) )
+   if(preset_workingVoiceArray>=0x3f)
    {
    // read bpm
       f_read((FIL*)&preset_File,&parameter_values[PAR_BPM],1,&bytesRead);
@@ -2251,46 +2251,46 @@ uint8_t preset_loadPerf(uint8_t presetNr, uint8_t voiceArray)
             goto closeFile;
       }
        
-   }
-   
-   if(preset_workingVersion>4) {
-      uint8_t noteData;
+      if(preset_workingVersion>4) {
+         uint8_t noteData;
       // versions 5+ store MIDI channel and note for the voices
       
       // 7 channels for the 7 tracks are stored first
-      for(trkNum=0;trkNum<NUM_TRACKS;trkNum++)
-      {
-         if(preset_workingVoiceArray&(0x01<<trkNum))
+         for(trkNum=0;trkNum<NUM_TRACKS;trkNum++)
          {
-            if(trkNum==6)// nb, chan7 is non-contiguous parameter
             {
-               f_read((FIL*)&preset_File,&noteData,1,&bytesRead);
-               if(bytesRead&&(noteData!=0xff))
-                  parameter_values[PAR_MIDI_CHAN_7]=noteData;
-            }
-            else
-            {
-               f_read((FIL*)&preset_File,&noteData,1,&bytesRead);
-               if(bytesRead&&(noteData!=0xff))
-                  parameter_values[PAR_MIDI_CHAN_1+trkNum]=noteData;
+               if(trkNum==6)// nb, chan7 is non-contiguous parameter
+               {
+                  f_read((FIL*)&preset_File,&noteData,1,&bytesRead);
+                  if(bytesRead&&(noteData!=0xff))
+                     parameter_values[PAR_MIDI_CHAN_7]=noteData;
+               }
+               else
+               {
+                  f_read((FIL*)&preset_File,&noteData,1,&bytesRead);
+                  if(bytesRead&&(noteData!=0xff))
+                     parameter_values[PAR_MIDI_CHAN_1+trkNum]=noteData;
+               }
             }
          }
-      }
       
       // 7 note settings are stored second
-      for(trkNum=0;trkNum<NUM_TRACKS;trkNum++)
-      {
-         if(preset_workingVoiceArray&(0x01<<trkNum))
+         for(trkNum=0;trkNum<NUM_TRACKS;trkNum++)
          {
-            f_read((FIL*)&preset_File,&noteData,1,&bytesRead);
-            if(bytesRead&&(noteData!=0xff))
-               parameter_values[PAR_MIDI_NOTE1+trkNum]=noteData;
+            {
+               f_read((FIL*)&preset_File,&noteData,1,&bytesRead);
+               if(bytesRead&&(noteData!=0xff))
+                  parameter_values[PAR_MIDI_NOTE1+trkNum]=noteData;
+            }
          }
       }
-   }
    
    // send global params
-   menu_sendAllGlobals();
+      menu_sendAllGlobals();
+       
+   }
+   
+
 	//close the file handle
    f_close((FIL*)&preset_File);
    
@@ -2303,7 +2303,7 @@ uint8_t preset_loadPerf(uint8_t presetNr, uint8_t voiceArray)
    // bc - NB: if enabled, this will lock the track
    preset_readPatternMainStep();
    
-   if( (preset_workingVoiceArray>=0x7f) || (preset_workingVoiceArray==0x7f) )
+   if(preset_workingVoiceArray>=0x3f)
    {
       preset_readShuffle();
    }
@@ -2311,7 +2311,7 @@ uint8_t preset_loadPerf(uint8_t presetNr, uint8_t voiceArray)
    preset_readPatternLength();
    preset_readPatternScale();
    
-   if( (preset_workingVoiceArray>=0x7f) || (preset_workingVoiceArray==0x7f) )
+   if(preset_workingVoiceArray>=0x3f)
    {
       preset_readPatternChain();
    }
