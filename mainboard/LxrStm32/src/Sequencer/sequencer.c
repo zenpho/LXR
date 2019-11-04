@@ -563,8 +563,10 @@ void seq_startLoop()
    
    for(i=0;i<NUM_TRACKS+1;i++)
    {
-      seq_loopStartStepPosition[i] = seq_stepIndex[i];
-      seq_loopActiveStepPosition[i] = seq_stepIndex[i];
+      // unscaled tracks end up 1 step ahead when they are looped. the -1 is a fix to see if it 
+      // puts them in correct time
+      seq_loopStartStepPosition[i] = 0x7f&(seq_stepIndex[i]-1);
+      seq_loopActiveStepPosition[i] = 0x7f&(seq_stepIndex[i]-1);
    }
    seq_loopCurrentPosition=0;
 }
