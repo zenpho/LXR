@@ -1699,10 +1699,21 @@ static void preset_readPatternStepData(uint8_t track, uint8_t pattern)
             			((preset_stepData.param2Val	& 0x80)>>1))
             			);
       }
+      
+      // must receive an ack from main before sending next step to avoid overflow
+      frontParser_sysexCallback=NO_CALLBACK;
+      while(frontParser_sysexCallback==NO_CALLBACK)
+      {  
+         uart_checkAndParse();
+      }
+   
    }
    f_close((FIL*)&stepRead_File); 
    
    // wait callback - step done on cortex
+   
+   //menu_debug("WAIT STEP CALL", 14, track, pattern, 0);
+   
    while(frontParser_sysexCallback!=STEP_CALLBACK)
    {  
       uart_checkAndParse();
@@ -1712,6 +1723,9 @@ static void preset_readPatternStepData(uint8_t track, uint8_t pattern)
    // end sysex mode
    frontParser_midiMsg.status = 0;
    frontPanel_sendByte(SYSEX_END);
+   
+   //menu_debug("WAIT SYSX", 9, track, pattern, 0);
+   
    while(frontParser_midiMsg.status != SYSEX_END)
    {
       uart_checkAndParse();
@@ -2217,6 +2231,7 @@ uint8_t preset_loadPerf(uint8_t presetNr, uint8_t voiceArray)
    preset_workingVoiceArray = voiceArray;
 
    preset_makeFileName(filename,presetNr,FEXT_PERF);
+   
    
 	//open the file
    FRESULT res = f_open((FIL*)&preset_File,filename,FA_OPEN_EXISTING | FA_READ);

@@ -675,7 +675,10 @@ static void frontParser_handleSysexData(unsigned char data)
             frontParser_rxCnt = 0;
             
             if(frontParser_sysexSeqStepNr<127)
+            {
                frontParser_sysexSeqStepNr++;
+               uart_sendFrontpanelSysExByte(SYSEX_STEP_ACK);
+            }
             else
             {
                

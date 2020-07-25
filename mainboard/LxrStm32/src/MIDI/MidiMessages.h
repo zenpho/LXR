@@ -715,7 +715,8 @@ byte3, data2 byte: xbbbbbbb : b=macro mod target value lower 7 bits or top level
 #define SYSEX_RECEIVE_PAT_CHAIN_DATA	0x0a
 // bc - added to parse individual track pattern changes
 #define SYSEX_BEGIN_PATTERN_TRANSMIT	0x08
-#define SYSEX_END_PATTERN_TRANSMIT	0x09
+#define SYSEX_END_PATTERN_TRANSMIT	   0x09
+#define SYSEX_STEP_ACK                 0x10
 
 #define SYSEX_ACTIVE_MODE_NONE			0x7f	/**< a placeholder message indicating that sysex is active but no mode is selected yet*/
 #endif /* MIDIMESSAGES_H_ */

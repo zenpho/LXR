@@ -239,6 +239,10 @@ void frontPanel_parseData(uint8_t data)
                   {
                      frontParser_sysexCallback=STEP_CALLBACK;
                   }
+                  else if(data==SYSEX_STEP_ACK)
+                  {
+                     frontParser_sysexCallback=STEP_ACK;
+                  }
                }
                break;
             case SYSEX_SEND_MAIN_STEP_DATA:
