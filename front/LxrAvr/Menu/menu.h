@@ -631,6 +631,7 @@ extern uint8_t paramToModTarget[END_OF_SOUND_PARAMETERS];
 
 extern uint8_t menu_selectedStepLed;
 
+void menu_debug(char* displayText, size_t length, uint8_t value1, uint8_t value2, int delayTime);
 //-----------------------------------------------------------------
 /** forces a complete repaint of the display*/
 void menu_repaintAll();

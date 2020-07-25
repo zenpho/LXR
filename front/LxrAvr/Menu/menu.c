@@ -715,6 +715,49 @@ void sendDisplayBuffer()
 
 }
 //-----------------------------------------------------------------
+void menu_debug(char* displayText, size_t length, uint8_t value1, uint8_t value2, int delayTime)
+{
+   if (length>16)
+      return;
+   uint8_t i;
+   
+   lcd_clear();
+   memset(editDisplayBuffer,' ',2*17);	
+   for(i=0;i<length;i++)
+   {
+      editDisplayBuffer[0][i]=displayText[i];
+   }
+
+   numtostru(&editDisplayBuffer[1][0],(uint8_t)(value1));
+   numtostru(&editDisplayBuffer[1][7],(uint8_t)(value2));
+
+   sendDisplayBuffer();
+   if(delayTime>=5000)
+      _delay_ms(5000);
+   else if(delayTime>=4000)
+      _delay_ms(4000);
+   else if(delayTime>=3000)
+      _delay_ms(3000);
+   else if(delayTime>=2000)
+      _delay_ms(2000);
+   else if(delayTime>=1000)
+      _delay_ms(1000);
+   else if(delayTime>=500)
+      _delay_ms(500);
+   else if(delayTime>=200)
+      _delay_ms(500);
+   else if (delayTime>=100)
+      _delay_ms(100);
+   else if (delayTime>=50)
+      _delay_ms(50);
+   else if (delayTime>=10)
+      _delay_ms(10);
+   else if (delayTime>=5)
+      _delay_ms(5);
+   else if (delayTime>=1)
+      _delay_ms(1);
+}
+//-----------------------------------------------------------------
 void menu_enterVoiceMode()
 {
    //set menu to voice page mode
