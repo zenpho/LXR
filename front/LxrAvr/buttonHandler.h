@@ -105,6 +105,8 @@ void buttonHandler_tick();
 //--------------------------------------------------------
 void buttonHandler_buttonPressed(uint8_t buttonNr);
 //--------------------------------------------------------
+void buttonHandler_handleModeButtons(uint8_t mode);
+//--------------------------------------------------------
 //uint8_t buttonHandler_getMutedVoices();
 //--------------------------------------------------------
 void buttonHandler_buttonReleased(uint8_t buttonNr);

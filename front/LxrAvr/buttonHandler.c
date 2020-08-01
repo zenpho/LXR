@@ -243,7 +243,6 @@ static void buttonHandler_setTimeraction(uint8_t buttonNr) {
  return 1;
  }
  */
-
 //--------------------------------------------------------
 //periodically called handler for timed actions
 //-> hold a step button for a long time to select/rec automation
@@ -276,7 +275,7 @@ uint8_t buttonHandler_getShift() {
    return 1;
 }
 //--------------------------------------------------------
-static void buttonHandler_handleModeButtons(uint8_t mode) {
+void buttonHandler_handleModeButtons(uint8_t mode) {
    buttonHandler_heldVoiceButtons = 0;// this is here for individ. pattern switch - if the mode
    buttonHandler_muteTag=0;           // is changed, clear any held buttons
    
@@ -367,7 +366,7 @@ void buttonHandler_showMuteLEDs() {
    led_setActiveVoiceLeds((uint8_t) (~buttonHandler_mutedVoices));
    menu_muteModeActive = 1;
 }
-//--------------------------------------------------------
+   //--------------------------------------------------------
 static void buttonHandler_handleSelectButton(uint8_t buttonNr) {
 
    if (buttonHandler_getShift()) {
@@ -1017,7 +1016,7 @@ static void buttonHandler_voiceButtonReleased(uint8_t voiceNr)
          {
             preset_loadPerf(menu_currentPresetNr[SAVE_TYPE_PERFORMANCE],menu_voiceArray);
             menu_resetSaveParameters();
-            led_clearAllBlinkLeds();
+            buttonHandler_handleModeButtons(SELECT_MODE_PERF);
          }
       }
    }
@@ -1478,7 +1477,6 @@ void buttonHandler_buttonReleased(uint8_t buttonNr) {
 uint8_t buttonHandler_getMode() {
    return buttonHandler_stateMemory.selectButtonMode;
 }
-;
 //--------------------------------------------------------------
 
 void buttonHandler_setRunStopState(uint8_t running) {
@@ -1486,6 +1484,5 @@ void buttonHandler_setRunStopState(uint8_t running) {
    buttonHandler_stateMemory.seqRunning = (uint8_t) (running & 0x01);
    menu_sequencerRunning = (uint8_t)(running&0x01);
 	// set the led
-   led_setValue(buttonHandler_stateMemory.seqRunning, LED_START_STOP);
-   menu_kitLocked=0;   
+   led_setValue(buttonHandler_stateMemory.seqRunning, LED_START_STOP);  
 }

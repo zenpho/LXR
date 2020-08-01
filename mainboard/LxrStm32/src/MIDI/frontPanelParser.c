@@ -317,6 +317,11 @@ void frontParser_parseUartData(unsigned char data)
       {
          seq_newVoiceAvailable=0x7f;
       }
+      else if(data==FRONT_CALLBACK_ACK)
+      {
+         uart_clearFrontFifo();
+         uart_sendFrontpanelSysExByte(FRONT_CALLBACK_ACK);
+      }
       else
       {
          frontParser_sysexActive = SYSEX_INACTIVE;
@@ -1546,6 +1551,57 @@ static void frontParser_handleSeqCC()
          seq_setLoop(frontParser_midiMsg.data2);
          break;
       case FRONT_SEQ_LOAD_VOICE:
+         /*
+         seq_voicesLoading is only used in Mainboard>frontPanelParser.c 
+         it applies to case MIDI_CC and FRONT_CC_2, LFO_TARGET and VELO_TARGET. 
+         if this flag is set, the parameter is sent to cache. 
+         cache needs to be opened before any cached parameters are applied
+         
+         Further notes:
+         case FRONT_SEQ_LOAD_VOICE:
+            sets seq_voicesLoading (bit register)
+            seq_voicesLoading is only used in Mainboard>frontPanelParser.c 
+            it applies to case MIDI_CC and FRONT_CC_2, LFO_TARGET and VELO_TARGET. 
+            if this flag is set, the parameter received to fpp is sent to cache. 
+            midi_midi<type>CacheAvailable is the flag for each parameter for reg. 
+            MIDI, Lfo, and Velo.
+            
+            voice needs to be *uncached* before any cached parameters are applied
+            
+            seq_voicesLoading is UNSET by:
+            - FRONT_SEQ_FILE_DONE (completely set to 0)
+            - frontParser_uncacheVoice(voice number), turns off each individual flag.
+            
+            case FRONT_SEQ_UNHOLD_VOICE (data for voice number):
+            calls frontParser_unholdVoice(voice). also calls fp_uncacheVoice if seq not 
+            running.
+            frontParser_unHoldVoice:
+            	- sets seq_newVoiceAvailable (a register) for the voice
+            	- then this waits for one of 2 cases (below) to actually update the voice
+            	- searches cacheAvailable to see if any new params need to be applied
+            	- sends the param to midi_midiKit, midi_kitLfoCache, or midi_kitVeloCache. 
+               this is not the actual voiced parameter. those get applied below:
+            
+            	CASE 1: global load fast mode is on. voice params get applied 
+               (frontParser_uncacheVoice) when seq_triggerVoice(voice #) is called. They 
+               also change over if the sequence is changed as case 2 below.
+            
+            	CASE 2: global load fast mode is off. voice params get applied 
+               (frontParser_uncacheVoice) when the sequence changes 
+               (flag seq_newPatternExecuted). This happens if the voice is trigged OR on 
+               corresponding substep(mod 8) (0=drum1, 3=snare etc.). when 
+            
+            frontParser_uncacheVoice(voice) actually applies the parameters
+            
+            
+            NOTES:
+            PATCH_RESET sets seq_newVoiceAvailable for ALL.
+            
+            seq_tracksLocked
+            - only used in seq_triggerVoice to return. ie the voice does not play at all.
+            - set only by SYSEX_RECEIVE_MAIN_STEP_DATA, unset by SYSEX_BEGIN_PATTERN_TRANSMIT
+         */
+         
          seq_voicesLoading |= (0x01<<frontParser_midiMsg.data2);
          break;
       case FRONT_SEQ_UNHOLD_VOICE:

@@ -680,7 +680,7 @@ static void seq_nextStep()
          if(seq_resetBarOnPatternChange)
             seq_barCounter=0;
       
-      	// first check if 2 new pattern is available
+      	// first check if new pattern is available
          // bc - seq_newPatternAvailable is now a register. if a complete pattern switch if necessary, 
          // it will be 0xff. if only some voices need switch, they will be represented by single bits
          // 0x01 for drum1, 0x02 for drum 2, 0x04, etc.

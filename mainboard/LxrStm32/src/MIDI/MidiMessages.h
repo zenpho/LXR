@@ -86,6 +86,7 @@ typedef struct MidiStruct {
 #define MIDI_CLOCK			0xF8
 #define SYSEX_START			0xF0
 #define SYSEX_END			0xF7
+#define FRONT_CALLBACK_ACK	0xFD
 #define MIDI_START			0xFA
 #define MIDI_STOP			0xFC
 #define MIDI_CONTINUE		0xFB

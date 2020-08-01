@@ -424,14 +424,15 @@ void preset_readKitToTemp(uint8_t isMorph)
 
 #endif
 }
-
 //----------------------------------------------------
 // read the data into either the main parameters or the morph parameters.
 void preset_readDrumVoice(uint8_t track, uint8_t isMorph)
 {
-   int8_t i;
+   if(track>NUM_TRACKS-1)
+      return;
+      
+   uint8_t i, value, upper, lower;
    uint8_t *paramMask;
-   uint8_t value,upper,lower;
    
    switch(track)
    {
@@ -458,9 +459,7 @@ void preset_readDrumVoice(uint8_t track, uint8_t isMorph)
       default:
          return;
    }
-    
    
- // copy values from temp to where they are supposed to be - normal params or morph
    if(isMorph)
    {
       for (i=0;i<VOICE_PARAM_LENGTH;i++)
@@ -476,35 +475,32 @@ void preset_readDrumVoice(uint8_t track, uint8_t isMorph)
       }
    }
     
+    // send velocity targets
+    
+   value = (uint8_t)pgm_read_word(&modTargets[parameter_values[PAR_VEL_DEST_1+track]].param);
+   upper = (uint8_t)(((value&0x80)>>7) | (((track)&0x3f)<<1));
+   lower = value&0x7f;
+   frontPanel_sendData(CC_VELO_TARGET,upper,lower);
    
-   if(!isMorph)
-   {
-      value = (uint8_t)pgm_read_word(&modTargets[parameter_values[PAR_VEL_DEST_1+track]].param);
-      upper = (uint8_t)(((value&0x80)>>7) | (((track)&0x3f)<<1));
-      lower = value&0x7f;
-      frontPanel_sendData(CC_VELO_TARGET,upper,lower);
+   // ensure lfo target voice # is valid
+   if(parameter_values[PAR_VOICE_LFO1+track] < 1 || parameter_values[PAR_VOICE_LFO1+track] > 6 )
+      parameter_values[PAR_VOICE_LFO1+track]=track;
    
-   	// ensure target voice # is valid
-      if(parameter_values[PAR_VOICE_LFO1+track] < 1 || parameter_values[PAR_VOICE_LFO1+track] > 6 )
-         parameter_values[PAR_VOICE_LFO1+track]=1;
-   
-   	// **LFO par_target_lfo will be an index into modTargets, but we need a parameter number to send
-      value = (uint8_t)pgm_read_word(&modTargets[parameter_values[PAR_TARGET_LFO1+track]].param);
-   
-      upper = (uint8_t)(((value&0x80)>>7) | (((track)&0x3f)<<1));
-      lower = value&0x7f;
-      frontPanel_sendData(CC_LFO_TARGET,upper,lower);
+   // **LFO par_target_lfo will be an index into modTargets, but we need a parameter number to send
+   value = (uint8_t)pgm_read_word(&modTargets[parameter_values[PAR_TARGET_LFO1+track]].param);
+   upper = (uint8_t)(((value&0x80)>>7) | (((track)&0x3f)<<1));
+   lower = value&0x7f;
+   frontPanel_sendData(CC_LFO_TARGET,upper,lower);
    
    // --AS todo will this morph (and fuck up) our modulation targets?
    // send parameters (possibly combined with morph parameters) to back
    
-   // bc: output dests aren't morphed anymore - they are need to be a special case
-      frontPanel_sendData(CC_2,(uint8_t)(PAR_AUDIO_OUT1+track-128),parameter_values[track+PAR_AUDIO_OUT1]);
-   
-      preset_morph((uint8_t)(0x01<<track),parameter_values[PAR_MORPH]);
-   }
+   // bc: output dests aren't morphed anymore - they need to be a special case
+   frontPanel_sendData(CC_2,(uint8_t)(PAR_AUDIO_OUT1+track-128),parameter_values[track+PAR_AUDIO_OUT1]);
+   frontPanel_holdForBuffer();
+   preset_morph((uint8_t)(0x01<<track),parameter_values[PAR_MORPH]);  
 }
-
+ 
 //----------------------------------------------------
 // read from temp any kit data not associated with a voice.
 void preset_readDrumsetMeta(uint8_t isMorph)
@@ -2211,7 +2207,7 @@ closeFile:
    return 0;
 }
 
-
+   
 //----------------------------------------------------
 uint8_t preset_loadPerf(uint8_t presetNr, uint8_t voiceArray)
 {
@@ -2227,11 +2223,10 @@ uint8_t preset_loadPerf(uint8_t presetNr, uint8_t voiceArray)
    frontParser_rxDisable=1;
    
    preset_workingPreset=presetNr;
-   preset_workingType=WTYPE_PERFORMANCE;
-   preset_workingVoiceArray = voiceArray;
+   preset_workingType=WTYPE_PERFORMANCE; // wtype is held until file load is done
+   preset_workingVoiceArray = voiceArray; // bit register of voies to load this perf
 
    preset_makeFileName(filename,presetNr,FEXT_PERF);
-   
    
 	//open the file
    FRESULT res = f_open((FIL*)&preset_File,filename,FA_OPEN_EXISTING | FA_READ);
@@ -2250,7 +2245,7 @@ uint8_t preset_loadPerf(uint8_t presetNr, uint8_t voiceArray)
    
    preset_workingVersion = version;
    
-   if(preset_workingVoiceArray>=0x3f)
+   if(preset_workingVoiceArray>=0x3f) // all voices - load perf metadata too
    {
    // read bpm
       f_read((FIL*)&preset_File,&parameter_values[PAR_BPM],1,&bytesRead);
@@ -2315,8 +2310,15 @@ uint8_t preset_loadPerf(uint8_t presetNr, uint8_t voiceArray)
    
    frontPanel_sendData(SEQ_CC,SEQ_EUKLID_RESET,0x01);
    
-   // bc - NB: if enabled, this will lock the track
+   // bc - NB: if enabled, this will lock the track (bit reg. seq_tracksLocked)
+   // 'locking' the track takes place only in the mainboard, in the case
+   // of loading mainstep data, it is only relevant if 'load fast' mode is on
+   // in which case the 'lock track' flag is set if the mainboard receives main
+   // step data for the currently playing sequence. it is used in triggervoice
+   // to prevent the voice from playing (return from function)
    preset_readPatternMainStep();
+   
+   // nb there is a sysex callback after mainstep, mainboard is caught up
    
    if(preset_workingVoiceArray>=0x3f)
    {
@@ -2330,36 +2332,9 @@ uint8_t preset_loadPerf(uint8_t presetNr, uint8_t voiceArray)
    {
       preset_readPatternChain();
    }
-   // calling this twice ensures pattern realign
-   menu_setShownPattern(menu_playedPattern);
-   menu_setShownPattern(menu_playedPattern);
    
    preset_readKitToTemp(1);
    preset_readKitToTemp(0);
-   
-   for (trkNum=0;trkNum<NUM_TRACKS;trkNum++)
-   {
-      if(voiceArray&(0x01<<trkNum))
-      {
-         
-         if(trkNum<6)
-         {
-            frontPanel_sendData(SEQ_CC,SEQ_LOAD_VOICE,trkNum); 
-            preset_readDrumVoice(trkNum, 1);
-            preset_readDrumVoice(trkNum, 0);
-         }
-         
-         // if track is locked, this will also unlock it for playing
-         preset_readPatternStepData(trkNum,menu_playedPattern);
-         
-         if(trkNum<5)
-            frontPanel_sendData(SEQ_CC,SEQ_UNHOLD_VOICE,trkNum);
-            
-      }
-      
-   }
-   
-   frontPanel_sendData(SEQ_CC,SEQ_UNHOLD_VOICE,5); 
    
    if( (voiceArray>=0x7f) || (voiceArray==0) )
    {
@@ -2373,19 +2348,17 @@ uint8_t preset_loadPerf(uint8_t presetNr, uint8_t voiceArray)
       {
          for (patNum=0;patNum<NUM_PATTERN;patNum++)
          {
-            if(patNum!=menu_playedPattern)
-               preset_readPatternStepData(trkNum,patNum);
+         
+            preset_readPatternStepData(trkNum,patNum); 
+            
          }
       }
    }
-
+   
    frontPanel_sendData(SEQ_CC,SEQ_FILE_DONE,WTYPE_PERFORMANCE);
    
-	//force complete repaint
-   menu_repaintAll();
-
 #else
-	frontPanel_sendData(PRESET,PRESET_LOAD,presetNr);
+	// frontPanel_sendData(PRESET,PRESET_LOAD,presetNr);
 #endif
 
 closeFile:

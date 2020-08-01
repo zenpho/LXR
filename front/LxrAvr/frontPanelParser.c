@@ -38,6 +38,7 @@ uint8_t frontParser_nameIndex = 0;
 uint8_t frontPanel_longOp;
 uint8_t frontPanel_morphArray;
 uint8_t frontPanel_morphAvail=0;
+uint8_t frontPanel_wait = 0;
 
 // case definitions for long ops that get dealt with once per main() loop
 // bitwise definitions to decide what to do for multiple ops
@@ -116,6 +117,18 @@ void frontPanel_updateSubstepLeds()
    uint8_t patternNr = menu_getViewedPattern(); //max 7 => 0x07 = 0b111
    uint8_t value = (uint8_t) ((trackNr << 4) | (patternNr & 0x7));
    frontPanel_sendData(LED_CC, LED_ALL_SUBSTEP, value);
+}
+//------------------------------------------------------------
+void frontPanel_holdForBuffer()
+{
+  // start and end sysex to make sure mainboard is caught up on messages and can respond
+// frontParser_midiMsg.status = 0;
+frontPanel_wait=1;
+frontPanel_sendByte(CALLBACK_ACK);
+while(frontPanel_wait)
+{
+    uart_checkAndParse();
+}
 }
 //------------------------------------------------------------
 void frontParser_parseNrpn(uint8_t value)
@@ -205,18 +218,21 @@ void frontPanel_ccHandler()
 //------------------------------------------------------------
 void frontPanel_parseData(uint8_t data)
 {
+   uint8_t i;
 	// if high byte set a new message starts
    if(data&0x80)
    {	
       if(data==PATCH_RESET)
       {
-            
-         uint8_t i;
          for(i=0;i<END_OF_MORPH_PARAMETERS;i++)
          {
             parameter_values[i]=parameter_values_temp[i];
          }
          menu_repaintAll();
+      }
+      else if(data==CALLBACK_ACK)
+      {
+         frontPanel_wait = 0;  
       }
       else
       {
@@ -378,7 +394,7 @@ void frontPanel_parseData(uint8_t data)
                      frontParser_rxCnt = 0;
                   }
                }
-               break;
+               break;  
             default:
                break;
          }
@@ -543,30 +559,22 @@ void frontPanel_parseData(uint8_t data)
                   	//ack message that the sequencer changed to the requested pattern
                      uint8_t patMsg = frontParser_midiMsg.data2&0x07;
                   	// if a 'perf' or 'all' load locked the kit, un-lock and load
-                     
-                     /*
-                     if(menu_kitLocked)
+                     if(preset_workingVoiceArray)
                      {
-                        menu_kitLocked = 0;
-                        if(menu_kitLockType)
+                        for (i=0;i<(NUM_TRACKS-1);i++)
+                     {
+                      if(preset_workingVoiceArray&(0x01<<i))
                         {
-                           //preset_loadAll(menu_kitLockPreset,1,1,0x7f);
+                           frontPanel_sendData(SEQ_CC,SEQ_LOAD_VOICE,i);  
+                           preset_readDrumVoice(i, 0);
+                           preset_readDrumVoice(i, 1); 
+                           frontPanel_sendData(SEQ_CC,SEQ_UNHOLD_VOICE,i);
+                           preset_workingVoiceArray = (uint8_t)(preset_workingVoiceArray&(~(0x01<<i)));
                         }
-                        else
-                        {
-                           //preset_loadPerf(menu_kitLockPreset,0x7f);
-                        }
+                       
                      }
-                     else if(menu_instPerfLock)
-                     {
-                        //preset_loadInstPerf(menu_instPerfLockPreset, menu_instPerfLock,1);
-                        menu_instPerfLock = 0;
-                     }*/
-                     if(frontParser_midiMsg.data2>7)
-                     {
-                        menu_reloadKit(); 
-                     }                     
-                  	//stop blinking pattern led
+                     preset_workingVoiceArray = 0;
+                     }
                      led_setBlinkLed((uint8_t)(LED_PART_SELECT1+patMsg),0);
                   	//clear last pattern led
                   	

@@ -33,6 +33,7 @@ extern uint8_t frontParser_rxDisable;
 #define SYSEX_START			0xF0
 #define SYSEX_END			0xF7
 #define PATCH_RESET			0xFE
+#define CALLBACK_ACK		0xFD
 //control messages from cortex for leds
 //status, param changes
 
@@ -213,7 +214,7 @@ byte3, data2 byte: xbbbbbbb : b=macro mod target value lower 7 bits or top level
 #define SYSEX_BEGIN_PATTERN_TRANSMIT	0x08
 #define SYSEX_END_PATTERN_TRANSMIT		0x09
 #define SYSEX_STEP_ACK                 0x10
-
+#define SYSEX_WAIT						0x11    // wait for main to catch up
 #define SYSEX_ACTIVE_MODE_NONE			0x7f	/**< a placeholder message indicating that sysex is active but no mode is selected yet*/
 
 /** a struct defining a standard midi message*/
@@ -239,6 +240,7 @@ enum sysexCallBack
 void frontPanel_parseData(uint8_t data);
 
 /** send messages to the cortex chip*/
+void frontPanel_holdForBuffer();
 void frontPanel_sendMidiMsg(MidiMsg msg);
 void frontPanel_sendData(uint8_t status, uint8_t data1, uint8_t data2);
 void frontPanel_sendByte(uint8_t data);
