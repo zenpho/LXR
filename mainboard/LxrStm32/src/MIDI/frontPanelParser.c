@@ -465,10 +465,16 @@ static void frontParser_handleSysexData(unsigned char data)
             uint8_t repeat = frontParser_sysexBuffer[1];
             //first load into inactive track
             PatternSet* patternSet = &seq_patternSet;
-         
-            patternSet->seq_patternSettings[currentPattern].nextPattern = next;
-            patternSet->seq_patternSettings[currentPattern].changeBar = repeat;
-         
+            if( (currentPattern == seq_activePattern) && seq_isRunning() && !seq_loadFastMode )
+            {
+               seq_tmpPattern.seq_patternSettings.nextPattern=next;
+               seq_tmpPattern.seq_patternSettings.changeBar=repeat;
+            }
+            else
+            {
+               patternSet->seq_patternSettings[currentPattern].nextPattern = next;
+               patternSet->seq_patternSettings[currentPattern].changeBar = repeat;
+            }
             //inc the step counter
             frontParser_sysexSeqStepNr++;
             frontParser_rxCnt = 0;
