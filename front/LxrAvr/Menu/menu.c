@@ -906,15 +906,11 @@ void menu_shiftStep(uint8_t shift)
 void menu_shiftActiveStep(uint8_t shift)
 {
    if(shift)
-   {
-      
+   {  
    }
    else
    {
-   
-   
    }
-   
 }
 //-----------------------------------------------------------------
 void menu_shiftPatgen(uint8_t shift)
@@ -4014,116 +4010,16 @@ void menu_parseKnobValue(uint8_t potNr, uint8_t potValue)
 	}
 
 }
-
-//-----------------------------------------------------------------
-// --AS TODO this looks to be unused. should it be removed?
-/*
-void menu_sendAllParameters()
-{
-	uint16_t i;
-	for(i=0;i<END_OF_SOUND_PARAMETERS;i++)
-		//for(i=PAR_PAN5;i<PAR_MOD_OSC_GAIN1_CYM;i++)
-
-	{
-		//send parameter change to uart tx
-		//since we are sending a big amount of data here we have to be sure 
-		//that the uart tx buffer doesn't overflow
-		//so we check the return value
-		if(i<128) {
-			frontPanel_sendData(MIDI_CC,(uint8_t)i,parameter_values[i]);
-		} else {
-			frontPanel_sendData(CC_2,(uint8_t)(i-128),parameter_values[i]);
-		}	
-		//frontPanel_sendData(MIDI_CC,i,parameters[i].value);
-
-		//delay to not overflow the rx buffer on the cortex
-		//TODO ACK scheme for speedup testen
-		if((i&0x1f) == 0x1f) //every 32 steps
-			_delay_ms(1);
-	}		
-}
-*/
 //----------------------------------------------------------------
 void menu_reloadKit()
-{
-
-
-   //frontPanel_sendByte(PATCH_RESET);
-   uint8_t i, track, value, upper, lower;
-   // frontPanel_sendByte(PATCH_RESET);
-   for(i=0;i<END_OF_SOUND_PARAMETERS;i++)
-   {
-      parameter_values[i]=parameter_values_temp[i];
-   }
-   for(i=0;i<END_OF_MORPH_PARAMETERS;i++)
-   {
-      parameters2[i]=parameters2_temp[i];
-   }
-   
-   for(track=0;track<(NUM_TRACKS-1);track++)
-   {
-      frontPanel_sendData(SEQ_CC,SEQ_LOAD_VOICE,track); 
-   }
-   
-   for(track=0;track<(NUM_TRACKS-1);track++)
-   { 
-      value = (uint8_t)pgm_read_word(&modTargets[parameter_values[PAR_VEL_DEST_1+track]].param);
-      upper = (uint8_t)(((value&0x80)>>7) | (((track)&0x3f)<<1));
-      lower = value&0x7f;
-      frontPanel_sendData(CC_VELO_TARGET,upper,lower);
-   
-   // ensure target voice # is valid
-   if(parameter_values[PAR_VOICE_LFO1+track] < 1 || parameter_values[PAR_VOICE_LFO1+track] > 6 )
-      parameter_values[PAR_VOICE_LFO1+track]=track;
-   
-   // **LFO par_target_lfo will be an index into modTargets, but we need a parameter number to send
-   value = (uint8_t)pgm_read_word(&modTargets[parameter_values[PAR_TARGET_LFO1+track]].param);
-   
-   upper = (uint8_t)(((value&0x80)>>7) | (((track)&0x3f)<<1));
-   lower = value&0x7f;
-   frontPanel_sendData(CC_LFO_TARGET,upper,lower);
-   
-   // --AS todo will this morph (and fuck up) our modulation targets?
-   // send parameters (possibly combined with morph parameters) to back
-   
-   // bc: output dests aren't morphed anymore - they need to be a special case
-   frontPanel_sendData(CC_2,(uint8_t)(PAR_AUDIO_OUT1+track-128),parameter_values[track+PAR_AUDIO_OUT1]);
-   _delay_ms(10);
-   preset_morph((uint8_t)(0x01<<track),parameter_values[PAR_MORPH]);
-}
-
-for(track=0;track<(NUM_TRACKS-1);track++)
-   { 
-   frontPanel_sendData(SEQ_CC,SEQ_UNHOLD_VOICE,track);
-}
-   /*
-   for(track=0;track<6;track++)
-      {
-   _delay_ms(10);
-   preset_morph((uint8_t)(0x01<<track),parameter_values[PAR_MORPH]);
-   }*/
-// preset morph to send to main board - some delay is necessary BEFORE func
-   // 1ms causes problems. 5ms causes occasional problems 10 before and after 
-   // seems to be ok
-   /*
-   _delay_ms(10);
-   preset_morph(0x7f, parameter_values[PAR_MORPH]);
-   _delay_ms(10);
-   */
-}
-/*
-//----------------------------------------------------------------
-void menu_reloadKit() // old reload kit func
 {
    uint8_t i;
    frontPanel_sendByte(PATCH_RESET);
    for(i=0;i<END_OF_MORPH_PARAMETERS;i++)
    {
       parameter_values[i]=parameter_values_temp[i];
-   }
-   
+   }  
 }
-*/
 //----------------------------------------------------------------
 uint8_t menu_getActivePage()
 {
