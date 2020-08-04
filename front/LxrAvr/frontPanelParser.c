@@ -564,11 +564,9 @@ void frontPanel_parseData(uint8_t data)
                         for (i=0;i<(NUM_TRACKS-1);i++)
                      {
                       if(preset_workingVoiceArray&(0x01<<i))
-                        {
-                           frontPanel_sendData(SEQ_CC,SEQ_LOAD_VOICE,i);  
+                        {  
                            preset_readDrumVoice(i, 0);
-                           preset_readDrumVoice(i, 1); 
-                           frontPanel_sendData(SEQ_CC,SEQ_UNHOLD_VOICE,i);
+                           preset_readDrumVoice(i, 1);
                            preset_workingVoiceArray = (uint8_t)(preset_workingVoiceArray&(~(0x01<<i)));
                         }
                        

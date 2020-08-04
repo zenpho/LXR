@@ -428,11 +428,15 @@ void preset_readKitToTemp(uint8_t isMorph)
 // read the data into either the main parameters or the morph parameters.
 void preset_readDrumVoice(uint8_t track, uint8_t isMorph)
 {
+
    if(track>NUM_TRACKS-1)
       return;
       
    uint8_t i, value, upper, lower;
    uint8_t *paramMask;
+   
+   frontPanel_holdForBuffer();
+   frontPanel_sendData(SEQ_CC,SEQ_LOAD_VOICE,track);
    
    switch(track)
    {
@@ -499,6 +503,10 @@ void preset_readDrumVoice(uint8_t track, uint8_t isMorph)
    frontPanel_sendData(CC_2,(uint8_t)(PAR_AUDIO_OUT1+track-128),parameter_values[track+PAR_AUDIO_OUT1]);
    frontPanel_holdForBuffer();
    preset_morph((uint8_t)(0x01<<track),parameter_values[PAR_MORPH]);  
+   
+   frontPanel_holdForBuffer();
+   frontPanel_sendData(SEQ_CC,SEQ_UNHOLD_VOICE,track);
+   
 }
  
 //----------------------------------------------------

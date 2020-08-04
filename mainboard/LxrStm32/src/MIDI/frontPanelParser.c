@@ -1605,11 +1605,10 @@ static void frontParser_handleSeqCC()
          seq_voicesLoading |= (0x01<<frontParser_midiMsg.data2);
          break;
       case FRONT_SEQ_UNHOLD_VOICE:
-         {
-            frontParser_unholdVoice(frontParser_midiMsg.data2);
-            if(!seq_isRunning())
-               frontParser_uncacheVoice(frontParser_midiMsg.data2);
-         }
+         frontParser_unholdVoice(frontParser_midiMsg.data2);
+         seq_voicesLoading &= ~(0x01<<frontParser_midiMsg.data2);
+         if(!seq_isRunning())
+            frontParser_uncacheVoice(frontParser_midiMsg.data2);
          break;
       case FRONT_SEQ_LOAD_FAST:
          seq_loadFastMode=frontParser_midiMsg.data2;
