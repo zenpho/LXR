@@ -3452,10 +3452,10 @@ void midiParser_MIDIccHandler(MidiMsg msg, uint8_t updateOriginalValue)
             case UNDEF_90: 
                break;
             case UNDEF_102: // MOD_WAVE_DRUM* (1-3 only)
-	       if(msg.data1<16)
-               {
+	            if(msg.data2<16)
+                {
                   seq_setNextPattern(msg.data2&0x07,0x7f);
-                  if(msg.data1>7)
+                  if(msg.data2>7)
                   {
                      seq_newVoiceAvailable=0x7f;
                   }
