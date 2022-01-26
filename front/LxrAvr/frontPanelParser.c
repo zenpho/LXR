@@ -864,14 +864,16 @@ void midiMsg_checkLongOps()
       {
          if (parameter_values[PAR_LOAD_PERF_ON_BANK]){
             preset_loadPerf(frontPanel_longData,0x7f); // preset, isAll, release kitlock, voiceArray
-            menu_repaint();
             if(frontPanel_morphAvail)
             {
                frontPanel_longOp=MORPH_OP;
                frontPanel_morphAvail=0;
             }
             else
-               frontPanel_longOp=NULL_OP;            
+               frontPanel_longOp=NULL_OP; 
+		 
+	    buttonHandler_handleModeButtons(SELECT_MODE_PERF);
+	    menu_repaint();
          }
          else {
             preset_loadDrumset(frontPanel_longData,0x7f,0);
