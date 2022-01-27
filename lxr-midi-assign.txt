@@ -6,9 +6,9 @@ The LXR can be assigned a global channel as well as 7 'track' channels for the p
 
 Where possible, these parameter numbers are in keeping with the General MIDI Specifications provided by the MIDI Manufacturer's Association here: http://www.midi.org/techspecs/midimessages.php
 
-Where specific controls are not specified, parameters have been grouped together as much as possible. 
+For parameters that do not have CC numbers recommended by the MMA, parameters have been grouped together as much as possible. 
 
-If more than one voice is assigned to the same MIDI channel, these voices will all respond to an incoming message. In the case of the hi-hat tracks, voice parameters will be updated for messages arriving on either channel, with the exception of the envelope decay, which has been assigned a different CC value so that HH open and closed can be assigned the same channel, if desired.
+If more than one voice is assigned to the same MIDI channel, these voices will all respond to an incoming message. In the case of the hi-hat tracks, voice parameters will be updated for messages arriving on either channel, with the exception of the envelope decay, which has been assigned a different CC value so that HH open and closed can be assigned the same channel, if desired, without interference.
 
 For parameters that are 'on/off', have menu select items, or have less than 127 values, literal CC values are used, without scaling. For example, to turn 'Velocity > Vol' on or off, a 1 or 0 should be sent. The exception to this is the Global Morph MIDI CC, which has been scaled up to range from 0 to 254 in increments of 2.
 
@@ -82,4 +82,46 @@ Voice Drive			013
 Audio Output			089
 MIDI Note			090
 Mute				120
+
+Global MIDI Channel Only
+Set Perf Roll Rate		016
+Set Perf Roll Note		017
+Set Perf Roll Velocity		018
+Roll on/off by Code		019
+
+Mute Drum 1			113
+Mute Drum 2			114
+Mute Drum 3			115
+Mute Snare			116
+Mute Cymbal			117
+Mute Hi-Hat Closed		118
+Mute Hi-Hat Open		119
+Mute by Code (0=none, 127=all)	120
+Reset all voices to presets	121 (any value)
+
+Pattern Change (alt to PC)	102
+Sequencer Loop			103
+
+**Proposed, not added yet**
+Global MIDI Channel Only
+Drum 1 Decimation 		013
+Drum 2 Decimation 		014
+Drum 3 Decimation 		015
+Snare Decimation 		016
+Cymbal Decimation 		017
+HiHat Decimation 		018
+
+Drum 1 Volume			019
+Drum 2 Volume			020
+Drum 3 Volume			021
+Snare Volume			022
+Cymbal Volume			023
+HiHat Volume			024
+
+Drum 1 Morph			025
+Drum 2 Morph			026
+Drum 3 Morph			027
+Snare Morph			028
+Cymbal Morph			029
+HiHat Morph			030
 
