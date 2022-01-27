@@ -3371,7 +3371,7 @@ void midiParser_MIDIccHandler(MidiMsg msg, uint8_t updateOriginalValue)
       if (chanonly == midi_MidiChannels[7]) // GLOBAL is a target
       {
          switch(MIDIparamNr){
-            case MOD_WHEEL:
+            case MOD_WHEEL: // global morph is handled elsewhere
                break;
             case CHANNEL_VOL: // voice 1-6
                break;
@@ -3379,7 +3379,7 @@ void midiParser_MIDIccHandler(MidiMsg msg, uint8_t updateOriginalValue)
                break;
             case PAN: // pan 1-6
                break;            
-            case EFFECT_1: // decimation 1-6, VOICE_DECIMATION_ALL
+            case EFFECT_1: // decimation 1-6, VOICE_DECIMATION_ALL, this is MIDI CC 12
                mixer_decimation_rate[6] = valueShaperI2F(msg.data2,-0.7f);
                LXRparamNr=VOICE_DECIMATION_ALL;
                break;
@@ -3389,13 +3389,20 @@ void midiParser_MIDIccHandler(MidiMsg msg, uint8_t updateOriginalValue)
                break;
             case UNDEF_14_LSB: // osc fine tune, voice 1-6
                break;
-            case GEN_CONTROLLER_16:
+            case GEN_CONTROLLER_16: // performance roll rate
+	       seq_setRollRate(msg.data2);
                break;
-            case GEN_CONTROLLER_17:
+            case GEN_CONTROLLER_17: // performance roll note
+	       seq_setRollNote(msg.data2);
                break;
             case GEN_CONTROLLER_18: // filter drive, 1-6
+	       seq_setRollVelocity(msg.data2); // performance roll velocity
                break;
-            case GEN_CONTROLLER_19: // filter type 1-6
+            case GEN_CONTROLLER_19: // filter type 1-6 // global set roll on/off by code 0=none, 127=all
+	    {
+		for(i=0;i<7;i++)
+		{seq_rollChange(i, ((msg.data2>>i)&0x01));}
+	    }
                break;
             case UNDEF_20: // snare mix - snare only
                break;
@@ -3452,16 +3459,17 @@ void midiParser_MIDIccHandler(MidiMsg msg, uint8_t updateOriginalValue)
             case UNDEF_90: 
                break;
             case UNDEF_102: // MOD_WAVE_DRUM* (1-3 only)
-	            if(msg.data2<16)
+	    	if(msg.data2<16)
                 {
-                  seq_setNextPattern(msg.data2&0x07,0x7f);
+                  seq_setNextPattern(msg.data2&0x07,0x7f); // all voices, hold off
                   if(msg.data2>7)
                   {
-                     seq_newVoiceAvailable=0x7f;
+                     seq_newVoiceAvailable=0x7f; // also re-load kit voice
                   }
                }  
                break;
             case UNDEF_103: // FMDTN* (1-3 only)
+	       seq_setLoop(msg.data2); // loop the sequence, just as from the frontpanel keys in perf mode. on yer own to send valid CC data. 0 is off.
                break;
             case UNDEF_104: /*104*/	// FMAMNT* (1-3 only)
                break;
@@ -3484,7 +3492,6 @@ void midiParser_MIDIccHandler(MidiMsg msg, uint8_t updateOriginalValue)
             case TRACK5_SOUND_OFF:
             case TRACK6_SOUND_OFF:
             case TRACK7_SOUND_OFF:
-            case ALL_SOUND_OFF:     /*120*/
                {
                
                   if(msg.data2 == 0)
@@ -3498,6 +3505,10 @@ void midiParser_MIDIccHandler(MidiMsg msg, uint8_t updateOriginalValue)
                }
                LXRparamNr=128+CC2_MUTE_1+MIDIparamNr-TRACK1_SOUND_OFF;
                break;
+	    case ALL_SOUND_OFF:     /*120*/ // bytecode - 0 is mute none, 127 is mute all
+		for(i=0;i<7;i++)
+		{seq_setMute(i, ((msg.data2>>i)&0x01));}
+		break;
             case RESET_ALL_CONTROLLERS:
                {// this should be the only circumstance in which VOICE_CC is sent back to front
                   seq_newVoiceAvailable=0x7f;
