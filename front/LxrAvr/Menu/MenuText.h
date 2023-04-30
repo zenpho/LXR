@@ -315,7 +315,7 @@ const char shortNames[][4] PROGMEM  =
 	{"min"},
 #endif
 	{"rol"},
-	{"mrp"},
+	{"mrp"}, // TEXT_X_FADE
 	{"nte"},
 	{"prb"},
 	{"stp"},

@@ -2191,11 +2191,11 @@ void menu_handleSaveMenu(int8_t inc, uint8_t btnClicked)
                break;
             
             case SAVE_TYPE_KIT:
-               preset_saveDrumset(menu_currentPresetNr[SAVE_TYPE_KIT],0);
+               preset_saveDrumset(menu_currentPresetNr[SAVE_TYPE_KIT],0);   // save main drumset
                break;
                
             case SAVE_TYPE_MORPH:
-               preset_saveDrumset(menu_currentPresetNr[SAVE_TYPE_MORPH],1);
+               preset_saveDrumset(menu_currentPresetNr[SAVE_TYPE_MORPH],1); // save morphmix drumset
                break;
             
             case SAVE_TYPE_GLO:
@@ -2574,14 +2574,14 @@ static void menu_encoderChangeParameter(int8_t inc)
 		uint8_t value =  (uint8_t)pgm_read_word(&modTargets[newTargVal].param);
 
 		/*  upper: rightmost bit is 1 if the parameter we are targeting is in the "above 127" range
-		 *         next 6 bits are the voice number (0 to 5) of which voice is being dealt with here
+		 *         next 6 bits are the voice/trackNr (0-5, so just 3 bits required)
 		 *  lower: the (0-127) value representing which parameter is being modulated
 		 */
 		uint8_t upper,lower;
 		upper = (uint8_t)(((value&0x80)>>7) | ((((uint8_t)(paramNr - PAR_VOICE_LFO1))&0x3f)<<1));
 		lower = value&0x7f;
       if (!isMorphParam)
-		frontPanel_sendData(CC_LFO_TARGET,upper,lower);
+		frontPanel_sendData(CC_LFO_TARGET,upper,lower); // --ZPO modnode
 	}
 		break;
 	case DTYPE_TARGET_SELECTION_LFO://parameter_dtypes[paramNr] & 0x0F
@@ -2606,7 +2606,7 @@ static void menu_encoderChangeParameter(int8_t inc)
 		upper = (uint8_t)((uint8_t)((value&0x80)>>7) | (((paramNr - PAR_TARGET_LFO1)&0x3f)<<1));
 		lower = value&0x7f;
       if (!isMorphParam)
-		frontPanel_sendData(CC_LFO_TARGET,upper,lower);
+		frontPanel_sendData(CC_LFO_TARGET,upper,lower); // --ZPO modnode
 		//--AS fall thru to update display
 	}
 		break;
@@ -2803,7 +2803,7 @@ static void menu_encoderChangeShiftParameter(int8_t inc)
 		uint8_t upper,lower;
 		/*
 		 *  upper: rightmost bit is 1 if the parameter we are targeting is in the "above 127" range
-		 *         next 6 bits are the voice number (0 to 5) of which voice is being dealt with here
+		 *         next 6 bits are the voice/trackNr (0-5, so just 3 bits required)
 		 *  lower: the (0-127) value representing which parameter is being modulated
 		 */
 		upper = (uint8_t)( (uint8_t)((value&0x80)>>7) | ((voiceNr&0x3f)<<1) );
@@ -2833,14 +2833,14 @@ static void menu_encoderChangeShiftParameter(int8_t inc)
 		uint8_t value =  (uint8_t)pgm_read_word(&modTargets[newTargVal].param);
 
 		/*  upper: rightmost bit is 1 if the parameter we are targeting is in the "above 127" range
-		 *         next 6 bits are the voice number (0 to 5) of which voice is being dealt with here
+		 *         next 6 bits are the voice/trackNr (0-5, so just 3 bits required)
 		 *  lower: the (0-127) value representing which parameter is being modulated
 		 */
 		uint8_t upper,lower;
 		upper = (uint8_t)(((value&0x80)>>7) | ((((uint8_t)(paramNr - PAR_VOICE_LFO1))&0x3f)<<1));
 		lower = value&0x7f;
       if (!isMorphParam)
-		frontPanel_sendData(CC_LFO_TARGET,upper,lower);
+		frontPanel_sendData(CC_LFO_TARGET,upper,lower); // --ZPO modnode
       else
          preset_morph(0x7f,morphValue);
 	}
@@ -3205,6 +3205,7 @@ uint8_t menu_getSubPage()
 {
 	return (menuIndex&MASK_PAGE)>>PAGE_SHIFT;
 };
+
 //-----------------------------------------------------------------
 void menu_switchPage(uint8_t pageNr)
 {
@@ -3865,7 +3866,7 @@ void menu_parseKnobValue(uint8_t potNr, uint8_t potValue)
 		uint8_t upper,lower;
 		upper = (uint8_t)(((value&0x80)>>7) | ((((uint8_t)(paramNr - PAR_VEL_DEST_1))&0x3f)<<1));
 		lower = value&0x7f;
-		frontPanel_sendData(CC_VELO_TARGET,upper,lower);
+		frontPanel_sendData(CC_VELO_TARGET,upper,lower); // --ZPO modnode
 	}
 		break;
 
@@ -3884,7 +3885,7 @@ void menu_parseKnobValue(uint8_t potNr, uint8_t potValue)
 		uint8_t upper,lower;
 		upper = (uint8_t)(((value&0x80)>>7) | ((((uint8_t)(paramNr - PAR_VOICE_LFO1))&0x3f)<<1));
 		lower = value&0x7f;
-		frontPanel_sendData(CC_LFO_TARGET,upper,lower);
+		frontPanel_sendData(CC_LFO_TARGET,upper,lower); // --ZPO modnode
 	}
 		break;
 	case DTYPE_TARGET_SELECTION_LFO:
@@ -3899,7 +3900,7 @@ void menu_parseKnobValue(uint8_t potNr, uint8_t potValue)
 		uint8_t upper,lower;
 		upper = (uint8_t)(((value&0x80)>>7) | ((((uint8_t)(paramNr - PAR_TARGET_LFO1))&0x3f)<<1));
 		lower = value&0x7f;
-		frontPanel_sendData(CC_LFO_TARGET,upper,lower);
+		frontPanel_sendData(CC_LFO_TARGET,upper,lower); // --ZPO modnode
 	}
 		break;
    case DTYPE_AUTOM_TARGET:
