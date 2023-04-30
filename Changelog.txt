@@ -1,4 +1,4 @@
-Firmware v0.37
+Firmware v0.37 
 ---------------------------
 - fixes the scrambled OLED after a AVR soft reset
 
