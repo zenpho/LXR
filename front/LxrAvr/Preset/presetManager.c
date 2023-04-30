@@ -4,7 +4,7 @@
  *
  * Created: 09.05.2012 16:06:19
  *  Author: Julian
- */ 
+ */
 #include "../config.h"
 #include "PresetManager.h"
 #include "../Hardware/SD/ff.h"
@@ -16,7 +16,7 @@
 #include <avr/pgmspace.h>
 #include "../frontPanelParser.h"
 #include <stdlib.h>
-#include <util/atomic.h> 
+#include <util/atomic.h>
 #include "../IO/uart.h"
 #include "../IO/din.h"
 #include "../IO/dout.h"
@@ -43,7 +43,7 @@
 #define VERSION_4_ALL_PATCHAIN_OFFSET 51385 // (16)
 #define VERSION_4_ALL_MAINSTEP_OFFSET 51273 // (112)
 #define VERSION_4_ALL_STEPDATA_OFFSET 1097  // (50176)
- 
+
 #define VERSION_4_ALL_KIT_OFFSET 73
 #define VERSION_1_ALL_KIT_OFFSET 73
 #define VERSION_4_ALL_MORPH_OFFSET 585
@@ -64,10 +64,10 @@
 #define NUM_PATTERN 8
 #define STEPS_PER_PATTERN 128
 #define VOICE_PARAM_LENGTH 36
-#define FEXT_SOUND 	0
-#define FEXT_PAT 	1
-#define FEXT_ALL 	2
-#define FEXT_PERF 	3
+#define FEXT_SOUND   0
+#define FEXT_PAT   1
+#define FEXT_ALL   2
+#define FEXT_PERF   3
 
 // fill buffer (length 9 total) with a filename. type is one of above
 // eg p001.snd
@@ -82,8 +82,8 @@
 #define BANK_7 0x40
 #define BANK_GLOBAL 0x80
 
-FATFS preset_Fatfs;		/* File system object for the logical drive */
-FIL preset_File;		/* place to hold 1 file*/
+FATFS preset_Fatfs;    /* File system object for the logical drive */
+FIL preset_File;    /* place to hold 1 file*/
 
 uint8_t preset_workingPreset;
 uint8_t preset_workingType;
@@ -102,7 +102,7 @@ enum workingTypeEnum
    WTYPE_PATTERN,
    WTYPE_PERFORMANCE,
    WTYPE_ALL,
-   WTYPE_GLOBAL,   
+   WTYPE_GLOBAL,
 };
 uint16_t totalBytes;
 char filename[GEN_BUF_LEN];
@@ -113,12 +113,12 @@ char preset_currentSaveMenuName[8];
 uint8_t parameter_values_temp[END_OF_SOUND_PARAMETERS];
 uint8_t parameters2_temp[END_OF_SOUND_PARAMETERS];
 
-static uint8_t voice1presetMask[VOICE_PARAM_LENGTH]={1,8,9,20,      37,43,49,50,   62,70,74,78,  82,83,88,94,   102,108,115,121,     128,134,137,143,    149,155,161,167,    173,179,185,191,    197,203,209,215}; 
-static uint8_t voice2presetMask[VOICE_PARAM_LENGTH]={2,10,11,21,    38,44,51,52,   63,71,75,79,  84,85,89,95,   103,109,116,122,     129,135,138,144,    150,156,162,168,    174,180,186,192,    198,204,210,216}; 
-static uint8_t voice3presetMask[VOICE_PARAM_LENGTH]={3,12,13,22,    39,45,53,54,   64,72,76,80,  86,87,90,96,   104,110,117,123,     130,136,139,145,    151,157,163,169,    175,181,187,193,    199,205,211,217}; 
-static uint8_t voice4presetMask[VOICE_PARAM_LENGTH]={4,14,15,27,28, 40,46,55,      56,65,68,73,  77,81,91,99,   105,111,118,124,     131,140,146,152,        158,164,170,    176,182,188,194,    200,206,212,218}; 
-static uint8_t voice5presetMask[VOICE_PARAM_LENGTH]={6,16,17,23,    24,29,30,31,   32,41,47,57,  58,66,69,92,   100,106,112,119,125, 132,141,147,153,        159,165,171,    177,183,189,195,    201,207,213,219}; 
-static uint8_t voice6presetMask[VOICE_PARAM_LENGTH]={7,18,19,25,    26,33,34,35,   36,42,48,59,  60,61,67,93,   101,107,113,120,126, 133,142,148,154,        160,166,172,    178,184,190,196,    202,208,214,220};         
+static uint8_t voice1presetMask[VOICE_PARAM_LENGTH]={1,8,9,20,      37,43,49,50,   62,70,74,78,  82,83,88,94,   102,108,115,121,     128,134,137,143,    149,155,161,167,    173,179,185,191,    197,203,209,215};
+static uint8_t voice2presetMask[VOICE_PARAM_LENGTH]={2,10,11,21,    38,44,51,52,   63,71,75,79,  84,85,89,95,   103,109,116,122,     129,135,138,144,    150,156,162,168,    174,180,186,192,    198,204,210,216};
+static uint8_t voice3presetMask[VOICE_PARAM_LENGTH]={3,12,13,22,    39,45,53,54,   64,72,76,80,  86,87,90,96,   104,110,117,123,     130,136,139,145,    151,157,163,169,    175,181,187,193,    199,205,211,217};
+static uint8_t voice4presetMask[VOICE_PARAM_LENGTH]={4,14,15,27,28, 40,46,55,      56,65,68,73,  77,81,91,99,   105,111,118,124,     131,140,146,152,        158,164,170,    176,182,188,194,    200,206,212,218};
+static uint8_t voice5presetMask[VOICE_PARAM_LENGTH]={6,16,17,23,    24,29,30,31,   32,41,47,57,  58,66,69,92,   100,106,112,119,125, 132,141,147,153,        159,165,171,    177,183,189,195,    201,207,213,219};
+static uint8_t voice6presetMask[VOICE_PARAM_LENGTH]={7,18,19,25,    26,33,34,35,   36,42,48,59,  60,61,67,93,   101,107,113,120,126, 133,142,148,154,        160,166,172,    178,184,190,196,    202,208,214,220};
 
 static void preset_makeFileName(char *buf, uint8_t num, uint8_t type);
 
@@ -127,10 +127,10 @@ static void preset_makeFileName(char *buf, uint8_t num, uint8_t type);
 void preset_init()
 {
 
-	//mount the filesystem	
+  //mount the filesystem
    f_mount(0,(FATFS*)&preset_Fatfs);
-	
-	
+  
+  
 }
 
 //----------------------------------------------------
@@ -138,35 +138,43 @@ static void preset_writeDrumsetData(uint8_t isMorph)
 {
    uint16_t i;
    unsigned int bytesWritten;
-	
+  
    if(isMorph>0)
    {
       for(i=0;i<END_OF_SOUND_PARAMETERS;i++)
       {
          uint8_t value;
-      	//Mod targets are not morphed!!!
+        //Mod targets are not morphed!!!
          if( (i >= PAR_VEL_DEST_1) && (i <= PAR_VEL_DEST_6) )
          {
             value = parameter_values[i];
-         } 
+         }
          else if( (i >= PAR_TARGET_LFO1) && (i <= PAR_TARGET_LFO6) )
          {
             value = parameter_values[i];
-         } 
+         }
          else if( (i >= PAR_VOICE_LFO1) && (i <= PAR_VOICE_LFO6) )
          {
             value = parameter_values[i];
-         } 
-         else 
+         }
+         else
          {
-            if (isMorph==2) // -bc- added this to be able to write full morph params for 'performance' files
-               value = preset_getMorphValue(i,255);
+            if (isMorph==2) // -bc- added this to write full 'target' morph params for performance sets
+            {
+               value = preset_getMorphValue(i, 255);
+            }
             else
-               value = preset_getMorphValue(i,parameter_values[PAR_MORPH]);
-         }					
-         f_write((FIL*)&preset_File,&value,1,&bytesWritten);	
+            {
+               // apply scaling
+               uint8_t morph = parameter_values[PAR_MORPH]; // morph range 0-127
+               if (morph>=127) morph=255;
+               else morph=(uint8_t)(morph<<1);              // morph range 0-255
+               value = preset_getMorphValue(i, morph);
+            }
+         }
+         f_write((FIL*)&preset_File,&value,1,&bytesWritten);
       }
-   } 
+   }
    else {
       for(i=0;i<END_OF_SOUND_PARAMETERS;i++)
       {
@@ -180,20 +188,20 @@ void preset_saveDrumset(uint8_t presetNr, uint8_t isMorph)
 {
 #if USE_SD_CARD
    unsigned int bytesWritten;
-	//filename in 8.3  format
+  //filename in 8.3  format
    char filename[9];
    preset_makeFileName(filename,presetNr,FEXT_SOUND);
-	//sprintf(filename,"p%03d.snd",presetNr);
+  //sprintf(filename,"p%03d.snd",presetNr);
 
-	//open the file
+  //open the file
    f_open((FIL*)&preset_File,filename,FA_CREATE_ALWAYS | FA_WRITE);
    totalBytes=0;
-	//write preset name to file
+  //write preset name to file
    f_write((FIL*)&preset_File,(void*)preset_currentSaveMenuName,8,&bytesWritten);
-	//write the preset data
+  //write the preset data
    preset_writeDrumsetData(isMorph);
-	
-	//close the file
+  
+  //close the file
    f_close((FIL*)&preset_File);
 #else
 #endif
@@ -213,16 +221,16 @@ static void preset_writeGlobalData()
 //----------------------------------------------------
 void preset_saveGlobals()
 {
-#if USE_SD_CARD	
-	//open the file
+#if USE_SD_CARD
+  //open the file
    f_open((FIL*)&preset_File,"glo.cfg",FA_CREATE_ALWAYS | FA_WRITE);
    totalBytes=0;
    preset_writeGlobalData();
 
-	//close the file
+  //close the file
    f_close((FIL*)&preset_File);
 #else
-#endif	
+#endif
 }
 //----------------------------------------------------
 // returns 1 on success
@@ -235,7 +243,7 @@ static uint8_t preset_readGlobalData()
       f_read((FIL*)&preset_File,&parameter_values[i],1,&bytesRead);
       if(!bytesRead)
          parameter_values[i]=0; // set to 0 by default
-         
+     
    }
    return 1;
 #endif
@@ -245,7 +253,7 @@ static uint8_t preset_readGlobalData()
 void preset_loadGlobals()
 {
 #if USE_SD_CARD
-	//open the file
+  //open the file
    uint8_t i;
    FRESULT res = f_open((FIL*)&preset_File,"glo.cfg",FA_OPEN_EXISTING | FA_READ);
    totalBytes=0;
@@ -254,43 +262,43 @@ void preset_loadGlobals()
 
    preset_readGlobalData();
    f_close((FIL*)&preset_File);
-   
+  
    switch(parameter_values[PAR_GLOBAL_SETTINGS_VERSION])
    {
       case 0: // config file created before setting versions. set macro to defaults
               // get midi note values from kit 0 file
          preset_loadDrumset(0,0x7f,0);
-         
+       
          // track MIDI was not contained in globals - get them from drumkit 0
          for(i=0;i<7;i++)
          {
             parameter_values[PAR_MIDI_NOTE1+i]=parameter_values_temp[PAR_ENVELOPE_POSITION_1+i];
          }
-         
+       
          lcd_clear();
          lcd_home();
          lcd_string_F(PSTR("old config!"));
          lcd_setcursor(0,2);
          lcd_string_F(PSTR("re-save settings"));
          _delay_ms(2000);
-         
+       
          break;
       default:
          break;
    }
-      
+  
    parameter_values[PAR_GLOBAL_SETTINGS_VERSION]=FILE_VERSION;
-   
+  
    menu_sendAllGlobals();
-	
-#endif	
+  
+#endif
 }
 //----------------------------------------------------
-// read the whole kit data from file to appropriate temp, fix values   
+// read the whole kit data from file to appropriate temp, fix values
 void preset_readKitToTemp(uint8_t isMorph)
 {
 
-  #if USE_SD_CARD		
+  #if USE_SD_CARD
    FIL kitRead_File;
    char kit_filename[GEN_BUF_LEN];
    uint16_t bytesRead;
@@ -298,10 +306,10 @@ void preset_readKitToTemp(uint8_t isMorph)
    FRESULT res;
    uint16_t kitOffset;
    uint8_t *para = parameter_values_temp;
-   
+  
    if(isMorph)
       para=parameters2_temp;
-   
+  
    switch(preset_workingType)
    {
       case WTYPE_PERFORMANCE:
@@ -320,7 +328,7 @@ void preset_readKitToTemp(uint8_t isMorph)
          {
             kitOffset=VERSION_1_PERF_KIT_OFFSET;
          }
-         
+       
          preset_makeFileName(kit_filename,preset_workingPreset,FEXT_PERF);
          break;
       case WTYPE_ALL:
@@ -339,7 +347,7 @@ void preset_readKitToTemp(uint8_t isMorph)
          {
             kitOffset=VERSION_1_ALL_KIT_OFFSET;
          }
-         
+       
          preset_makeFileName(kit_filename,preset_workingPreset,FEXT_ALL);
          break;
       case WTYPE_KIT:
@@ -349,7 +357,7 @@ void preset_readKitToTemp(uint8_t isMorph)
       default:
          return;
    }
-   
+  
    res = f_open((FIL*)&kitRead_File,kit_filename,FA_OPEN_EXISTING | FA_READ);
    if(res)
    {
@@ -362,7 +370,7 @@ void preset_readKitToTemp(uint8_t isMorph)
       lcd_string(text);
       while(1){;}
    }
-   
+  
    res = f_lseek((FIL*)&kitRead_File,kitOffset);
    if(res)
    {
@@ -375,7 +383,7 @@ void preset_readKitToTemp(uint8_t isMorph)
       lcd_string(text);
       while(1){;}
    }
-   
+  
    res=f_read((FIL*)&kitRead_File, para,END_OF_SOUND_PARAMETERS, &bytesRead);
    if(res)
    {
@@ -388,19 +396,19 @@ void preset_readKitToTemp(uint8_t isMorph)
       lcd_string(text);
       while(1){;}
    }
-   
+  
 
    f_close((FIL*)&kitRead_File);
-   
+  
    // set to 0 for any that were not read from the file
    if(END_OF_SOUND_PARAMETERS-bytesRead)
       memset(para+bytesRead,0,END_OF_SOUND_PARAMETERS-bytesRead);
-   	
+  
  //special case mod targets. normalize.
    const uint8_t nmt=getNumModTargets();
    for(i=0;i<6;i++) {
-      	// --AS since I've changed the meaning of these, I'll ensure that it's valid for kits saved prior to the
-      	// change
+        // --AS since I've changed the meaning of these, I'll ensure that it's valid for kits saved prior to the
+        // change
       if(para[PAR_VEL_DEST_1+i] >= nmt )
          para[PAR_VEL_DEST_1+i] = 0;
       if(para[PAR_TARGET_LFO1+i] >= nmt )
@@ -419,7 +427,7 @@ void preset_readKitToTemp(uint8_t isMorph)
          }
       }
          // end of corrections - save the version as a param so it gets written with kit on save
-      para[PAR_KIT_VERSION]=FILE_VERSION; 
+      para[PAR_KIT_VERSION]=FILE_VERSION;
    }
 
 #endif
@@ -431,13 +439,13 @@ void preset_readDrumVoice(uint8_t track, uint8_t isMorph)
 
    if(track>NUM_TRACKS-1)
       return;
-      
+  
    uint8_t i, value, upper, lower;
    uint8_t *paramMask;
-   
+  
    frontPanel_holdForBuffer();
    frontPanel_sendData(SEQ_CC,SEQ_LOAD_VOICE,track);
-   
+  
    switch(track)
    {
       case 0:
@@ -463,7 +471,7 @@ void preset_readDrumVoice(uint8_t track, uint8_t isMorph)
       default:
          return;
    }
-   
+  
    if(isMorph)
    {
       for (i=0;i<VOICE_PARAM_LENGTH;i++)
@@ -478,44 +486,44 @@ void preset_readDrumVoice(uint8_t track, uint8_t isMorph)
          parameter_values[paramMask[i]]=parameter_values_temp[paramMask[i]];
       }
    }
-    
+  
     // send velocity targets
-    
+  
    value = (uint8_t)pgm_read_word(&modTargets[parameter_values[PAR_VEL_DEST_1+track]].param);
    upper = (uint8_t)(((value&0x80)>>7) | (((track)&0x3f)<<1));
    lower = value&0x7f;
-   frontPanel_sendData(CC_VELO_TARGET,upper,lower);
-   
+   frontPanel_sendData(CC_VELO_TARGET,upper,lower); // --ZPO modnode
+  
    // ensure lfo target voice # is valid
    if(parameter_values[PAR_VOICE_LFO1+track] < 1 || parameter_values[PAR_VOICE_LFO1+track] > 6 )
       parameter_values[PAR_VOICE_LFO1+track]=track;
-   
+  
    // **LFO par_target_lfo will be an index into modTargets, but we need a parameter number to send
    value = (uint8_t)pgm_read_word(&modTargets[parameter_values[PAR_TARGET_LFO1+track]].param);
    upper = (uint8_t)(((value&0x80)>>7) | (((track)&0x3f)<<1));
    lower = value&0x7f;
-   frontPanel_sendData(CC_LFO_TARGET,upper,lower);
-   
+   frontPanel_sendData(CC_LFO_TARGET,upper,lower); // --ZPO modnode
+  
    // --AS todo will this morph (and fuck up) our modulation targets?
    // send parameters (possibly combined with morph parameters) to back
-   
+  
    // bc: output dests aren't morphed anymore - they need to be a special case
    frontPanel_sendData(CC_2,(uint8_t)(PAR_AUDIO_OUT1+track-128),parameter_values[track+PAR_AUDIO_OUT1]);
    frontPanel_holdForBuffer();
-   preset_morph((uint8_t)(0x01<<track),parameter_values[PAR_MORPH]);  
-   
+   preset_morph((uint8_t)(0x01<<track),parameter_values[PAR_MORPH]);
+  
    frontPanel_holdForBuffer();
    frontPanel_sendData(SEQ_CC,SEQ_UNHOLD_VOICE,track);
-   
+  
 }
- 
+
 //----------------------------------------------------
 // read from temp any kit data not associated with a voice.
 void preset_readDrumsetMeta(uint8_t isMorph)
 {
    int16_t i;
    uint8_t value;
-   
+  
    if(isMorph)
    {
       // bc: extra morph data not associated with a voice. Not sure anything other
@@ -525,7 +533,7 @@ void preset_readDrumsetMeta(uint8_t isMorph)
       parameters2[NRPN_COARSE]=parameters2_temp[NRPN_COARSE];
       parameters2[NRPN_DATA_ENTRY_COARSE]=parameters2_temp[NRPN_DATA_ENTRY_COARSE];
       parameters2[PAR_KIT_VERSION]=preset_workingVersion; // version is updated in readToTemp
-      
+     
    }
    else
    {
@@ -546,7 +554,7 @@ void preset_readDrumsetMeta(uint8_t isMorph)
                                   b=macro mod target value top bit
                                   I have left a blank bit above this to make it easier to make more than 255 kit parameters
                                   if we ever want to take on that can of worms
-                                 
+    
    byte3, data2 byte: xbbb bbbb : b=macro mod target value lower 7 bits or top level value full
    */
       for(i=0;i<7; i=(uint8_t)(i+2) ) // 0,2,4,6
@@ -558,11 +566,11 @@ void preset_readDrumsetMeta(uint8_t isMorph)
                            >>1 )  //  MAC1_DST1=0, M1D2=1, M2D1=2, M2D2=3
                            <<2 )  //  shift over 2 to make room for upper mod target bit
                            |(value>>7) );
-                           
+        
          frontPanel_sendData(MACRO_CC,upper,lower);
       }
    
-         
+     
    // send macro amounts as special cases
       frontPanel_sendData(CC_2,(uint8_t)(PAR_MAC1_DST1_AMT-128),parameter_values[PAR_MAC1_DST1_AMT]);
       frontPanel_sendData(CC_2,(uint8_t)(PAR_MAC1_DST2_AMT-128),parameter_values[PAR_MAC1_DST2_AMT]);
@@ -575,74 +583,76 @@ void preset_readDrumsetMeta(uint8_t isMorph)
 uint8_t preset_loadDrumset(uint8_t presetNr, uint8_t voiceArray, uint8_t isMorph)
 {
    #if USE_SD_CARD
-	//filename in 8.3  format
-   
+  //filename in 8.3  format
+  
    UINT bytesRead;
    uint8_t trkNum;
 
    uart_clearFifo();
    frontParser_rxDisable=1;
-   
+  
    preset_workingPreset=presetNr;
    preset_workingType=WTYPE_KIT;
    preset_workingVoiceArray = voiceArray;
 
    preset_makeFileName(filename,presetNr,FEXT_SOUND);
-   
-	//open the file
+  
+  //open the file
    FRESULT res = f_open((FIL*)&preset_File,filename,FA_OPEN_EXISTING | FA_READ);
    if(res!=FR_OK)
       return 1; //file open error... maybe the file does not exist?
-   
-	//first the preset name
+  
+  //first the preset name
    f_read((FIL*)&preset_File,(void*)preset_currentName,8,&bytesRead);
    if(!bytesRead)
       goto closeFile;
-   
+  
    preset_readKitToTemp(isMorph);
 
-   
+  
    for (trkNum=0;trkNum<NUM_TRACKS;trkNum++)
    {
       if(voiceArray&(0x01<<trkNum))
       {
-         
+        
          if(trkNum<6)
          {
-            frontPanel_sendData(SEQ_CC,SEQ_LOAD_VOICE,trkNum); 
+            frontPanel_sendData(SEQ_CC,SEQ_LOAD_VOICE,trkNum);
             preset_readDrumVoice(trkNum, isMorph);
          }
-         
+        
          if(trkNum<5)
             frontPanel_sendData(SEQ_CC,SEQ_UNHOLD_VOICE,trkNum);
-            
+        
       }
-      
+     
    }
-   
-   frontPanel_sendData(SEQ_CC,SEQ_UNHOLD_VOICE,5); 
-   
+  
+   frontPanel_sendData(SEQ_CC,SEQ_UNHOLD_VOICE,5);
+  
    if( (voiceArray>=0x7f) || (voiceArray==0) )
    {
       preset_readDrumsetMeta(isMorph);
    }
-   
+  
    frontPanel_sendData(SEQ_CC,SEQ_FILE_DONE,WTYPE_KIT);
-   
-	//force complete repaint
+  
+   preset_dump(); // tx all voice parameters to STM for tx over ext midi if enabled
+  
+  //force complete repaint
    menu_repaintAll();
 
 #else
-	frontPanel_sendData(PRESET,PRESET_LOAD,presetNr);
+  frontPanel_sendData(PRESET,PRESET_LOAD,presetNr);
 #endif
 
 closeFile:
-	//close the file handle
+  //close the file handle
    f_close((FIL*)&preset_File);
-   
+  
    frontParser_rxDisable=0;
    uart_clearFifo();
-   
+  
    return 0;
 }
 
@@ -676,7 +686,7 @@ char* preset_loadName(uint8_t presetNr, uint8_t what, uint8_t loadSave)
          type=FEXT_PERF;
          break;
       default:
-      // 
+      //
          if (loadSave==0)
          {
             memcpy_P((void*)preset_currentName,PSTR("Empty   "),8);
@@ -684,23 +694,23 @@ char* preset_loadName(uint8_t presetNr, uint8_t what, uint8_t loadSave)
          else
          {
             memcpy_P((void*)preset_currentSaveMenuName,PSTR("Empty   "),8);
-         }   
+         }
          return NULL; // for glo and sample we don't load a name
    }
-	
+  
 
-#if USE_SD_CARD		
-	//filename in 8.3  format
+#if USE_SD_CARD
+  //filename in 8.3  format
    char filename[9];
    preset_makeFileName(filename,presetNr,type);
 
-	//try to open the file
+  //try to open the file
    FRESULT res = f_open((FIL*)&preset_File,filename,FA_OPEN_EXISTING | FA_READ);
    totalBytes=0;
-	
+  
    if(res!=FR_OK)
    {
-   	//error opening the file
+     //error opening the file
       if (loadSave==0)
       {
          memcpy_P((void*)preset_currentName,PSTR("Empty   "),8);
@@ -710,12 +720,12 @@ char* preset_loadName(uint8_t presetNr, uint8_t what, uint8_t loadSave)
       {
          memcpy_P((void*)preset_currentSaveMenuName,PSTR("Empty   "),8);
          return (char*)preset_currentSaveMenuName;
-      } 
-      
-      	
+      }
+     
+     
    }
-	
-	//file opened correctly -> extract name (first 8 bytes)
+  
+  //file opened correctly -> extract name (first 8 bytes)
    unsigned int bytesRead;
    if (loadSave==0)
    {
@@ -735,7 +745,7 @@ char* preset_loadName(uint8_t presetNr, uint8_t what, uint8_t loadSave)
    
       return (char*)preset_currentSaveMenuName;
    }
-   
+  
 
 #else
 
@@ -749,61 +759,61 @@ void preset_queryStepDataFromSeq(uint16_t stepNr)
 {
    frontParser_newSeqDataAvailable = 0;
 
-	//request step data
-	//the max number for 14 bit data is 16383!!!
-	//current max step nr is 128*7*8 = 7168
-   frontPanel_sendByte((stepNr>>7)&0x7f);		//upper nibble 7 bit
-   frontPanel_sendByte(stepNr&0x7f);			//lower nibble 7 bit
+  //request step data
+  //the max number for 14 bit data is 16383!!!
+  //current max step nr is 128*7*8 = 7168
+   frontPanel_sendByte((stepNr>>7)&0x7f);    //upper nibble 7 bit
+   frontPanel_sendByte(stepNr&0x7f);      //lower nibble 7 bit
 
-	//wait until data arrives
+  //wait until data arrives
    uint8_t newSeqDataLocal = 0;
    uint16_t now = time_sysTick;
    while((newSeqDataLocal==0))
    {
-   	//we have to call the uart parser to handle incoming messages from the sequencer
+     //we have to call the uart parser to handle incoming messages from the sequencer
       uart_checkAndParse();
-   	
+     
       newSeqDataLocal = frontParser_newSeqDataAvailable;
-   	
+     
       if(time_sysTick-now >= 31)
       {
-      	//timeout
+        //timeout
          now = time_sysTick;
-      	//request step again
-         frontPanel_sendByte((stepNr>>7)&0x7f);		//upper nibble 7 bit
+        //request step again
+         frontPanel_sendByte((stepNr>>7)&0x7f);    //upper nibble 7 bit
          frontPanel_sendByte(stepNr&0x7f);
       }
    }
 }
-    
+
  //----------------------------------------------------
 void preset_queryPatternInfoFromSeq(uint8_t patternNr, uint8_t* next, uint8_t* repeat)
 {
    frontParser_newSeqDataAvailable = 0;
-	//request pattern info
-   frontPanel_sendByte(patternNr);	
+  //request pattern info
+   frontPanel_sendByte(patternNr);
 
-	//wait until data arrives
+  //wait until data arrives
    uint8_t newSeqDataLocal = 0;
    uint16_t now = time_sysTick;
    while((newSeqDataLocal==0))
    {
-   	//we have to call the uart parser to handle incoming messages from the sequencer
+     //we have to call the uart parser to handle incoming messages from the sequencer
       uart_checkAndParse();
-   	
+     
       newSeqDataLocal = frontParser_newSeqDataAvailable;
-   	
+     
       if(time_sysTick-now >= 31)
       {
-      	//timeout
+        //timeout
          now = time_sysTick;
-      	//request step again
-         frontPanel_sendByte(patternNr);	
+        //request step again
+         frontPanel_sendByte(patternNr);
       }
    }
-	
-	//the stepdata struct is used as buffer for the data
-   *next = frontParser_stepData.volume; 
+  
+  //the stepdata struct is used as buffer for the data
+   *next = frontParser_stepData.volume;
    *repeat =  frontParser_stepData.prob;
 }
  //----------------------------------------------------
@@ -811,33 +821,33 @@ void preset_queryMainStepDataFromSeq(uint16_t stepNr, uint16_t *mainStepData, ui
 {
    frontParser_newSeqDataAvailable = 0;
 
-	//request step data
-	//the max number for 14 bit data is 16383!!!
-	//current max step nr is 7*8 = 56
-   frontPanel_sendByte((stepNr>>7)&0x7f);		//upper nibble 7 bit
-   frontPanel_sendByte(stepNr&0x7f);	//lower nibble 7 bit
+  //request step data
+  //the max number for 14 bit data is 16383!!!
+  //current max step nr is 7*8 = 56
+   frontPanel_sendByte((stepNr>>7)&0x7f);    //upper nibble 7 bit
+   frontPanel_sendByte(stepNr&0x7f);  //lower nibble 7 bit
 
-	//wait until data arrives
+  //wait until data arrives
    uint8_t newSeqDataLocal = 0;
    uint16_t now = time_sysTick;
    while((newSeqDataLocal==0))
    {
-   	//we have to call the uart parser to handle incoming messages from the sequencer
+     //we have to call the uart parser to handle incoming messages from the sequencer
       uart_checkAndParse();
-   	
+     
       newSeqDataLocal = frontParser_newSeqDataAvailable;
-   	
+     
       if(time_sysTick-now >= 31)
       {
-      	//timeout
+        //timeout
          now = time_sysTick;
-      	//request step again
-         frontPanel_sendByte((stepNr>>7)&0x7f);		//upper nibble 7 bit
+        //request step again
+         frontPanel_sendByte((stepNr>>7)&0x7f);    //upper nibble 7 bit
          frontPanel_sendByte(stepNr&0x7f);
       }
    }
-	
-	// we are reusing these members for purposes other than those that were originally intended
+  
+  // we are reusing these members for purposes other than those that were originally intended
    *mainStepData =(uint16_t) ((frontParser_stepData.volume<<8) | frontParser_stepData.prob);
    *length=frontParser_stepData.note;
    *scale=frontParser_stepData.param1Nr;
@@ -851,19 +861,19 @@ static void preset_writePatternData()
 
    frontPanel_sendData(SEQ_CC,SEQ_EUKLID_RESET,0x01);
 
-	//write the preset data
-	//initiate the sysex mode
-	
+  //write the preset data
+  //initiate the sysex mode
+  
    while( (frontParser_midiMsg.status != SYSEX_START))
    {
       frontPanel_sendByte(SYSEX_START);
       uart_checkAndParse();
-   }		
+   }
    _delay_ms(10);
-	//enter step data mode
+  //enter step data mode
    frontPanel_sendByte(SYSEX_REQUEST_STEP_DATA);
    frontPanel_sysexMode = SYSEX_REQUEST_STEP_DATA;
-	
+  
    uint8_t percent=0;
    char text[5];
    uint16_t i;
@@ -871,79 +881,79 @@ static void preset_writePatternData()
    {
       if((i&0x80) == 0)
       {
-      	//set cursor to beginning of row 2
+        //set cursor to beginning of row 2
          lcd_setcursor(0,2);
-      	//print percent value
+        //print percent value
          percent = (uint8_t)(i * (100.f/(STEPS_PER_PATTERN*NUM_PATTERN*NUM_TRACKS)));
          itoa(percent,text,10);
          lcd_string(text);
-      }			
-   	
-   	
-   	
-   	//get next data chunk and write it to file
+      }
+     
+     
+     
+     //get next data chunk and write it to file
       preset_queryStepDataFromSeq(i);
-      f_write((FIL*)&preset_File,(const void*)&frontParser_stepData,sizeof(StepData),&bytesWritten);	
+      f_write((FIL*)&preset_File,(const void*)&frontParser_stepData,sizeof(StepData),&bytesWritten);
    }
-	
-	//end sysex mode
+  
+  //end sysex mode
    frontPanel_sendByte(SYSEX_END);
    frontParser_midiMsg.status = 0;
-	//now the main step data
+  //now the main step data
    while( (frontParser_midiMsg.status != SYSEX_START))
    {
       frontPanel_sendByte(SYSEX_START);
       uart_checkAndParse();
-   }	
-   _delay_ms(50);	
+   }
+   _delay_ms(50);
    frontPanel_sendByte(SYSEX_REQUEST_MAIN_STEP_DATA);
    frontPanel_sysexMode = SYSEX_REQUEST_MAIN_STEP_DATA;
-	
+  
    uint16_t mainStepData;
    for(i=0;i<(NUM_PATTERN*NUM_TRACKS);i++)
    {
-   	//get next data chunk and write it to file (length here is ignored)
+     //get next data chunk and write it to file (length here is ignored)
       preset_queryMainStepDataFromSeq(i, &mainStepData, &length, &scale);
-      f_write((FIL*)&preset_File,(const void*)&mainStepData,sizeof(uint16_t),&bytesWritten);	
+      f_write((FIL*)&preset_File,(const void*)&mainStepData,sizeof(uint16_t),&bytesWritten);
    }
-		
-	//end sysex mode
+  
+  //end sysex mode
    frontPanel_sendByte(SYSEX_END);
    frontParser_midiMsg.status = 0;
-	
-	//----- pattern info (next/repeat) ------
-	
+  
+  //----- pattern info (next/repeat) ------
+  
    while( (frontParser_midiMsg.status != SYSEX_START))
    {
       frontPanel_sendByte(SYSEX_START);
       uart_checkAndParse();
-   }	
-   _delay_ms(50);	
+   }
+   _delay_ms(50);
    frontPanel_sendByte(SYSEX_REQUEST_PATTERN_DATA);
    frontPanel_sysexMode = SYSEX_REQUEST_PATTERN_DATA;
-	
+  
    uint8_t next;
    uint8_t repeat;
    for(i=0;i<(NUM_PATTERN);i++)
    {
-   	//get next data chunk and write it to file
+     //get next data chunk and write it to file
       preset_queryPatternInfoFromSeq((uint8_t)i, &next, &repeat);
-      f_write((FIL*)&preset_File,(const void*)&next,sizeof(uint8_t),&bytesWritten);	
+      f_write((FIL*)&preset_File,(const void*)&next,sizeof(uint8_t),&bytesWritten);
       f_write((FIL*)&preset_File,(const void*)&repeat,sizeof(uint8_t),&bytesWritten);
    }
-		
-	//end sysex mode
+  
+  //end sysex mode
    frontPanel_sendByte(SYSEX_END);
    frontParser_midiMsg.status = 0;
-	
-	
-	//----- shuffle setting ------
+  
+  
+  //----- shuffle setting ------
    f_write((FIL*)&preset_File,(const void*)&parameter_values[PAR_SHUFFLE],sizeof(uint8_t),&bytesWritten);
 
-	//----- pattern/track lengths ------
-	// --AS we reuse the same call from above (when saving main step data)
-	// but we only use the length info retrieved. We want to store it at the end
-	// to avoid breaking compatibility with save file
+  //----- pattern/track lengths ------
+  // --AS we reuse the same call from above (when saving main step data)
+  // but we only use the length info retrieved. We want to store it at the end
+  // to avoid breaking compatibility with save file
    while( (frontParser_midiMsg.status != SYSEX_START))
    {
       frontPanel_sendByte(SYSEX_START);
@@ -955,21 +965,21 @@ static void preset_writePatternData()
 
    for(i=0;i<(NUM_PATTERN*NUM_TRACKS);i++)
    {
-   	//get next data chunk and write it to file
+     //get next data chunk and write it to file
       preset_queryMainStepDataFromSeq(i, &mainStepData, &length, &scale);
       f_write((FIL*)&preset_File,(const void*)&length,sizeof(uint8_t),&bytesWritten);
    }
-   
+  
 
    for(i=0;i<(NUM_PATTERN*NUM_TRACKS);i++)
    {
-   	//get next data chunk and write it to file
+     //get next data chunk and write it to file
       preset_queryMainStepDataFromSeq(i, &mainStepData, &length, &scale);
       f_write((FIL*)&preset_File,(const void*)&scale,sizeof(uint8_t),&bytesWritten);
    }
-   
+  
 
-	//end sysex mode
+  //end sysex mode
    frontPanel_sendByte(SYSEX_END);
    frontParser_midiMsg.status = 0;
 
@@ -980,32 +990,32 @@ void preset_savePattern(uint8_t presetNr)
 #if USE_SD_CARD
 
    frontPanel_sendData(SEQ_CC,SEQ_EUKLID_RESET,0x01);
-   
+  
    uint16_t bytesWritten;
    lcd_clear();
    lcd_home();
    lcd_string_F(PSTR("Saving pattern"));
-	
-     
-	
-	//filename in 8.3  format
+  
+  
+  
+  //filename in 8.3  format
    char filename[9];
-	//sprintf(filename,"p%03d.pat",presetNr);
+  //sprintf(filename,"p%03d.pat",presetNr);
    preset_makeFileName(filename,presetNr,FEXT_PAT);
-	//open the file
+  //open the file
    f_open((FIL*)&preset_File,filename,FA_CREATE_ALWAYS | FA_WRITE);
 
-	//write preset name to file
+  //write preset name to file
    f_write((FIL*)&preset_File,(void*)preset_currentSaveMenuName,8,&bytesWritten);
-   
+  
    preset_writePatternData();
 
-	//close the file
+  //close the file
    f_close((FIL*)&preset_File);
-	
-	//reset the lcd
+  
+  //reset the lcd
    menu_repaintAll();
-	
+  
 #else
 #endif
 }
@@ -1019,7 +1029,7 @@ static void preset_readPatternScale()
    FRESULT res;
    uint16_t scaleOffset=0;
    uint8_t infoByte;
-   
+  
    switch(preset_workingType)
    {
       case WTYPE_PERFORMANCE:
@@ -1036,8 +1046,8 @@ static void preset_readPatternScale()
          break;
       default:
          return;
-   }   
-   
+   }
+  
    res = f_open((FIL*)&scaleread_File,sca_filename,FA_OPEN_EXISTING | FA_READ);
    if(res)
    {
@@ -1062,20 +1072,20 @@ static void preset_readPatternScale()
       lcd_string(text);
       while(1){;}
    }
-   
+  
    uint8_t scale[NUM_PATTERN*NUM_TRACKS];
-   
+  
    frontParser_midiMsg.status = 0;
    frontPanel_sendByte(SYSEX_START);
    while(frontParser_midiMsg.status != SYSEX_START)
    {
       uart_checkAndParse();
    }
-   
+  
    frontPanel_sendByte(SYSEX_SEND_PAT_SCALE_DATA);
    frontPanel_sysexMode = SYSEX_SEND_PAT_SCALE_DATA;
    frontParser_sysexCallback=NO_CALLBACK;
-      
+  
    for(i=0;i<(NUM_PATTERN*NUM_TRACKS);i++)
    {
       res=f_read((FIL*)&scaleread_File,(void*)&scale[i],sizeof(uint8_t),&bytesRead);
@@ -1095,9 +1105,9 @@ static void preset_readPatternScale()
          }
       }
    }
-   
-   f_close((FIL*)&scaleread_File);  
-   
+  
+   f_close((FIL*)&scaleread_File);
+  
    for(patNum=0;patNum<NUM_PATTERN;patNum++)
    {
       for(trkNum=0;trkNum<NUM_TRACKS;trkNum++)
@@ -1107,7 +1117,7 @@ static void preset_readPatternScale()
             infoByte = (uint8_t)((trkNum&0x07)<<3);
             infoByte = (uint8_t)( (infoByte)|(patNum&0x07) );
             frontPanel_sendByte(infoByte);
-            
+           
             frontPanel_sendByte(scale[patNum*NUM_TRACKS+trkNum]);
            
          // wait to get ack from cortex
@@ -1117,8 +1127,8 @@ static void preset_readPatternScale()
             }
             frontParser_sysexCallback=NO_CALLBACK;
          }
-            
-      }         
+        
+      }
    }
 
    // end sysex mode
@@ -1128,8 +1138,8 @@ static void preset_readPatternScale()
    {
       uart_checkAndParse();
    }
-   
-   
+  
+  
 }
  //----------------------------------------------------
 static void preset_readPatternLength()
@@ -1141,7 +1151,7 @@ static void preset_readPatternLength()
    FRESULT res;
    uint16_t lengthOffset=0;
    uint8_t infoByte;
-   
+  
    switch(preset_workingType)
    {
       case WTYPE_PERFORMANCE:
@@ -1158,8 +1168,8 @@ static void preset_readPatternLength()
          break;
       default:
          return;
-   }  
-   
+   }
+  
    res = f_open((FIL*)&lengthread_File,len_filename,FA_OPEN_EXISTING | FA_READ);
    if(res)
    {
@@ -1184,20 +1194,20 @@ static void preset_readPatternLength()
       lcd_string(text);
       while(1){;}
    }
-   
+  
    uint8_t length[NUM_PATTERN*NUM_TRACKS];
-   
+  
    frontParser_midiMsg.status = 0;
    frontPanel_sendByte(SYSEX_START);
    while(frontParser_midiMsg.status != SYSEX_START)
    {
       uart_checkAndParse();
    }
-   
+  
    frontPanel_sendByte(SYSEX_SEND_PAT_LEN_DATA);
    frontPanel_sysexMode = SYSEX_SEND_PAT_LEN_DATA;
    frontParser_sysexCallback=NO_CALLBACK;
-      
+  
    for(i=0;i<(NUM_PATTERN*NUM_TRACKS);i++)
    {
       res=f_read((FIL*)&lengthread_File,(void*)&length[i],sizeof(uint8_t),&bytesRead);
@@ -1217,8 +1227,8 @@ static void preset_readPatternLength()
          }
       }
    }
-   
-   f_close((FIL*)&lengthread_File);  
+  
+   f_close((FIL*)&lengthread_File);
 
    for(patNum=0;patNum<NUM_PATTERN;patNum++)
    {
@@ -1229,7 +1239,7 @@ static void preset_readPatternLength()
             infoByte = (uint8_t)((trkNum&0x07)<<3);
             infoByte = (uint8_t)( (infoByte)|(patNum&0x07) );
             frontPanel_sendByte(infoByte);
-            
+           
             frontPanel_sendByte(length[patNum*NUM_TRACKS+trkNum]);
            
          // wait to get ack from cortex
@@ -1239,10 +1249,10 @@ static void preset_readPatternLength()
             }
             frontParser_sysexCallback=NO_CALLBACK;
          }
-            
-      }         
+        
+      }
    }
-   
+  
    // end sysex mode
    frontParser_midiMsg.status = 0;
    frontPanel_sendByte(SYSEX_END);
@@ -1251,7 +1261,7 @@ static void preset_readPatternLength()
       uart_checkAndParse();
    }
 
-   
+  
 }
  //----------------------------------------------------
 static void preset_readShuffle()
@@ -1261,7 +1271,7 @@ static void preset_readShuffle()
    UINT bytesRead;
    FRESULT res;
    uint16_t shuffOffset=0;
-   
+  
    switch(preset_workingType)
    {
       case WTYPE_PERFORMANCE:
@@ -1278,8 +1288,8 @@ static void preset_readShuffle()
          break;
       default:
          return;
-   }  
-   
+   }
+  
    res = f_open((FIL*)&shuffread_File,shuff_filename,FA_OPEN_EXISTING | FA_READ);
    if(res)
    {
@@ -1304,13 +1314,13 @@ static void preset_readShuffle()
       lcd_string(text);
       while(1){;}
    }
-   
+  
    // ------------ shuffle settings
-   	//load the shuffle settings
+     //load the shuffle settings
    f_read((FIL*)&shuffread_File,(void*)&parameter_values[PAR_SHUFFLE],sizeof(uint8_t),&bytesRead);
-   if(res) 
+   if(res)
    {
-      
+     
                //print received data on LCD
       char text[2];
       lcd_clear();
@@ -1319,12 +1329,12 @@ static void preset_readShuffle()
       itoa(res,text,10);
       lcd_string(text);
       while(1){;}
-      
+     
    }
    else
       frontPanel_sendData(SEQ_CC,SEQ_SHUFFLE,parameter_values[PAR_SHUFFLE]);
 
-   f_close((FIL*)&shuffread_File);  
+   f_close((FIL*)&shuffread_File);
 
 }
  //----------------------------------------------------
@@ -1336,7 +1346,7 @@ static void preset_readPatternChain()
    uint8_t i;
    FRESULT res;
    uint16_t chainOffset=0;
-   
+  
    switch(preset_workingType)
    {
       case WTYPE_PERFORMANCE:
@@ -1353,8 +1363,8 @@ static void preset_readPatternChain()
          break;
       default:
          return;
-   }  
-   
+   }
+  
    res = f_open((FIL*)&chainread_File,chain_filename,FA_OPEN_EXISTING | FA_READ);
    if(res)
    {
@@ -1379,21 +1389,21 @@ static void preset_readPatternChain()
       lcd_string(text);
       while(1){;}
    }
-   
+  
    uint8_t next[NUM_PATTERN];
    uint8_t repeat[NUM_PATTERN];
-   
+  
    frontParser_midiMsg.status = 0;
    frontPanel_sendByte(SYSEX_START);
    while(frontParser_midiMsg.status != SYSEX_START)
    {
       uart_checkAndParse();
    }
-   
+  
    frontPanel_sendByte(SYSEX_SEND_PAT_CHAIN_DATA);
    frontPanel_sysexMode = SYSEX_SEND_PAT_CHAIN_DATA;
    frontParser_sysexCallback=NO_CALLBACK;
-      
+  
    for(i=0;i<(NUM_PATTERN);i++)
    {
       res=f_read((FIL*)&chainread_File,(void*)&next[i],sizeof(uint8_t),&bytesRead);
@@ -1430,27 +1440,27 @@ static void preset_readPatternChain()
       }
    
    }
-   
-   f_close((FIL*)&chainread_File);  
+  
+   f_close((FIL*)&chainread_File);
 
    for(i=0;i<(NUM_PATTERN);i++)
-   { 
-      frontPanel_sendByte(next[i]);    
-      // wait to get ack from cortex  
+   {
+      frontPanel_sendByte(next[i]);
+      // wait to get ack from cortex
       while(frontParser_sysexCallback!=PATCHAIN_CALLBACK)
       {
          uart_checkAndParse();
       }
       frontParser_sysexCallback=NO_CALLBACK;
-      
-      frontPanel_sendByte(repeat[i]);    
-      // wait to get ack from cortex  
+     
+      frontPanel_sendByte(repeat[i]);
+      // wait to get ack from cortex
       while(frontParser_sysexCallback!=PATCHAIN_CALLBACK)
       {
          uart_checkAndParse();
       }
       frontParser_sysexCallback=NO_CALLBACK;
-            
+     
    }
    // end sysex mode
    frontParser_midiMsg.status = 0;
@@ -1460,7 +1470,7 @@ static void preset_readPatternChain()
       uart_checkAndParse();
    }
 
-   
+  
 }
  //----------------------------------------------------
 static void preset_readPatternMainStep()
@@ -1473,7 +1483,7 @@ static void preset_readPatternMainStep()
    FRESULT res;
    uint16_t mainStpOffset=0;
    uint8_t infoByte;
-   
+  
    switch(preset_workingType)
    {
       case WTYPE_PERFORMANCE:
@@ -1490,8 +1500,8 @@ static void preset_readPatternMainStep()
          break;
       default:
          return;
-   }  
-   
+   }
+  
    res = f_open((FIL*)&mainStpRead_File,mainStp_filename,FA_OPEN_EXISTING | FA_READ);
    if(res)
    {
@@ -1516,20 +1526,20 @@ static void preset_readPatternMainStep()
       lcd_string(text);
       while(1){;}
    }
-   
+  
    uint16_t mainStep[NUM_PATTERN*NUM_TRACKS];
-   
+  
    frontParser_midiMsg.status = 0;
    frontPanel_sendByte(SYSEX_START);
    while(frontParser_midiMsg.status != SYSEX_START)
    {
       uart_checkAndParse();
    }
-   
+  
    frontPanel_sendByte(SYSEX_SEND_MAIN_STEP_DATA);
    frontPanel_sysexMode = SYSEX_SEND_MAIN_STEP_DATA;
    frontParser_sysexCallback=NO_CALLBACK;
-      
+  
    for(patNum=0;patNum<NUM_PATTERN;patNum++)
    {
       for(trkNum=0;trkNum<NUM_TRACKS;trkNum++)
@@ -1552,8 +1562,8 @@ static void preset_readPatternMainStep()
          }
       }
    }
-   
-   f_close((FIL*)&mainStpRead_File);  
+  
+   f_close((FIL*)&mainStpRead_File);
 
    for(patNum=0;patNum<NUM_PATTERN;patNum++)
    {
@@ -1573,11 +1583,11 @@ static void preset_readPatternMainStep()
             {
                uart_checkAndParse();
             }
-            frontParser_sysexCallback=NO_CALLBACK;     
+            frontParser_sysexCallback=NO_CALLBACK;
          }
       }
    }
-   
+  
    // end sysex mode
    frontParser_midiMsg.status = 0;
    frontPanel_sendByte(SYSEX_END);
@@ -1586,7 +1596,7 @@ static void preset_readPatternMainStep()
       uart_checkAndParse();
    }
 
-   
+  
 }
 
 //----------------------------------------------------
@@ -1599,7 +1609,7 @@ static void preset_readPatternStepData(uint8_t track, uint8_t pattern)
    uint16_t stepOffset=0;
    volatile StepData preset_stepData;
    uint8_t i;
-   
+  
    switch(preset_workingType)
    {
       case WTYPE_PERFORMANCE:
@@ -1622,8 +1632,8 @@ static void preset_readPatternStepData(uint8_t track, uint8_t pattern)
          break;
       default:
          return;
-   }  
-   
+   }
+  
    res = f_open((FIL*)&stepRead_File,step_filename,FA_OPEN_EXISTING | FA_READ);
    if(res)
    {
@@ -1648,18 +1658,18 @@ static void preset_readPatternStepData(uint8_t track, uint8_t pattern)
       lcd_string(text);
       while(1){;}
    }
-   
+  
    frontParser_midiMsg.status = 0;
    frontPanel_sendByte(SYSEX_START);
    while(frontParser_midiMsg.status != SYSEX_START)
    {
       uart_checkAndParse();
    }
-   
+  
    frontPanel_sendByte(SYSEX_BEGIN_PATTERN_TRANSMIT);
    frontPanel_sysexMode = SYSEX_BEGIN_PATTERN_TRANSMIT;
    frontParser_sysexCallback=NO_CALLBACK;
-   
+  
    for(i=0;i<128;i++)
    {
       res=f_read((FIL*)&stepRead_File,(void*)&preset_stepData,sizeof(StepData),&bytesRead);
@@ -1682,62 +1692,62 @@ static void preset_readPatternStepData(uint8_t track, uint8_t pattern)
          infoByte = (uint8_t)( (infoByte)|(pattern&0x07) );
          frontPanel_sendByte(infoByte);
       
-         frontPanel_sendByte(preset_stepData.volume	& 0x7f);
-         frontPanel_sendByte(preset_stepData.prob	& 0x7f);
-         frontPanel_sendByte(preset_stepData.note	& 0x7f);
+         frontPanel_sendByte(preset_stepData.volume  & 0x7f);
+         frontPanel_sendByte(preset_stepData.prob  & 0x7f);
+         frontPanel_sendByte(preset_stepData.note  & 0x7f);
       
-         frontPanel_sendByte(preset_stepData.param1Nr	& 0x7f);
-         frontPanel_sendByte(preset_stepData.param1Val	& 0x7f);
+         frontPanel_sendByte(preset_stepData.param1Nr  & 0x7f);
+         frontPanel_sendByte(preset_stepData.param1Val  & 0x7f);
       
-         frontPanel_sendByte(preset_stepData.param2Nr	& 0x7f);
-         frontPanel_sendByte(preset_stepData.param2Val	& 0x7f);
+         frontPanel_sendByte(preset_stepData.param2Nr  & 0x7f);
+         frontPanel_sendByte(preset_stepData.param2Val  & 0x7f);
       
       //now the MSBs from all 7 values
          frontPanel_sendByte((uint8_t)(
-                     ((preset_stepData.volume 	& 0x80)>>7) |
-            			((preset_stepData.prob	 	& 0x80)>>6) |
-            			((preset_stepData.note	 	& 0x80)>>5) |
-            			((preset_stepData.param1Nr	& 0x80)>>4) |
-            			((preset_stepData.param1Val	& 0x80)>>3) |
-            			((preset_stepData.param2Nr	& 0x80)>>2) |
-            			((preset_stepData.param2Val	& 0x80)>>1))
-            			);
+                     ((preset_stepData.volume   & 0x80)>>7) |
+                  ((preset_stepData.prob     & 0x80)>>6) |
+                  ((preset_stepData.note     & 0x80)>>5) |
+                  ((preset_stepData.param1Nr  & 0x80)>>4) |
+                  ((preset_stepData.param1Val  & 0x80)>>3) |
+                  ((preset_stepData.param2Nr  & 0x80)>>2) |
+                  ((preset_stepData.param2Val  & 0x80)>>1))
+                  );
       }
-      
+     
       // must receive an ack from main before sending next step to avoid overflow
       frontParser_sysexCallback=NO_CALLBACK;
       while(frontParser_sysexCallback==NO_CALLBACK)
-      {  
+      {
          uart_checkAndParse();
       }
    
    }
-   f_close((FIL*)&stepRead_File); 
-   
+   f_close((FIL*)&stepRead_File);
+  
    // wait callback - step done on cortex
-   
+  
    //menu_debug("WAIT STEP CALL", 14, track, pattern, 0);
-   
+  
    while(frontParser_sysexCallback!=STEP_CALLBACK)
-   {  
+   {
       uart_checkAndParse();
    }
    frontParser_sysexCallback=NO_CALLBACK;
-   
+  
    // end sysex mode
    frontParser_midiMsg.status = 0;
    frontPanel_sendByte(SYSEX_END);
-   
+  
    //menu_debug("WAIT SYSX", 9, track, pattern, 0);
-   
+  
    while(frontParser_midiMsg.status != SYSEX_END)
    {
       uart_checkAndParse();
    }
 
 }
-   
- 
+
+
 //----------------------------------------------------
 uint8_t preset_loadPattern(uint8_t presetNr, uint8_t voiceArray)
 {
@@ -1748,46 +1758,46 @@ uint8_t preset_loadPattern(uint8_t presetNr, uint8_t voiceArray)
 
    uart_clearFifo();
    frontParser_rxDisable=1;
-   
+  
    preset_workingPreset=presetNr;
    preset_workingType=WTYPE_PATTERN;
    preset_workingVoiceArray = voiceArray;
 
    preset_makeFileName(filename,presetNr,FEXT_PAT);
-   
+  
    //open the file
    FRESULT res = f_open((FIL*)&preset_File,filename,FA_OPEN_EXISTING | FA_READ);
    if(res!=FR_OK)
       return 1; //file open error... maybe the file does not exist?
-   
-	//first the preset name
+  
+  //first the preset name
    f_read((FIL*)&preset_File,(void*)preset_currentName,8,&bytesRead);
    if(!bytesRead)
       goto closeFile;
-   
+  
 
    preset_workingVersion = 0;
-   
+  
    f_close((FIL*)&preset_File);
-   
+  
    lcd_clear();
    lcd_home();
    lcd_string_F(PSTR("Loading Patrn"));
-   
+  
    frontPanel_sendData(SEQ_CC,SEQ_EUKLID_RESET,0x01);
-   
+  
    // bc - NB: if enabled, this will lock the track
    preset_readPatternMainStep();
-   
+  
 
    if( (preset_workingVoiceArray>=0x7f) || (preset_workingVoiceArray==0x7f) )
    {
       preset_readShuffle();
    }
-   
+  
    preset_readPatternLength();
    preset_readPatternScale();
-   
+  
    if( (preset_workingVoiceArray>=0x7f) || (preset_workingVoiceArray==0x7f) )
    {
       preset_readPatternChain();
@@ -1795,20 +1805,20 @@ uint8_t preset_loadPattern(uint8_t presetNr, uint8_t voiceArray)
    // calling this twice ensures pattern realign
    menu_setShownPattern(menu_playedPattern);
    menu_setShownPattern(menu_playedPattern);
-   
-   
+  
+  
    for (trkNum=0;trkNum<NUM_TRACKS;trkNum++)
    {
       if(voiceArray&(0x01<<trkNum))
       {
          // if track is locked, this will also unlock it for playing
          preset_readPatternStepData(trkNum,menu_playedPattern);
-         
-            
+        
+        
       }
-      
+     
    }
-   
+  
 
    for (trkNum=0;trkNum<NUM_TRACKS;trkNum++)
    {
@@ -1824,35 +1834,34 @@ uint8_t preset_loadPattern(uint8_t presetNr, uint8_t voiceArray)
 
 
    frontPanel_sendData(SEQ_CC,SEQ_FILE_DONE,WTYPE_PATTERN);
-   
-	//force complete repaint
+  
+  //force complete repaint
    menu_repaintAll();
 
 #else
-	frontPanel_sendData(PRESET,PRESET_LOAD,presetNr);
+  frontPanel_sendData(PRESET,PRESET_LOAD,presetNr);
 #endif
 
 closeFile:
-	//close the file handle
+  //close the file handle
    f_close((FIL*)&preset_File);
-   
+  
    _delay_ms(50);
    frontParser_rxDisable=0;
    uart_clearFifo();
-   
+  
    return 0;
 }
 
 //----------------------------------------------------
-//val is interpolation value between 0 and 255 
+//val is interpolation value between 0 and 255
 //uses bankers rounding
 static uint8_t interpolate(uint8_t a, uint8_t b, uint8_t x)
 {
    uint16_t fixedPointValue = (uint16_t)(((a*256) + (b-a)*x));
    uint8_t result = (uint8_t)(fixedPointValue/256);
-	
+  
    return (uint8_t)((fixedPointValue&0xff) < 0x7f ? result : result+1);
-	//return ((a*255) + (b-a)*x)/255;
 }
 //----------------------------------------------------
 // This will determine an interpolated value between parameters
@@ -1867,15 +1876,15 @@ void preset_morph(uint8_t voiceArray, uint8_t morph)
       morph=255;
    else
       morph=(uint8_t)(morph<<1);
-         
+  
    for(k=0;k<NUM_TRACKS-1;k++)
-   {      
+   {
    
       if(voiceArray&(0x01))
       {
          parArray=voice1presetMask;
          voiceArray &= (uint8_t)~(0x01);
-      } 
+      }
       else if(voiceArray&(0x02))
       {
          parArray=voice2presetMask;
@@ -1890,49 +1899,113 @@ void preset_morph(uint8_t voiceArray, uint8_t morph)
       {
          parArray=voice4presetMask;
          voiceArray &= (uint8_t)~(0x08);
-      }	
+      }
       else if(voiceArray&(0x10))
       {
          parArray=voice5presetMask;
          voiceArray &= (uint8_t)~(0x10);
-      }	
+      }
       else if((voiceArray&(0x20))||(voiceArray&(0x40)))
       {
          parArray=voice6presetMask;
          voiceArray &= (uint8_t)~(0x60);
-      }	
-      else 
+      }
+      else
          goto EndLoop;
-      
+     
       for(i=0;i<VOICE_PARAM_LENGTH;i++)
       {
          uint8_t paramNumber = parArray[i];
          uint8_t val;
-         	
-         val = interpolate(parameter_values[paramNumber],parameters2[paramNumber],morph);
-         if(paramNumber<128) 
+        
+         // exclude audio out routing from morph
+         // see also menu_encoderChangeShiftParameter() isMorphParameter
+         if ( paramNumber >= PAR_AUDIO_OUT1 && paramNumber <= PAR_AUDIO_OUT6 )
+         {
+          val = parameter_values[paramNumber];
+         }
+         else
+         {
+          // inlined val = getMorphValue(...
+          val = interpolate(parameter_values[paramNumber],parameters2[paramNumber],morph);
+         }
+
+         if(paramNumber<128)
          {
             frontPanel_sendData(MIDI_CC,(uint8_t)paramNumber,val);
-         } 
-         else 
+         }
+         else
          {
             frontPanel_sendData(CC_2,(uint8_t)(paramNumber-128),val);
-         }		
-         	
-         		
-         	//to omit front panel button/LED lag we have to process din dout and uart here
-         	//read next button
+         }
+        
+        
+           //to omit front panel button/LED lag we have to process din dout and uart here
+           //read next button
          din_readNextInput();
-         	//update LEDs
+           //update LEDs
          dout_updateOutputs();
-         	//read uart messages from sequencer
+           //read uart messages from sequencer
          uart_checkAndParse();
-      }	
+      }
    EndLoop: ;
-   }	
+   }
 
 
 
+}
+
+// tx all voice parameters to STM backpanel (which should then tx over usb and din midi)
+void preset_dump()
+{
+   char text[8];
+   for(uint8_t track=0;track<=5;track++)
+   {
+      lcd_setcursor(5,1); // after colon in "Load:"
+      itoa(track,text,10);
+      lcd_string(text);
+     
+      preset_dumpTrack(track);
+   }
+}
+
+// tx voice parameters to STM backpanel (which should then tx over usb and din midi)
+void preset_dumpTrack(uint8_t track)
+{
+    uint8_t i;
+    uint8_t *parArray=voice1presetMask;
+  
+    if(track==0) parArray=voice1presetMask;
+    if(track==1) parArray=voice2presetMask;
+    if(track==2) parArray=voice3presetMask;
+    if(track==3) parArray=voice4presetMask;
+    if(track==4) parArray=voice5presetMask;
+    if(track==5) parArray=voice6presetMask;
+
+    for(i=0;i<VOICE_PARAM_LENGTH;i++)
+    {
+     uint8_t paramNumber = parArray[i];
+     uint8_t val = parameter_values[paramNumber];
+     if(paramNumber>=PAR_VEL_DEST_1 && paramNumber<=PAR_VEL_DEST_6)
+     {
+        /*
+         *  tx velo mod target values CC_VELO_TARGET
+         *  upper: rightmost bit is 1 if the parameter we are targeting is in the "above 127" range
+         *         next 6 bits are the voice/trackNr (0-5, so just 3 bits required)
+         *  lower: the (0-127) value representing which parameter is being modulated
+         */
+        uint8_t upper = (uint8_t)(((val&0x80)>>7) | (((track)&0x3f)<<1));
+        uint8_t lower = val&0x7f;
+        frontPanel_sendData(CC_VELO_TARGET,upper,lower); // --ZPO modnode
+     }
+     
+     // --ZPO TODO tx lfo target values as CC_LFO_TARGET
+     
+     else if(paramNumber<128) frontPanel_sendData(MIDI_CC,(uint8_t)paramNumber,val);
+     else                     frontPanel_sendData(CC_2,(uint8_t)(paramNumber-128),val);
+
+     _delay_ms(2);
+    }
 }
 
 //----------------------------------------------------
@@ -1952,40 +2025,40 @@ void preset_saveAll(uint8_t presetNr, uint8_t isAll)
 #if USE_SD_CARD
    uint16_t remain;
    uint8_t siz;
-	//filename in 8.3  format
+  //filename in 8.3  format
    char filename[GEN_BUF_LEN];
    if(isAll)
       preset_makeFileName(filename,presetNr,FEXT_ALL);
    else
       preset_makeFileName(filename,presetNr,FEXT_PERF);
-	//open the file
+  //open the file
    f_open((FIL*)&preset_File,filename,FA_CREATE_ALWAYS | FA_WRITE);
    totalBytes=0;
 
 
    unsigned int bytesWritten;
-	//write preset name to file
+  //write preset name to file
    f_write((FIL*)&preset_File,(void*)preset_currentSaveMenuName,8,&bytesWritten);
 
-	//write the version
+  //write the version
    filename[0]=FILE_VERSION;
    f_write((FIL*)&preset_File, filename, 1, &bytesWritten);
 
    memset(filename,0xFF,GEN_BUF_LEN); // reuse this as our buffer for padding
 
    if(isAll) {
-   	// write global settings
+     // write global settings
       preset_writeGlobalData();
    
-   	// write some padding (we'll allocate 64 bytes for globals, right now we have +/- 18) so that
-   	// we don't need to change the file format later
-      remain=	64- (NUM_PARAMS - PAR_BEGINNING_OF_GLOBALS);
+     // write some padding (we'll allocate 64 bytes for globals, right now we have +/- 18) so that
+     // we don't need to change the file format later
+      remain=  64- (NUM_PARAMS - PAR_BEGINNING_OF_GLOBALS);
    
-   } 
+   }
    else {
-   	// write the bpm
+     // write the bpm
       f_write((FIL*)&preset_File, &parameter_values[PAR_BPM], 1, &bytesWritten);
-   	// bar reset mode
+     // bar reset mode
       f_write((FIL*)&preset_File, &parameter_values[PAR_BAR_RESET_MODE], 1, &bytesWritten);
       // pattern change time
       f_write((FIL*)&preset_File, &parameter_values[PAR_SEQ_PC_TIME], 1, &bytesWritten);
@@ -1999,11 +2072,11 @@ void preset_saveAll(uint8_t presetNr, uint8_t isAll)
       f_write((FIL*)&preset_File, &parameter_values[PAR_MIDI_CHAN_7], 1, &bytesWritten);
       // track midi note settings
       f_write((FIL*)&preset_File, &parameter_values[PAR_MIDI_NOTE1], 7, &bytesWritten);
-      
-      remain=	64 - (1+1)-14;
+     
+      remain=  64 - (1+1)-14;
    }
 
-	// write padding after globals/perf data
+  // write padding after globals/perf data
    while(remain){
       if(remain < GEN_BUF_LEN)
          siz=(uint8_t)remain;
@@ -2013,15 +2086,15 @@ void preset_saveAll(uint8_t presetNr, uint8_t isAll)
       remain -=siz;
    }
 
-	// save kit
+  // save kit
    preset_writeDrumsetData(0);
 
    // check remain from drumkit data
    remain = 512 - (END_OF_SOUND_PARAMETERS);
-   
+  
    // write some more padding (we'll allocate 512 bytes for kit data. This should be more than
-	// we'll ever need. Right now we use about 228 bytes for kit plus morph params).
-   
+  // we'll ever need. Right now we use about 228 bytes for kit plus morph params).
+  
    while(remain){
       if(remain < GEN_BUF_LEN)
          siz=(uint8_t)remain;
@@ -2031,15 +2104,15 @@ void preset_saveAll(uint8_t presetNr, uint8_t isAll)
       remain -=siz;
    }
 
-   	// save morph target
+     // save morph target
    preset_writeDrumsetData(2);
 
    // check remain from drumkit data
    remain = 512 - (END_OF_SOUND_PARAMETERS);
-   
+  
    // write some more padding (we'll allocate 512 bytes for kit data. This should be more than
-	// we'll ever need. Right now we use about 228 bytes for kit plus morph params).
-   
+  // we'll ever need. Right now we use about 228 bytes for kit plus morph params).
+  
    while(remain){
       if(remain < GEN_BUF_LEN)
          siz=(uint8_t)remain;
@@ -2051,23 +2124,23 @@ void preset_saveAll(uint8_t presetNr, uint8_t isAll)
 
 
 
-	// write pattern data
+  // write pattern data
    preset_writePatternData();
-   
-   
-	//close the file
+  
+  
+  //close the file
    f_close((FIL*)&preset_File);
 #else
 #endif
 }
-   
+
 //----------------------------------------------------
 uint8_t preset_loadAll(uint8_t presetNr, uint8_t voiceArray)
 {
 
    #if USE_SD_CARD
-	//filename in 8.3  format
-   
+  //filename in 8.3  format
+  
    UINT bytesRead;
    uint8_t version=0;
    uint8_t trkNum;
@@ -2076,34 +2149,34 @@ uint8_t preset_loadAll(uint8_t presetNr, uint8_t voiceArray)
 
    uart_clearFifo();
    frontParser_rxDisable=1;
-   
+  
    preset_workingPreset=presetNr;
    preset_workingType=WTYPE_ALL;
    preset_workingVoiceArray = voiceArray;
 
    preset_makeFileName(filename,presetNr,FEXT_ALL);
-   
+  
    //open the file
    FRESULT res = f_open((FIL*)&preset_File,filename,FA_OPEN_EXISTING | FA_READ);
    if(res!=FR_OK)
       return 1; //file open error... maybe the file does not exist?
-   
-	//first the preset name
+  
+  //first the preset name
    f_read((FIL*)&preset_File,(void*)preset_currentName,8,&bytesRead);
    if(!bytesRead)
       goto closeFile;
-   
-	// read version number and make sure its valid
+  
+  // read version number and make sure its valid
    f_read((FIL*)&preset_File,&version,1,&bytesRead);
    if(!bytesRead || version > FILE_VERSION)
       goto closeFile;
-   
+  
    preset_workingVersion = version;
-   
+  
    if( (preset_workingVoiceArray>=0x7f) || (preset_workingVoiceArray==0x7f) )
    {
       #if USE_SD_CARD
-      for(i=0;(i<(NUM_PARAMS-PAR_BEGINNING_OF_GLOBALS)) &&( bytesRead!=0);i++) 
+      for(i=0;(i<(NUM_PARAMS-PAR_BEGINNING_OF_GLOBALS)) &&( bytesRead!=0);i++)
       {
          f_read((FIL*)&preset_File,&parameter_values[(PAR_BEGINNING_OF_GLOBALS+i)],1,&bytesRead);
          totalBytes+=bytesRead;
@@ -2113,35 +2186,35 @@ uint8_t preset_loadAll(uint8_t presetNr, uint8_t voiceArray)
          // set global to 0 by default
          else if((parameter_values[(PAR_BEGINNING_OF_GLOBALS+i)]==0xff) && i)
             parameter_values[(PAR_BEGINNING_OF_GLOBALS+i)]=0;
-            
+        
       }
       #endif
-      
+     
       // send global params
       menu_sendAllGlobals();
    }
  //close the file handle
    f_close((FIL*)&preset_File);
-   
+  
    lcd_clear();
    lcd_home();
    lcd_string_F(PSTR("Loading All"));
-   
+  
    frontPanel_sendData(SEQ_CC,SEQ_EUKLID_RESET,0x01);
-   
+  
    // bc - NB: if enabled, this will lock the track
    preset_readPatternMainStep();
-   
+  
 
    if( (preset_workingVoiceArray>=0x7f) || (preset_workingVoiceArray==0x7f) )
    {
       preset_readShuffle();
    }
-   
-   
+  
+  
    preset_readPatternLength();
    preset_readPatternScale();
-   
+  
    if( (preset_workingVoiceArray>=0x7f) || (preset_workingVoiceArray==0x7f) )
    {
       preset_readPatternChain();
@@ -2149,40 +2222,40 @@ uint8_t preset_loadAll(uint8_t presetNr, uint8_t voiceArray)
    // calling this twice ensures pattern realign
    menu_setShownPattern(menu_playedPattern);
    menu_setShownPattern(menu_playedPattern);
-   
+  
    preset_readKitToTemp(1);
    preset_readKitToTemp(0);
-   
+  
    for (trkNum=0;trkNum<NUM_TRACKS;trkNum++)
    {
       if(voiceArray&(0x01<<trkNum))
       {
-         
+        
          if(trkNum<6)
          {
-            frontPanel_sendData(SEQ_CC,SEQ_LOAD_VOICE,trkNum); 
+            frontPanel_sendData(SEQ_CC,SEQ_LOAD_VOICE,trkNum);
             preset_readDrumVoice(trkNum, 1);
             preset_readDrumVoice(trkNum, 0);
          }
-         
+        
          // if track is locked, this will also unlock it for playing
          preset_readPatternStepData(trkNum,menu_playedPattern);
-         
+        
          if(trkNum<5)
             frontPanel_sendData(SEQ_CC,SEQ_UNHOLD_VOICE,trkNum);
-            
+        
       }
-      
+     
    }
-   
-   frontPanel_sendData(SEQ_CC,SEQ_UNHOLD_VOICE,5); 
-   
+  
+   frontPanel_sendData(SEQ_CC,SEQ_UNHOLD_VOICE,5);
+  
    if( (voiceArray>=0x7f) || (voiceArray==0) )
    {
       preset_readDrumsetMeta(0);
       preset_readDrumsetMeta(1);
    }
-   
+  
    for (trkNum=0;trkNum<NUM_TRACKS;trkNum++)
    {
       if(preset_workingVoiceArray&(0x01<<trkNum))
@@ -2196,32 +2269,32 @@ uint8_t preset_loadAll(uint8_t presetNr, uint8_t voiceArray)
    }
 
    frontPanel_sendData(SEQ_CC,SEQ_FILE_DONE,WTYPE_ALL);
-   
-	//force complete repaint
+  
+  //force complete repaint
    menu_repaintAll();
 
 #else
-	frontPanel_sendData(PRESET,PRESET_LOAD,presetNr);
+  frontPanel_sendData(PRESET,PRESET_LOAD,presetNr);
 #endif
 
 closeFile:
-	//close the file handle
+  //close the file handle
    f_close((FIL*)&preset_File);
-   
+  
    _delay_ms(50);
    frontParser_rxDisable=0;
    uart_clearFifo();
-   
+  
    return 0;
 }
 
-   
+
 //----------------------------------------------------
 uint8_t preset_loadPerf(uint8_t presetNr, uint8_t voiceArray)
 {
    #if USE_SD_CARD
-	//filename in 8.3  format
-   
+  //filename in 8.3  format
+  
    UINT bytesRead;
    uint8_t version=0;
    uint8_t trkNum;
@@ -2229,30 +2302,30 @@ uint8_t preset_loadPerf(uint8_t presetNr, uint8_t voiceArray)
 
    uart_clearFifo();
    frontParser_rxDisable=1;
-   
+  
    preset_workingPreset=presetNr;
    preset_workingType=WTYPE_PERFORMANCE; // wtype is held until file load is done
    preset_workingVoiceArray = voiceArray; // bit register of voies to load this perf
 
    preset_makeFileName(filename,presetNr,FEXT_PERF);
-   
-	//open the file
+  
+  //open the file
    FRESULT res = f_open((FIL*)&preset_File,filename,FA_OPEN_EXISTING | FA_READ);
    if(res!=FR_OK)
       return 1; //file open error... maybe the file does not exist?
-   
-	//first the preset name
+  
+  //first the preset name
    f_read((FIL*)&preset_File,(void*)preset_currentName,8,&bytesRead);
    if(!bytesRead)
       goto closeFile;
-   
-	// read version number and make sure its valid
+  
+  // read version number and make sure its valid
    f_read((FIL*)&preset_File,&version,1,&bytesRead);
    if(!bytesRead || version > FILE_VERSION)
       goto closeFile;
-   
+  
    preset_workingVersion = version;
-   
+  
    if(preset_workingVoiceArray>=0x3f) // all voices - load perf metadata too
    {
    // read bpm
@@ -2268,7 +2341,7 @@ uint8_t preset_loadPerf(uint8_t presetNr, uint8_t voiceArray)
          if(!bytesRead)
             goto closeFile;
       }
-       
+     
       if(preset_workingVersion>4) {
          uint8_t noteData;
       // versions 5+ store MIDI channel and note for the voices
@@ -2305,19 +2378,19 @@ uint8_t preset_loadPerf(uint8_t presetNr, uint8_t voiceArray)
    
    // send global params
       menu_sendAllGlobals();
-       
+     
    }
-   
+  
 
-	//close the file handle
+  //close the file handle
    f_close((FIL*)&preset_File);
-   
+  
    lcd_clear();
    lcd_home();
    lcd_string_F(PSTR("Loading Perf"));
-   
+  
    frontPanel_sendData(SEQ_CC,SEQ_EUKLID_RESET,0x01);
-   
+  
    // bc - NB: if enabled, this will lock the track (bit reg. seq_tracksLocked)
    // 'locking' the track takes place only in the mainboard, in the case
    // of loading mainstep data, it is only relevant if 'load fast' mode is on
@@ -2325,31 +2398,31 @@ uint8_t preset_loadPerf(uint8_t presetNr, uint8_t voiceArray)
    // step data for the currently playing sequence. it is used in triggervoice
    // to prevent the voice from playing (return from function)
    preset_readPatternMainStep();
-   
+  
    // nb there is a sysex callback after mainstep, mainboard is caught up
-   
+  
    if(preset_workingVoiceArray>=0x3f)
    {
       preset_readShuffle();
    }
-      
+  
    preset_readPatternLength();
    preset_readPatternScale();
-   
+  
    if(preset_workingVoiceArray>=0x3f)
    {
       preset_readPatternChain();
    }
-   
+  
    preset_readKitToTemp(1);
    preset_readKitToTemp(0);
-   
+  
    if( (voiceArray>=0x7f) || (voiceArray==0) )
    {
       preset_readDrumsetMeta(0);
       preset_readDrumsetMeta(1);
    }
-   
+  
    for (trkNum=0;trkNum<NUM_TRACKS;trkNum++)
    {
       if(preset_workingVoiceArray&(0x01<<trkNum))
@@ -2357,25 +2430,25 @@ uint8_t preset_loadPerf(uint8_t presetNr, uint8_t voiceArray)
          for (patNum=0;patNum<NUM_PATTERN;patNum++)
          {
          
-            preset_readPatternStepData(trkNum,patNum); 
-            
+            preset_readPatternStepData(trkNum,patNum);
+           
          }
       }
    }
-   
+  
    frontPanel_sendData(SEQ_CC,SEQ_FILE_DONE,WTYPE_PERFORMANCE);
-   
+  
 #else
-	// frontPanel_sendData(PRESET,PRESET_LOAD,presetNr);
+  // frontPanel_sendData(PRESET,PRESET_LOAD,presetNr);
 #endif
 
 closeFile:
-	//close the file handle
+  //close the file handle
    f_close((FIL*)&preset_File);
-   
+  
    frontParser_rxDisable=0;
    uart_clearFifo();
-   
+  
    return 0;
 }
 

@@ -35,6 +35,9 @@
 
 #include "automationNode.h"
 
+#include "usb_manager.h"
+#include "Uart.h"
+
 //-------------------------------------------------------------
 void autoNode_init(AutomationNode* node)
 {
@@ -49,14 +52,14 @@ void autoNode_setDestination(AutomationNode* node, uint16_t dest)
 		MidiMsg msg;
 
 		if(node->destination > 127) {
-			msg.status = MIDI_CC2;
+			msg.status = MIDI_CC_2;
 			msg.data1 = node->destination - 127 -1;
 		} else {
 			msg.status = MIDI_CC;
 			msg.data1 = node->destination;
 		}
 		msg.data2 = midiParser_originalCcValues[node->destination];
-		midiParser_ccHandler(msg,0);
+		midiParser_LXRccHandler(msg,0);
 	}
 
 	//set new destination
@@ -69,14 +72,14 @@ void autoNode_updateValue(AutomationNode* node, uint8_t val)
 		MidiMsg msg;
 
 		if(node->destination > 127) {
-			msg.status = MIDI_CC2;
+			msg.status = MIDI_CC_2;
 			msg.data1 = node->destination - 127 -1; //todo why +1 offset?
 		} else {
 			msg.status = MIDI_CC;
 			msg.data1 = node->destination;
 		}
 		msg.data2 = val;
-		midiParser_ccHandler(msg,0);
+		midiParser_LXRccHandler(msg,0);
 	}
 }
 //-------------------------------------------------------------

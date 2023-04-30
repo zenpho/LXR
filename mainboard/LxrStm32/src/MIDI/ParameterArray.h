@@ -113,6 +113,7 @@ enum ParamEnums
 	PAR_RESO_5,
 	PAR_RESO_6,
 
+  // "velo" is misleading, these are AEG controls
 	PAR_VELOA1,
 	PAR_VELOD1,
 	PAR_VELOA2,

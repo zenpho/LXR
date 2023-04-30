@@ -51,6 +51,7 @@
 #include "Snare.h"
 #include "SomGenerator.h"
 #include "TriggerOut.h"
+#include "usb_manager.h"
 
 static void frontParser_handleMidiMessage();
 static void frontParser_handleSysexData(unsigned char data);
@@ -212,7 +213,7 @@ void frontParser_uncacheVoice(uint8_t voice)
    {
       if(midi_midiCacheAvailable[presetMask[i]])
       {
-         midiParser_ccHandler(midi_midiCache[presetMask[i]],1);
+         midiParser_LXRccHandler(midi_midiCache[presetMask[i]],1);
       }
    }
    
@@ -288,8 +289,11 @@ void frontParser_updateSubStepLeds(const uint8_t trackNr, uint8_t patternNr)
 void frontParser_parseUartData(unsigned char data)
 {
 
-	//TODO der ganze sysex kram kann sicher noch optimiert werden
+	//DE: TODO der ganze sysex kram kann sicher noch optimiert werden
 	//das das nicht andauernd abgefragt werden muss
+  //
+  //EN: TODO the whole sysex stuff can certainly be optimized
+  //that this doesn't have to be queried all the time
 
 	// if high bit is set, a new message starts
    if(data&0x80)
@@ -693,6 +697,682 @@ static void frontParser_handleSysexData(unsigned char data)
          break;
    }
 }
+
+/* tx per-channel per-voice usb and din MIDI using standard cc numbers
+   will only tx report if midi filter configured to tx cc
+
+   input "msg" is e.g. from frontparser with MIDI_CC or MIDI_CC_2 statusbyte
+
+   uses frontParser_LXRtoMIDIchanlNr() and frontParser_LXRtoMIDIparamNr()
+*/
+void frontParser_LXRtoMIDItx(MidiMsg msg)
+{
+  // abort if filter set to skip cc tx
+  if(false==(midiParser_txRxFilter & 0x40)) return;
+  
+  // handle special cases of VELO_TARGET and LFO_TARGET
+  if((msg.status==FRONT_CC_VELO_TARGET) || (msg.status==FRONT_CC_LFO_TARGET))
+  {
+    uint8_t upper = msg.data1;
+    uint8_t lower = msg.data2;
+    uint8_t modNr = (upper&0xfe)>>1;
+
+    uint8_t isHigh = (upper&0x01); // 0 for params<127, 1 for params>=128
+    msg.data2 = lower; // range 0-127
+
+    if(msg.status==FRONT_CC_VELO_TARGET)
+    {
+      if(isHigh) msg.data1 = UNDEF_26; // param>=128
+      else       msg.data1 = UNDEF_25; // param<127
+    }
+    //if(msg.status==FRONT_CC_LFO_TARGET)
+    //{
+      //if(isHigh) msg.data1 = UNDEF_31; // param>=128 //? GEN_CONTROLLER_81 ?
+      //else       msg.data1 = UNDEF_30; // param<127  //? GEN_CONTROLLER_81 ?
+    //}
+  
+
+    // retarget status to be midi CC (ch1=drum1, ch4=snare, ch5=cym, etc)
+    msg.status = MIDI_CC | modNr;
+
+    usb_sendMidi(msg);
+    uart_sendMidi(msg);
+    return; // no further processing
+  }
+  
+  // abort if not LXR parameter change
+  if( (msg.status!=MIDI_CC) && (msg.status!=MIDI_CC_2) ) return;
+
+  int16_t LXRparamNr = I_DUNNO;
+  if(msg.status==MIDI_CC)   LXRparamNr = msg.data1; // offset applied elsewhere
+  if(msg.status==MIDI_CC_2) LXRparamNr = msg.data1+128;
+  
+  if( LXRparamNr ) // skip invalid param
+  {
+    // lookup channel and cc
+    int16_t chanl = frontParser_LXRtoMIDIchanlNr(LXRparamNr);
+    int16_t ccNum = frontParser_LXRtoMIDIparamNr(LXRparamNr);
+    
+    // abort if lookup failed
+    if(chanl==-1 || ccNum==-1) return;
+    
+    // set cc msg channel and tx
+    msg.status = 0xb0 | ((chanl-1)&0x0f); // range 0 to 15
+    msg.data1 = ccNum;
+    usb_sendMidi(msg);
+    uart_sendMidi(msg);
+  }
+}
+
+int16_t frontParser_LXRtoMIDIparamNr(uint16_t LXRparamNr)
+/*  see also LXRtoMIDIchanlNr and LXRtoMIDItx comments
+    returns -1 if conversion failed
+ 
+map from internal LXRparamNr to BC's patched midi cc by voice channel
+so that a user recording LXR MIDI output to an external sequencer
+will capture and can replay realtime/automated voice parameter changes
+*/
+{
+  if(LXRparamNr < 128)
+  {
+    switch(LXRparamNr)
+    {
+      case  CC_MODWHEEL:     return  MOD_WHEEL;
+      case  OSC_WAVE_DRUM1:  return  UNDEF_9;
+      case  OSC_WAVE_DRUM2:  return  UNDEF_9;
+      case  OSC_WAVE_DRUM3:  return  UNDEF_9;
+      case  OSC_WAVE_SNARE:  return  UNDEF_9;
+      case  CYM_WAVE1:       return  UNDEF_9;
+      case  WAVE1_HH:        return  UNDEF_9;
+      
+      case  F_OSC1_COARSE:  return  UNDEF_14;
+      case  F_OSC1_FINE:  return  UNDEF_14_LSB;
+      case  F_OSC2_COARSE:  return  UNDEF_14;
+      case  F_OSC2_FINE:  return  UNDEF_14_LSB;
+      case  F_OSC3_COARSE:  return  UNDEF_14;
+      case  F_OSC3_FINE:  return  UNDEF_14_LSB;
+      case  F_OSC4_COARSE:  return  UNDEF_14;
+      case  F_OSC4_FINE:  return  UNDEF_14_LSB;
+      case  F_OSC5_COARSE:  return  UNDEF_14;
+      case  F_OSC5_FINE:  return  UNDEF_14_LSB;
+      case  F_OSC6_COARSE:  return  UNDEF_14;
+      case  F_OSC6_FINE:  return  UNDEF_14_LSB;
+      
+      case  MOD_WAVE_DRUM1:  return  UNDEF_102;
+      case  MOD_WAVE_DRUM2:  return  UNDEF_102;
+      case  MOD_WAVE_DRUM3:  return  UNDEF_102;
+      case  CYM_WAVE2:  return  UNDEF_105;
+      case  CYM_WAVE3:  return  UNDEF_108;
+      case  WAVE2_HH:  return  UNDEF_105;
+      case  WAVE3_HH:  return  UNDEF_108;
+      case  SNARE_NOISE_F:  return  UNDEF_21;
+      case  SNARE_MIX:  return  UNDEF_20;
+      case  CYM_MOD_OSC_F1:  return  UNDEF_107;
+      case  CYM_MOD_OSC_F2:  return  UNDEF_110;
+      case  CYM_MOD_OSC_GAIN1:  return    UNDEF_106;
+      case  CYM_MOD_OSC_GAIN2:  return    UNDEF_109;
+      case  MOD_OSC_F1:  return  UNDEF_107;    //hh
+      case  MOD_OSC_F2:  return  UNDEF_110;    //hh
+      case  MOD_OSC_GAIN1:  return  UNDEF_106; //hh
+      case  MOD_OSC_GAIN2:  return  UNDEF_109; //hh
+      
+      case  FILTER_FREQ_DRUM1:  return    GEN_CONTROLLER_16;
+      case  FILTER_FREQ_DRUM2:  return    GEN_CONTROLLER_16;
+      case  FILTER_FREQ_DRUM3:  return    GEN_CONTROLLER_16;
+      case  SNARE_FILTER_F:  return  GEN_CONTROLLER_16;
+      case  CYM_FIL_FREQ:  return  GEN_CONTROLLER_16;
+      case  HAT_FILTER_F:  return  GEN_CONTROLLER_16;
+      case  RESO_DRUM1:  return  GEN_CONTROLLER_17;
+      case  RESO_DRUM2:  return  GEN_CONTROLLER_17;
+      case  RESO_DRUM3:  return  GEN_CONTROLLER_17;
+      case  SNARE_RESO:  return  GEN_CONTROLLER_17;
+      case  CYM_RESO:  return  GEN_CONTROLLER_17;
+      case  HAT_RESO:  return  GEN_CONTROLLER_17;
+      
+      // "velo" is misleading, these are AEG controls
+      // D6=closedhh and D6_OPEN=openhh
+      case  VELOA1:    return  ENV_ATTACK;
+      case  VELOD1:    return  ENV_DECAY;
+      case  VELOA2:    return  ENV_ATTACK;
+      case  VELOD2:    return  ENV_DECAY;
+      case  VELOA3:    return  ENV_ATTACK;
+      case  VELOD3:    return  ENV_DECAY;
+      case  VELOA4:    return  ENV_ATTACK;
+      case  VELOD4:    return  ENV_DECAY;
+      case  VELOA5:    return  ENV_ATTACK;
+      case  VELOD5:    return  ENV_DECAY;
+      case  VELOA6:    return  ENV_ATTACK;
+      case  VELOD6:    return  ENV_DECAY;
+      case  VELOD6_OPEN:  return  ENV_RELEASE;
+     
+      case  VOL_SLOPE1:  return  UNDEF_87;
+      case  VOL_SLOPE2:  return  UNDEF_87;
+      case  VOL_SLOPE3:  return  UNDEF_87;
+      case  EG_SNARE1_SLOPE:  return    UNDEF_87;
+      case  CYM_SLOPE:  return  UNDEF_87;
+      case  VOL_SLOPE6:  return  UNDEF_87;
+      
+      case  REPEAT1:  return  SOUND_VAR;
+      case  CYM_REPEAT:  return  SOUND_VAR;
+     
+      case  PITCHD1:   return  PORT_CONTROL;
+      case  PITCHD2:  return  PORT_CONTROL;
+      case  PITCHD3:  return  PORT_CONTROL;
+      case  PITCHD4:  return  PORT_CONTROL;
+      case  MODAMNT1:  return  UNDEF_85;
+      case  MODAMNT2:  return  UNDEF_85;
+      case  MODAMNT3:  return  UNDEF_85;
+      case  MODAMNT4:  return  UNDEF_85;
+      
+      case  PITCH_SLOPE1:  return  UNDEF_86;
+      case  PITCH_SLOPE2:  return  UNDEF_86;
+      case  PITCH_SLOPE3:  return  UNDEF_86;
+      case  PITCH_SLOPE4:  return  UNDEF_86;
+      
+      case  FMAMNT1:  return  UNDEF_104;
+      case  FMDTN1:    return  UNDEF_103;
+      case  FMAMNT2:  return  UNDEF_104;
+      case  FMDTN2:    return  UNDEF_103;
+      case  FMAMNT3:  return  UNDEF_104;
+      case  FMDTN3:    return  UNDEF_103;
+     
+      case  VOL1:    return  CHANNEL_VOL;
+      case  VOL2:    return  CHANNEL_VOL;
+      case  VOL3:    return  CHANNEL_VOL;
+      case  VOL4:    return  CHANNEL_VOL;
+      case  VOL5:    return  CHANNEL_VOL;
+      case  VOL6:    return  CHANNEL_VOL;
+      case  PAN1:    return  PAN;
+      case  PAN2:    return  PAN;
+      case  PAN3:    return  PAN;
+      case  PAN4:    return  PAN;
+      case  PAN5:    return  PAN;
+      case  PAN6:    return  PAN;
+      
+      case  OSC1_DIST:  return  EFFECT_2;
+      case  OSC2_DIST:  return  EFFECT_2;
+      case  OSC3_DIST:  return  EFFECT_2;
+      case  SNARE_DISTORTION:  return    EFFECT_2;
+      case  CYMBAL_DISTORTION:  return    EFFECT_2;
+      case  HAT_DISTORTION:  return  EFFECT_2;
+      
+      case  VOICE_DECIMATION1:  return    EFFECT_1;
+      case  VOICE_DECIMATION2:  return    EFFECT_1;
+      case  VOICE_DECIMATION3:  return    EFFECT_1;
+      case  VOICE_DECIMATION4:  return    EFFECT_1;
+      case  VOICE_DECIMATION5:  return    EFFECT_1;
+      case  VOICE_DECIMATION6:  return    EFFECT_1;
+      case  VOICE_DECIMATION_ALL:  return    EFFECT_1;
+     
+      case  FREQ_LFO1:  return  SOUND_VIB_RATE;
+      case  FREQ_LFO2:  return  SOUND_VIB_RATE;
+      case  FREQ_LFO3:  return  SOUND_VIB_RATE;
+      case  FREQ_LFO4:  return  SOUND_VIB_RATE;
+      case  FREQ_LFO5:  return  SOUND_VIB_RATE;
+      case  FREQ_LFO6:  return  SOUND_VIB_RATE;
+      
+      case  AMOUNT_LFO1:  return  SOUND_VIB_DEPTH;
+      case  AMOUNT_LFO2:  return  SOUND_VIB_DEPTH;
+      case  AMOUNT_LFO3:  return  SOUND_VIB_DEPTH;
+      case  AMOUNT_LFO4:  return  SOUND_VIB_DEPTH;
+      case  AMOUNT_LFO5:  return  SOUND_VIB_DEPTH;
+      case  AMOUNT_LFO6:  return  SOUND_VIB_DEPTH;
+    }
+  }
+  else //paramNr >= 128
+  {
+    switch(LXRparamNr-128) // CC2_FILTER_DRIVE_1 = 0
+    {
+      
+      case  CC2_VEL_DEST_1:
+      case  CC2_VEL_DEST_2:
+      case  CC2_VEL_DEST_3:
+      case  CC2_VEL_DEST_4:
+      case  CC2_VEL_DEST_5:
+      case  CC2_VEL_DEST_6:
+        // "UNDEF_25" but not used here, see (FRONT_) CC_VELO_TARGET
+        break;
+      
+      case  CC2_TARGET_LFO1:
+      case  CC2_TARGET_LFO2:
+      case  CC2_TARGET_LFO3:
+      case  CC2_TARGET_LFO4:
+      case  CC2_TARGET_LFO5:
+      case  CC2_TARGET_LFO6:
+        // "GEN_CONTROLLER_81" but not used here, see (FRONT_) CC_LFO_TARGET
+        break;
+        
+      case  CC2_VOICE_LFO1:
+      case  CC2_VOICE_LFO2:
+      case  CC2_VOICE_LFO3:
+      case  CC2_VOICE_LFO4:
+      case  CC2_VOICE_LFO5:
+      case  CC2_VOICE_LFO6:
+        // "GEN_CONTROLLER_80" but not used here, see (FRONT_) CC_LFO_TARGET
+        break;
+    
+      case  CC2_FILTER_DRIVE_1:  return    GEN_CONTROLLER_18;
+      case  CC2_FILTER_DRIVE_2:  return    GEN_CONTROLLER_18;
+      case  CC2_FILTER_DRIVE_3:  return    GEN_CONTROLLER_18;
+      case  CC2_FILTER_DRIVE_4:  return    GEN_CONTROLLER_18;
+      case  CC2_FILTER_DRIVE_5:  return    GEN_CONTROLLER_18;
+      case  CC2_FILTER_DRIVE_6:  return    GEN_CONTROLLER_18;
+      
+      case  CC2_MIX_MOD_1:  return  UNDEF_22;
+      case  CC2_MIX_MOD_2:  return  UNDEF_22;
+      case  CC2_MIX_MOD_3:  return  UNDEF_22;
+      
+      case  CC2_VOLUME_MOD_ON_OFF1:  return    UNDEF_23;
+      case  CC2_VOLUME_MOD_ON_OFF2:  return    UNDEF_23;
+      case  CC2_VOLUME_MOD_ON_OFF3:  return    UNDEF_23;
+      case  CC2_VOLUME_MOD_ON_OFF4:  return    UNDEF_23;
+      case  CC2_VOLUME_MOD_ON_OFF5:  return    UNDEF_23;
+      case  CC2_VOLUME_MOD_ON_OFF6:  return    UNDEF_23;
+      
+      case  CC2_VELO_MOD_AMT_1:  return    UNDEF_24;
+      case  CC2_VELO_MOD_AMT_2:  return    UNDEF_24;
+      case  CC2_VELO_MOD_AMT_3:  return    UNDEF_24;
+      case  CC2_VELO_MOD_AMT_4:  return    UNDEF_24;
+      case  CC2_VELO_MOD_AMT_5:  return    UNDEF_24;
+      case  CC2_VELO_MOD_AMT_6:  return    UNDEF_24;
+      
+      case  CC2_WAVE_LFO1:  return  SOUND_UNDEF;
+      case  CC2_WAVE_LFO2:  return  SOUND_UNDEF;
+      case  CC2_WAVE_LFO3:  return  SOUND_UNDEF;
+      case  CC2_WAVE_LFO4:  return  SOUND_UNDEF;
+      case  CC2_WAVE_LFO5:  return  SOUND_UNDEF;
+      case  CC2_WAVE_LFO6:  return  SOUND_UNDEF;
+      
+      case  CC2_RETRIGGER_LFO1:  return    GEN_CONTROLLER_82;
+      case  CC2_RETRIGGER_LFO2:  return    GEN_CONTROLLER_82;
+      case  CC2_RETRIGGER_LFO3:  return    GEN_CONTROLLER_82;
+      case  CC2_RETRIGGER_LFO4:  return    GEN_CONTROLLER_82;
+      case  CC2_RETRIGGER_LFO5:  return    GEN_CONTROLLER_82;
+      case  CC2_RETRIGGER_LFO6:  return    GEN_CONTROLLER_82;
+      
+      case  CC2_SYNC_LFO1:  return  GEN_CONTROLLER_83;
+      case  CC2_SYNC_LFO2:  return  GEN_CONTROLLER_83;
+      case  CC2_SYNC_LFO3:  return  GEN_CONTROLLER_83;
+      case  CC2_SYNC_LFO4:  return  GEN_CONTROLLER_83;
+      case  CC2_SYNC_LFO5:  return  GEN_CONTROLLER_83;
+      case  CC2_SYNC_LFO6:  return  GEN_CONTROLLER_83;
+      
+      case  CC2_OFFSET_LFO1:  return    SOUND_VIB_DELAY;
+      case  CC2_OFFSET_LFO2:  return    SOUND_VIB_DELAY;
+      case  CC2_OFFSET_LFO3:  return    SOUND_VIB_DELAY;
+      case  CC2_OFFSET_LFO4:  return    SOUND_VIB_DELAY;
+      case  CC2_OFFSET_LFO5:  return    SOUND_VIB_DELAY;
+      case  CC2_OFFSET_LFO6:  return    SOUND_VIB_DELAY;
+      
+      case  CC2_FILTER_TYPE_1:  return    GEN_CONTROLLER_19;
+      case  CC2_FILTER_TYPE_2:  return    GEN_CONTROLLER_19;
+      case  CC2_FILTER_TYPE_3:  return    GEN_CONTROLLER_19;
+      case  CC2_FILTER_TYPE_4:  return    GEN_CONTROLLER_19;
+      case  CC2_FILTER_TYPE_5:  return    GEN_CONTROLLER_19;
+      case  CC2_FILTER_TYPE_6:  return    GEN_CONTROLLER_19;
+      
+      case  CC2_TRANS1_VOL:  return  UNDEF_29;
+      case  CC2_TRANS2_VOL:  return  UNDEF_29;
+      case  CC2_TRANS3_VOL:  return  UNDEF_29;
+      case  CC2_TRANS4_VOL:  return  UNDEF_29;
+      case  CC2_TRANS5_VOL:  return  UNDEF_29;
+      case  CC2_TRANS6_VOL:  return  UNDEF_29;
+      
+      case  CC2_TRANS1_WAVE:  return  UNDEF_27;
+      case  CC2_TRANS2_WAVE:  return  UNDEF_27;
+      case  CC2_TRANS3_WAVE:  return  UNDEF_27;
+      case  CC2_TRANS4_WAVE:  return  UNDEF_27;
+      case  CC2_TRANS5_WAVE:  return  UNDEF_27;
+      case  CC2_TRANS6_WAVE:  return  UNDEF_27;
+      
+      case  CC2_TRANS1_FREQ:  return  UNDEF_28;
+      case  CC2_TRANS2_FREQ:  return  UNDEF_28;
+      case  CC2_TRANS3_FREQ:  return  UNDEF_28;
+      case  CC2_TRANS4_FREQ:  return  UNDEF_28;
+      case  CC2_TRANS5_FREQ:  return  UNDEF_28;
+      case  CC2_TRANS6_FREQ:  return  UNDEF_28;
+      
+      case  CC2_AUDIO_OUT1:  return  UNDEF_89;
+      case  CC2_AUDIO_OUT2:  return  UNDEF_89;
+      case  CC2_AUDIO_OUT3:  return  UNDEF_89;
+      case  CC2_AUDIO_OUT4:  return  UNDEF_89;
+      case  CC2_AUDIO_OUT5:  return  UNDEF_89;
+      case  CC2_AUDIO_OUT6:  return  UNDEF_89;
+      
+      case  CC2_ENVELOPE_POSITION_1:  return  UNDEF_90;
+      case  CC2_ENVELOPE_POSITION_2:  return  UNDEF_90;
+      case  CC2_ENVELOPE_POSITION_3:  return  UNDEF_90;
+      case  CC2_ENVELOPE_POSITION_4:  return  UNDEF_90;
+      case  CC2_ENVELOPE_POSITION_5:  return  UNDEF_90;
+      case  CC2_ENVELOPE_POSITION_6:  return  UNDEF_90;
+      
+      case  CC2_MORPH_DRUM1:  return  MOD_WHEEL;
+      case  CC2_MORPH_DRUM2:  return  MOD_WHEEL;
+      case  CC2_MORPH_DRUM3:  return  MOD_WHEEL;
+      case  CC2_MORPH_SNARE:  return  MOD_WHEEL;
+      case  CC2_MORPH_CYM:    return  MOD_WHEEL;
+      case  CC2_MORPH_HIHAT:  return  MOD_WHEEL;
+      
+      case  CC2_MUTE_1:  return  ALL_SOUND_OFF;
+      case  CC2_MUTE_2:  return  ALL_SOUND_OFF;
+      case  CC2_MUTE_3:  return  ALL_SOUND_OFF;
+      case  CC2_MUTE_4:  return  ALL_SOUND_OFF;
+      case  CC2_MUTE_5:  return  ALL_SOUND_OFF;
+      case  CC2_MUTE_6:  return  ALL_SOUND_OFF;
+      case  CC2_MUTE_7:  return  ALL_SOUND_OFF;
+    }
+  } //paramNr >= 128
+  
+  return -1; // default unknown param
+}
+
+int16_t frontParser_LXRtoMIDIchanlNr(uint16_t LXRparamNr)
+/*  see also LXRtoMIDIparamNr and LXRtoMIDItx comments
+    returns -1 if conversion failed
+    otherwise 0 to 16 (0=off, 1=ch1 etc)
+*/
+{
+    const uint8_t chDrum1 = midi_MidiChannels[0];  // DRUM1 voice 0
+    const uint8_t chDrum2 = midi_MidiChannels[1];  // DRUM2 voice 1
+    const uint8_t chDrum3 = midi_MidiChannels[2];  // DRUM3 voice 2
+    const uint8_t chSnare = midi_MidiChannels[3];  // SNARE voice 3
+    const uint8_t chCym   = midi_MidiChannels[4];  // CYMBAL voice 4
+    const uint8_t chHat   = midi_MidiChannels[5];  // CLOSED HAT voice 5
+    const uint8_t chOpHat = midi_MidiChannels[6];  // OPEN HAT voice 6
+    const uint8_t chGlob  = midi_MidiChannels[7];  // GLOBAL voice 7
+  
+    if(LXRparamNr < 128)
+    {
+      switch(LXRparamNr)
+      {
+        case  OSC_WAVE_DRUM1:   return  chDrum1;
+        case  OSC_WAVE_DRUM2:   return  chDrum2;
+        case  OSC_WAVE_DRUM3:   return  chDrum3;
+        case  OSC_WAVE_SNARE:   return  chSnare;
+        case  CYM_WAVE1:        return  chCym;
+        case  WAVE1_HH:         return  chHat;
+        
+        case  F_OSC1_COARSE:  return  chDrum1;
+        case  F_OSC1_FINE:    return  chDrum1;
+        case  F_OSC2_COARSE:  return  chDrum2;
+        case  F_OSC2_FINE:    return  chDrum2;
+        case  F_OSC3_COARSE:  return  chDrum3;
+        case  F_OSC3_FINE:    return  chDrum3;
+        case  F_OSC4_COARSE:  return  chSnare;
+        case  F_OSC4_FINE:    return  chSnare;
+        case  F_OSC5_COARSE:  return  chCym;
+        case  F_OSC5_FINE:    return  chCym;
+        case  F_OSC6_COARSE:  return  chHat;
+        case  F_OSC6_FINE:    return  chHat;
+        
+        case  MOD_WAVE_DRUM1:     return  chDrum1;
+        case  MOD_WAVE_DRUM2:     return  chDrum2;
+        case  MOD_WAVE_DRUM3:     return  chDrum3;
+        case  CYM_WAVE2:          return  chCym;
+        case  CYM_WAVE3:          return  chCym;
+        case  WAVE2_HH:           return  chHat;
+        case  WAVE3_HH:           return  chHat;
+        case  SNARE_NOISE_F:      return  chSnare;
+        case  SNARE_MIX:          return  chSnare;
+        
+        case  CYM_MOD_OSC_F1:     return  chCym;
+        case  CYM_MOD_OSC_F2:     return  chCym;
+        case  CYM_MOD_OSC_GAIN1:  return  chCym;
+        case  CYM_MOD_OSC_GAIN2:  return  chCym;
+        case  MOD_OSC_F1:         return  chHat; //hh
+        case  MOD_OSC_F2:         return  chHat; //hh
+        case  MOD_OSC_GAIN1:      return  chHat; //hh
+        case  MOD_OSC_GAIN2:      return  chHat; //hh
+        
+        case  FILTER_FREQ_DRUM1:  return  chDrum1;
+        case  FILTER_FREQ_DRUM2:  return  chDrum2;
+        case  FILTER_FREQ_DRUM3:  return  chDrum3;
+        case  SNARE_FILTER_F:     return  chSnare;
+        case  CYM_FIL_FREQ:       return  chCym;
+        case  HAT_FILTER_F:       return  chHat;
+        
+        case  RESO_DRUM1:         return  chDrum1;
+        case  RESO_DRUM2:         return  chDrum2;
+        case  RESO_DRUM3:         return  chDrum3;
+        case  SNARE_RESO:         return  chSnare;
+        case  CYM_RESO:           return  chCym;
+        case  HAT_RESO:           return  chHat;
+        
+        case  VELOA1:       return  chDrum1;
+        case  VELOD1:       return  chDrum1;
+        case  VELOA2:       return  chDrum2;
+        case  VELOD2:       return  chDrum2;
+        case  VELOA3:       return  chDrum3;
+        case  VELOD3:       return  chDrum3;
+        case  VELOA4:       return  chSnare;
+        case  VELOD4:       return  chSnare;
+        case  VELOA5:       return  chCym;
+        case  VELOD5:       return  chCym;
+        case  VELOA6:       return  chHat;
+        case  VELOD6:       return  chHat;
+        case  VELOD6_OPEN:  return  chOpHat;
+        
+        case  VOL_SLOPE1:       return  chDrum1;
+        case  VOL_SLOPE2:       return  chDrum2;
+        case  VOL_SLOPE3:       return  chDrum3;
+        case  EG_SNARE1_SLOPE:  return  chSnare;
+        case  CYM_SLOPE:        return  chCym;
+        case  VOL_SLOPE6:       return  chHat;
+        
+        case  REPEAT1:      return  chSnare;
+        case  CYM_REPEAT:   return  chCym;   // clap cym repeat
+        
+        case  PITCHD1:    return  chDrum1;
+        case  PITCHD2:    return  chDrum2;
+        case  PITCHD3:    return  chDrum3;
+        case  PITCHD4:    return  chSnare;
+        case  MODAMNT1:   return  chDrum1;
+        case  MODAMNT2:   return  chDrum2;
+        case  MODAMNT3:   return  chDrum3;
+        case  MODAMNT4:   return  chSnare;
+        
+        case  PITCH_SLOPE1:  return  chDrum1;
+        case  PITCH_SLOPE2:  return  chDrum2;
+        case  PITCH_SLOPE3:  return  chDrum3;
+        case  PITCH_SLOPE4:  return  chSnare;
+        
+        case  FMAMNT1:    return  chDrum1;
+        case  FMDTN1:     return  chDrum1;
+        case  FMAMNT2:    return  chDrum2;
+        case  FMDTN2:     return  chDrum2;
+        case  FMAMNT3:    return  chDrum3;
+        case  FMDTN3:     return  chDrum3;
+        
+        case  VOL1:    return  chDrum1;
+        case  VOL2:    return  chDrum2;
+        case  VOL3:    return  chDrum3;
+        case  VOL4:    return  chSnare;
+        case  VOL5:    return  chCym;
+        case  VOL6:    return  chHat;
+        
+        case  PAN1:    return  chDrum1;
+        case  PAN2:    return  chDrum2;
+        case  PAN3:    return  chDrum3;
+        case  PAN4:    return  chSnare;
+        case  PAN5:    return  chCym;
+        case  PAN6:    return  chHat;
+        
+        case  OSC1_DIST:          return  chDrum1;
+        case  OSC2_DIST:          return  chDrum2;
+        case  OSC3_DIST:          return  chDrum3;
+        case  SNARE_DISTORTION:   return  chSnare;
+        case  CYMBAL_DISTORTION:  return  chCym;
+        case  HAT_DISTORTION:     return  chHat;
+        
+        case  VOICE_DECIMATION1:    return  chDrum1;
+        case  VOICE_DECIMATION2:    return  chDrum2;
+        case  VOICE_DECIMATION3:    return  chDrum3;
+        case  VOICE_DECIMATION4:    return  chSnare;
+        case  VOICE_DECIMATION5:    return  chCym;
+        case  VOICE_DECIMATION6:    return  chHat;
+        case  VOICE_DECIMATION_ALL: return  chGlob;
+        
+        
+        case  FREQ_LFO1:  return  chDrum1;
+        case  FREQ_LFO2:  return  chDrum2;
+        case  FREQ_LFO3:  return  chDrum3;
+        case  FREQ_LFO4:  return  chSnare;
+        case  FREQ_LFO5:  return  chCym;
+        case  FREQ_LFO6:  return  chHat;
+        
+        case  AMOUNT_LFO1:  return  chDrum1;
+        case  AMOUNT_LFO2:  return  chDrum2;
+        case  AMOUNT_LFO3:  return  chDrum3;
+        case  AMOUNT_LFO4:  return  chSnare;
+        case  AMOUNT_LFO5:  return  chCym;
+        case  AMOUNT_LFO6:  return  chHat;
+      }
+    }
+    else //paramNr >= 128
+    {
+      switch(LXRparamNr-128) // CC2_FILTER_DRIVE_1=0, PAR_FILTER_DRIVE=128
+      {
+        case  CC2_VEL_DEST_1:
+        case  CC2_VEL_DEST_2:
+        case  CC2_VEL_DEST_3:
+        case  CC2_VEL_DEST_4:
+        case  CC2_VEL_DEST_5:
+        case  CC2_VEL_DEST_6:
+          // not used here, see (FRONT_) CC_VELO_TARGET
+          break;
+          
+        case  CC2_TARGET_LFO1:
+        case  CC2_TARGET_LFO2:
+        case  CC2_TARGET_LFO3:
+        case  CC2_TARGET_LFO4:
+        case  CC2_TARGET_LFO5:
+        case  CC2_TARGET_LFO6:
+          // not used here, see (FRONT_) CC_LFO_TARGET
+          break;
+        
+        case  CC2_VOICE_LFO1:
+        case  CC2_VOICE_LFO2:
+        case  CC2_VOICE_LFO3:
+        case  CC2_VOICE_LFO4:
+        case  CC2_VOICE_LFO5:
+        case  CC2_VOICE_LFO6:
+          // not used here see (FRONT_) CC_LFO_TARGET
+          break;
+      
+        case  CC2_FILTER_DRIVE_1:  return  chDrum1;
+        case  CC2_FILTER_DRIVE_2:  return  chDrum2;
+        case  CC2_FILTER_DRIVE_3:  return  chDrum3;
+        case  CC2_FILTER_DRIVE_4:  return  chSnare;
+        case  CC2_FILTER_DRIVE_5:  return  chCym;
+        case  CC2_FILTER_DRIVE_6:  return  chHat;
+        
+        case  CC2_MIX_MOD_1:  return  chDrum1;
+        case  CC2_MIX_MOD_2:  return  chDrum2;
+        case  CC2_MIX_MOD_3:  return  chDrum3;
+        
+        case  CC2_VOLUME_MOD_ON_OFF1:  return  chDrum1;
+        case  CC2_VOLUME_MOD_ON_OFF2:  return  chDrum2;
+        case  CC2_VOLUME_MOD_ON_OFF3:  return  chDrum3;
+        case  CC2_VOLUME_MOD_ON_OFF4:  return  chSnare;
+        case  CC2_VOLUME_MOD_ON_OFF5:  return  chCym;
+        case  CC2_VOLUME_MOD_ON_OFF6:  return  chHat;
+        
+        case  CC2_VELO_MOD_AMT_1:  return  chDrum1;
+        case  CC2_VELO_MOD_AMT_2:  return  chDrum2;
+        case  CC2_VELO_MOD_AMT_3:  return  chDrum3;
+        case  CC2_VELO_MOD_AMT_4:  return  chSnare;
+        case  CC2_VELO_MOD_AMT_5:  return  chCym;
+        case  CC2_VELO_MOD_AMT_6:  return  chHat;
+        
+        case  CC2_WAVE_LFO1:  return  chDrum1;
+        case  CC2_WAVE_LFO2:  return  chDrum2;
+        case  CC2_WAVE_LFO3:  return  chDrum3;
+        case  CC2_WAVE_LFO4:  return  chSnare;
+        case  CC2_WAVE_LFO5:  return  chCym;
+        case  CC2_WAVE_LFO6:  return  chHat;
+        
+        case  CC2_RETRIGGER_LFO1:  return    chDrum1;
+        case  CC2_RETRIGGER_LFO2:  return    chDrum2;
+        case  CC2_RETRIGGER_LFO3:  return    chDrum3;
+        case  CC2_RETRIGGER_LFO4:  return    chSnare;
+        case  CC2_RETRIGGER_LFO5:  return    chCym;
+        case  CC2_RETRIGGER_LFO6:  return    chHat;
+        
+        case  CC2_SYNC_LFO1:  return  chDrum1;
+        case  CC2_SYNC_LFO2:  return  chDrum2;
+        case  CC2_SYNC_LFO3:  return  chDrum3;
+        case  CC2_SYNC_LFO4:  return  chSnare;
+        case  CC2_SYNC_LFO5:  return  chCym;
+        case  CC2_SYNC_LFO6:  return  chHat;
+        
+        case  CC2_OFFSET_LFO1:  return    chDrum1;
+        case  CC2_OFFSET_LFO2:  return    chDrum2;
+        case  CC2_OFFSET_LFO3:  return    chDrum3;
+        case  CC2_OFFSET_LFO4:  return    chSnare;
+        case  CC2_OFFSET_LFO5:  return    chCym;
+        case  CC2_OFFSET_LFO6:  return    chHat;
+        
+        case  CC2_FILTER_TYPE_1:  return    chDrum1;
+        case  CC2_FILTER_TYPE_2:  return    chDrum2;
+        case  CC2_FILTER_TYPE_3:  return    chDrum3;
+        case  CC2_FILTER_TYPE_4:  return    chSnare;
+        case  CC2_FILTER_TYPE_5:  return    chCym;
+        case  CC2_FILTER_TYPE_6:  return    chHat;
+        
+        case  CC2_TRANS1_VOL:  return  chDrum1;
+        case  CC2_TRANS2_VOL:  return  chDrum2;
+        case  CC2_TRANS3_VOL:  return  chDrum3;
+        case  CC2_TRANS4_VOL:  return  chSnare;
+        case  CC2_TRANS5_VOL:  return  chCym;
+        case  CC2_TRANS6_VOL:  return  chHat;
+        
+        case  CC2_TRANS1_WAVE:  return    chDrum1;
+        case  CC2_TRANS2_WAVE:  return    chDrum2;
+        case  CC2_TRANS3_WAVE:  return    chDrum3;
+        case  CC2_TRANS4_WAVE:  return    chSnare;
+        case  CC2_TRANS5_WAVE:  return    chCym;
+        case  CC2_TRANS6_WAVE:  return    chHat;
+        
+        case  CC2_TRANS1_FREQ:  return    chDrum1;
+        case  CC2_TRANS2_FREQ:  return    chDrum2;
+        case  CC2_TRANS3_FREQ:  return    chDrum3;
+        case  CC2_TRANS4_FREQ:  return    chSnare;
+        case  CC2_TRANS5_FREQ:  return    chCym;
+        case  CC2_TRANS6_FREQ:  return    chHat;
+        
+        case  CC2_AUDIO_OUT1:  return  chDrum1;
+        case  CC2_AUDIO_OUT2:  return  chDrum2;
+        case  CC2_AUDIO_OUT3:  return  chDrum3;
+        case  CC2_AUDIO_OUT4:  return  chSnare;
+        case  CC2_AUDIO_OUT5:  return  chCym;
+        case  CC2_AUDIO_OUT6:  return  chHat;
+        
+        case  CC2_ENVELOPE_POSITION_1:  return  chDrum1;
+        case  CC2_ENVELOPE_POSITION_2:  return  chDrum2;
+        case  CC2_ENVELOPE_POSITION_3:  return  chDrum3;
+        case  CC2_ENVELOPE_POSITION_4:  return  chSnare;
+        case  CC2_ENVELOPE_POSITION_5:  return  chCym;
+        case  CC2_ENVELOPE_POSITION_6:  return  chHat;
+        
+        case  CC2_MORPH_DRUM1:   return  chDrum1;
+        case  CC2_MORPH_DRUM2:   return  chDrum2;
+        case  CC2_MORPH_DRUM3:   return  chDrum3;
+        case  CC2_MORPH_SNARE:   return  chSnare;
+        case  CC2_MORPH_CYM:     return  chCym;
+        case  CC2_MORPH_HIHAT:   return  chHat;
+        
+        case  CC2_MUTE_1:  return  chDrum1;
+        case  CC2_MUTE_2:  return  chDrum2;
+        case  CC2_MUTE_3:  return  chDrum3;
+        case  CC2_MUTE_4:  return  chSnare;
+        case  CC2_MUTE_5:  return  chCym;
+        case  CC2_MUTE_6:  return  chHat;
+        case  CC2_MUTE_7:  return  chOpHat;
+      } //paramNr >= 128
+    }
+    return -1; // default unknown channel
+}
+
 //------------------------------------------------------
 // This is called when we've received a full midi message
 static void frontParser_handleMidiMessage()
@@ -741,9 +1421,10 @@ static void frontParser_handleMidiMessage()
             }
          
          }
-         break; // case FRONT_CC_LFO_TARGET
+         break; // case FRONT_CC_MACRO_TARGET
+      
       //SEQ MESSAGES
-      case FRONT_SEQ_CC: // frontParser_midiMsg.status
+      case FRONT_SEQ_CC: // frontParser_midiMsg.status // e.g. FRONT_SEQ_CHANGE_PAT
          frontParser_handleSeqCC();
          break;
    
@@ -792,7 +1473,7 @@ static void frontParser_handleMidiMessage()
                midi_midiCache[paramNr]=frontParser_midiMsg;
                midi_midiCacheAvailable[paramNr]=1;
                // message is cached for voice release. 
-               // we can do: midiParser_ccHandler(seq_midiCache[voice1PresetMask[i]],1)
+               // we can do: midiParser_LXRccHandler(seq_midiCache[voice1PresetMask[i]],1)
                // for i=0:37 to release a voice. no need to split CC and CC2.
             }
             else
@@ -800,16 +1481,18 @@ static void frontParser_handleMidiMessage()
                frontParser_midiMsg.data1 += 1;
                frontParser_midiMsg.data1 &= 0x7f;
             
-               midiParser_ccHandler(frontParser_midiMsg,1);
+               frontParser_LXRtoMIDItx(frontParser_midiMsg); // tx parameter changes to ext midi
             
-            //record automation if record is turned on
+               midiParser_LXRccHandler(frontParser_midiMsg,1); // update voice dsp
+            
+               //record automation if record is turned on
                seq_recordAutomation(frontParser_activeTrack, frontParser_midiMsg.data1, frontParser_midiMsg.data2);
             }
          }
          break;
    
    //CC2 above 127
-      case FRONT_CC_2: // frontParser_midiMsg.status
+      case MIDI_CC_2: // frontParser_midiMsg.status
          {
             // are receiving a file transmit for voice?
             // message is for loading voice, or if all voices loading, always hold message
@@ -818,27 +1501,50 @@ static void frontParser_handleMidiMessage()
                midi_midiCache[frontParser_midiMsg.data1+128]=frontParser_midiMsg;
                midi_midiCacheAvailable[frontParser_midiMsg.data1+128]=1;
             // message is cached for voice release. 
-            // we can do: midiParser_ccHandler(seq_midiCache[voice1PresetMask[i]],1)
+            // we can do: midiParser_LXRccHandler(seq_midiCache[voice1PresetMask[i]],1)
             // for i=0:37 to release a voice. no need to split CC and CC2.     
             }
             else
             {
-               midiParser_ccHandler(frontParser_midiMsg,1);
+               frontParser_LXRtoMIDItx(frontParser_midiMsg); // tx to ext midi
+            
+               midiParser_LXRccHandler(frontParser_midiMsg,1); // update voice dsp
+            
                //record automation if record is turned on
                seq_recordAutomation(frontParser_activeTrack, frontParser_midiMsg.data1+128, frontParser_midiMsg.data2);
             }
          }
          break;
-   
+       
+      case FRONT_CC_VELO_TARGET: // frontParser_midiMsg.status
+       {
+          frontParser_LXRtoMIDItx(frontParser_midiMsg); // tx to ext midi
+       
+          uint8_t upper = frontParser_midiMsg.data1;
+          uint8_t lower = frontParser_midiMsg.data2;
+       // --AS valid values for the following are listed in modTargets array in the AVR code
+          uint16_t value = (uint16_t)( ( (upper&0x01)<<7) | lower);
+          uint8_t velModNr = (upper&0xfe)>>1;
+          if(seq_voicesLoading&(0x01<<(velModNr)))
+          {
+             midi_midiVeloCache[velModNr]=value;
+             midi_midiLfoCacheAvailable[velModNr]=1; // should be veloCacheAvailable?
+          }
+          else
+          {
+             modNode_setDestination(&velocityModulators[velModNr], value); // update voice dsp
+          }
+       }
+      break;
    
       case FRONT_CC_LFO_TARGET: //frontParser_midiMsg.status
          {
+            //? frontParser_LXRtoMIDItx(frontParser_midiMsg); // --ZPO TODO - tx to ext midi
+         
             uint8_t upper = frontParser_midiMsg.data1;
             uint8_t lower = frontParser_midiMsg.data2;
-         // --AS **PATROT note that the only valid values for the following are listed in
-         // the modTargets array in the AVR code
-            uint8_t value = ((upper&0x01)<<7) | lower;
-         
+         // --AS valid values for the following are listed in modTargets array in the AVR code
+            uint16_t value = (uint16_t)( ( (upper&0x01)<<7) | lower);
             uint8_t lfoNr = (upper&0xfe)>>1;
             
             if(seq_voicesLoading&(0x01<<(lfoNr)))
@@ -958,7 +1664,7 @@ static void frontParser_handleMidiMessage()
          //data 1 = track und pattern nr
          //data 2 = step nr
             uint8_t voiceNr 	= frontParser_midiMsg.data1 >> 4;
-            uint8_t patternNr 	= frontParser_midiMsg.data1 & 0x7;
+            uint8_t patternNr = frontParser_midiMsg.data1 & 0x7;
             uint8_t stepNr 		= frontParser_midiMsg.data2;
          
          //toggle the step in the seq
@@ -967,25 +1673,7 @@ static void frontParser_handleMidiMessage()
          }
          break;
    
-      case FRONT_CC_VELO_TARGET: // frontParser_midiMsg.status
-         {
-            uint8_t upper = frontParser_midiMsg.data1;
-            uint8_t lower = frontParser_midiMsg.data2;
-         // --AS **PATROT note that the only valid values for the following are listed in
-         // the modTargets array in the AVR code
-            uint8_t value = ((upper&0x01)<<7) | lower;
-            uint8_t velModNr = (upper&0xfe)>>1;
-            if(seq_voicesLoading&(0x01<<(velModNr)))
-            {
-               midi_midiVeloCache[velModNr]=value;
-               midi_midiLfoCacheAvailable[velModNr]=1;
-            }
-            else
-            {
-               modNode_setDestination(&velocityModulators[velModNr], value);
-            }
-         }
-         break;
+
    
    //VOICE option Messages
       case VOICE_CC: // frontParser_midiMsg.status
@@ -1530,7 +2218,7 @@ static void frontParser_handleSeqCC()
       case FRONT_SEQ_LOAD_VOICE:
          /*
          seq_voicesLoading is only used in Mainboard>frontPanelParser.c 
-         it applies to case MIDI_CC and FRONT_CC_2, LFO_TARGET and VELO_TARGET. 
+         it applies to case MIDI_CC and MIDI_CC_2, LFO_TARGET and VELO_TARGET.
          if this flag is set, the parameter is sent to cache. 
          cache needs to be opened before any cached parameters are applied
          
@@ -1538,7 +2226,7 @@ static void frontParser_handleSeqCC()
          case FRONT_SEQ_LOAD_VOICE:
             sets seq_voicesLoading (bit register)
             seq_voicesLoading is only used in Mainboard>frontPanelParser.c 
-            it applies to case MIDI_CC and FRONT_CC_2, LFO_TARGET and VELO_TARGET. 
+            it applies to case MIDI_CC and MIDI_CC_2, LFO_TARGET and VELO_TARGET. 
             if this flag is set, the parameter received to fpp is sent to cache. 
             midi_midi<type>CacheAvailable is the flag for each parameter for reg. 
             MIDI, Lfo, and Velo.

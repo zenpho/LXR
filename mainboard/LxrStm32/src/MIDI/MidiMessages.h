@@ -66,8 +66,7 @@ typedef struct MidiStruct {
 //Status bytes
 #define NOTE_OFF 			0x80	// 2 data bytes
 #define NOTE_ON 			0x90	// 2 data bytes
-#define MIDI_CC				0xb0	// 2 data bytes
-#define MIDI_CC2			0xF4	// 2 data bytes an unused midi status is used to indicate another cc message for params above 127
+
 #define PROG_CHANGE			0xc0	// 1 data bytes
 #define MIDI_PITCH_WHEEL	0xE0	// 2 data bytes
 #define MIDI_AT				0xA0	// 2 data bytes
@@ -125,11 +124,11 @@ UNDEF_21, 		// SNARE_NOISE_F
 UNDEF_22, 		// CC2_MIX_MOD* (1-3)
 UNDEF_23, 		// CC2_VOLUME_MOD_ON_OFF* (1-6)
 UNDEF_24, 		/*24*/	// CC2_VELO_MOD_AMT_* (1-6)
-UNDEF_25, 		// CC2_VEL_DEST_* (1-6)
-UNDEF_26, 		// CC2_TRANS*_VOL (1-6)
+UNDEF_25, 	  // CC2_VEL_DEST_* (1-6) params under 127
+UNDEF_26,     // CC2_VEL_DEST_* (1-6) params 128 and above
 UNDEF_27,		// CC2_TRANS*_WAVE (1-6)
 UNDEF_28,		// CC2_TRANS*_FREQ (1-6)
-UNDEF_29,
+UNDEF_29,   // CC2_TRANS*_VOL (1-6)
 UNDEF_30,
 UNDEF_31,
 BANK_LSB, 		/*32*/
@@ -174,7 +173,7 @@ SOUND_VAR, // REPEAT1 (v.4), CYM_REPEAT (v.5)
 SOUND_TIMBRE,
 ENV_RELEASE, /*72*/	// VELOD6_OPEN (voice 6, track 7 only)
 ENV_ATTACK, // VELOA* (1-6)
-SOUND_BRIGHT, // VOL_SLOPE* (1-3), EG_SNARE1_SLOPE, CYM_SLOPE, VOL_SLOPE6
+SOUND_BRIGHT, /*74*/
 ENV_DECAY, // VELOD* (1-6)
 SOUND_VIB_RATE, // FREQ_LFO* (1-6)
 SOUND_VIB_DEPTH, // AMOUNT_LFO* (1-6)
@@ -187,7 +186,7 @@ GEN_CONTROLLER_83, // CC2_SYNC_LFO* (1-6)
 PORT_CONTROL, // PITCHD* (1-4 for DRUM and SNARE)
 UNDEF_85, // MODAMNT* (1-4 for DRUM and SNARE)
 UNDEF_86, // PITCH_SLOPE* (1-4 for DRUM and SNARE)
-UNDEF_87,
+UNDEF_87, // VOL_SLOPE* (1-3), EG_SNARE1_SLOPE, CYM_SLOPE, VOL_SLOPE6
 VELOCITY_PREFIX, /*88*/
 UNDEF_89, // CC2_AUDIO_OUT* (1-6)
 UNDEF_90, // CC2_MIDI_NOTE* (1-6)
@@ -293,14 +292,14 @@ enum
 	HAT_RESO,
 
 	VELOA1,							/*50*/
-	VELOD1,
+	VELOD1, // "velo" is misleading, these are AEG controls
 	VELOA2,
 	VELOD2,
 	VELOA3,
 	VELOD3,
 	VELOA4,
 	VELOD4,
-	VELOA5,
+	VELOA5, // D6=closedhh, D6_OPEN=openhh
 	VELOD5,
 	VELOA6,							/*60*/
 	VELOD6,
@@ -533,9 +532,8 @@ enum
 
 	
 
-	//Mute Button NRPN messages
+	//Mute Buttons
 	//these have to stay at the end of the CC2 list.
-	//They are a special case to enable control of the channel muting via external NRPN messages
 	CC2_MUTE_1 = 200,
 	CC2_MUTE_2,
 	CC2_MUTE_3,
@@ -565,12 +563,14 @@ byte2, data1 byte: xttaaa-b : tt= top level macro value sent (2 macros exist now
 byte3, data2 byte: xbbbbbbb : b=macro mod target value lower 7 bits or top level value full
 */
 
-#define FRONT_STEP_LED_STATUS_BYTE 		0xb1
+#define MIDI_CC        0xb0  //for ext midi control (and frontpanel uart parameters below 127)
+#define MIDI_CC_2      0xb1  //for frontpanel uart parameters above 127
+
 #define FRONT_SEQ_CC					      0xb2
 #define FRONT_CODEC_CONTROL				0xb3
 #define VOICE_CC						      0xb4
 #define FRONT_SET_BPM				   	0xb5
-#define FRONT_CC_2					   	0xb6	//for parameters above 127
+#define FRONT_STEP_LED_STATUS_BYTE     0xb6
 #define FRONT_CC_LFO_TARGET				0xb7
 #define FRONT_CC_VELO_TARGET		   	0xb8
 #define FRONT_STEP_CC				   	0xb9	// toggle a step in the subStepPattern array

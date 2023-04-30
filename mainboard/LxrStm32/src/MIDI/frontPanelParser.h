@@ -53,4 +53,8 @@ void frontParser_updateTrackLeds(const uint8_t trackNr, uint8_t patternNr);
 void frontParser_updateSubStepLeds(const uint8_t trackNr, uint8_t patternNr);
 void frontParser_uncacheVoice(uint8_t voice);
 
+void frontParser_LXRtoMIDItx(MidiMsg msg);
+int16_t frontParser_LXRtoMIDIparamNr(uint16_t LXRparamNr);
+int16_t frontParser_LXRtoMIDIchanlNr(uint16_t LXRparamNr);
+
 #endif /* FRONTPANELPARSER_H_ */

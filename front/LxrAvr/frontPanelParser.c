@@ -23,7 +23,6 @@
 
 static uint8_t frontParser_rxCnt=0;
 volatile MidiMsg frontParser_midiMsg;
-static uint16_t frontParser_nrpnNr = 0;
 
 uint8_t frontPanel_sysexMode = 0;
 uint8_t frontParser_sysexCallback = 0;
@@ -36,7 +35,7 @@ volatile uint8_t frontParser_sysexBuffer[7];
 
 uint8_t frontParser_nameIndex = 0;
 uint8_t frontPanel_longOp;
-uint8_t frontPanel_morphArray;
+uint8_t frontPanel_morphArray; // passed to preset_morph() as "voiceArray" bitmask flags
 uint8_t frontPanel_morphAvail=0;
 uint8_t frontPanel_wait = 0;
 
@@ -63,9 +62,6 @@ uint8_t frontPanel_longData;
 
 
 
-//------------------------------------------------------------
-#define NRPN_MUTE_1 1000
-#define NRPN_MUTE_7 1006
 //------------------------------------------------------------
 void frontPanel_sendMacro(uint8_t whichMacro,uint8_t value)
 {
@@ -121,91 +117,7 @@ while(frontPanel_wait)
     uart_checkAndParse();
 }
 }
-//------------------------------------------------------------
-void frontParser_parseNrpn(uint8_t value)
-{
-   uint16_t paramNr=frontParser_nrpnNr+128;
 
-   if(paramNr < NUM_PARAMS)
-      parameter_values[paramNr] = value;
-	
-   if( (paramNr >= PAR_TARGET_LFO1) && (paramNr <= PAR_TARGET_LFO6) )
-   {
-   	//**LFO receive nrpn translate --AS TODO this needs to be checked. I'm not sure what needs to happen here.
-   	// It seems like the assumption is that in this case, value represents an encoded menupage value (this code
-   	// used to call the now defunct getModTargetValue)
-   
-   	//LFO
-      uint8_t lfoNr = (uint8_t)(paramNr-PAR_TARGET_LFO1);
-      if(lfoNr>5)lfoNr=5;
-   
-   	// value (might) represents an actual parameter number, we need to convert to index into modTargets
-      parameter_values[paramNr]=paramToModTarget[value];
-   	// this was the old code
-   	//since the LFO target calculation from the index number needs to know about the menu structure (menuPages)
-   	//we need to send back the right target param number to the cortex
-   	//value = getModTargetValue(parameter_values[frontParser_nrpnNr+128],
-   	//		(uint8_t)(parameter_values[PAR_VOICE_LFO1+lfoNr]-1));
-   
-      uint8_t upper = (uint8_t)(((value&0x80)>>7) | (((lfoNr)&0x3f)<<1));
-      uint8_t lower = value&0x7f;
-      frontPanel_sendData(CC_LFO_TARGET,upper,lower);
-   }
-   else if ( (paramNr >= PAR_VEL_DEST_1) && (paramNr <= PAR_VEL_DEST_6) )
-   {
-   	//**VELO receive nrpn translate to parameter. --AS TODO this needs to be checked as well
-   
-   	// value (might) represents an actual parameter number, we need to convert to index into modTargets
-      parameter_values[paramNr]=paramToModTarget[value];
-   
-   	// old code
-   	//uint8_t param = parameter_values[frontParser_nrpnNr+128];
-   	//if(param > (NUM_SUB_PAGES * 8 -1))
-   	//param = (NUM_SUB_PAGES * 8 -1);
-   	//uint8_t value = getModTargetValue(param, (uint8_t)(frontParser_nrpnNr+128 - PAR_VEL_DEST_1));
-   			
-      uint8_t upper,lower;
-      upper = (uint8_t)((uint16_t)((value&0x80)>>7) | (((paramNr-PAR_VEL_DEST_1)&0x3f)<<1));
-      lower = value&0x7f;
-      frontPanel_sendData(CC_VELO_TARGET,upper,lower);
-   
-   } 
-   else if ( (frontParser_nrpnNr >= NRPN_MUTE_1) && (frontParser_nrpnNr <= NRPN_MUTE_7) )
-   {
-      const uint8_t voice = (uint8_t)(frontParser_nrpnNr - NRPN_MUTE_1);
-      const uint8_t onOff = value;
-      buttonHandler_muteVoice(voice,onOff);
-   	
-   }
-}
-//------------------------------------------------------------
-void frontPanel_ccHandler()
-{
-	//get the real parameter number from the cc number
-   const uint8_t parNr =(uint8_t)( frontParser_midiMsg.data1 - 1);
-	
-   if(parNr == NRPN_DATA_ENTRY_COARSE) {
-      frontParser_parseNrpn(frontParser_midiMsg.data2);
-   }
-	
-   if(parNr == NRPN_FINE) {
-      frontParser_nrpnNr &= 0x80; //clear lower 7 bit
-      frontParser_nrpnNr |= frontParser_midiMsg.data2;
-   }
-		
-   if(parNr == NRPN_COARSE) {
-      frontParser_nrpnNr &= 0x7f; //clear upper 7 bit
-      frontParser_nrpnNr |= (uint16_t)(frontParser_midiMsg.data2<<7);
-   }
-	
-	
-	//set the parameter value
-   parameter_values[parNr] = frontParser_midiMsg.data2;
-	
-	//repaint the LCD
-   menu_repaint();
-	
-}
 //------------------------------------------------------------
 void frontPanel_parseData(uint8_t data)
 {
@@ -393,12 +305,13 @@ void frontPanel_parseData(uint8_t data)
       	//parameter value
          frontParser_midiMsg.data2 = data;
          frontParser_rxCnt=0;
-      	//process the received data
-         if(frontParser_midiMsg.status == MIDI_CC) //sound cc data from cortex 
-         {
-            frontPanel_ccHandler();
-         }
-         else
+      	
+         // frontpanel shall never rx MIDI_CC from stm (see PARAM_CC and PARAM_CC2)
+         //if(frontParser_midiMsg.status == MIDI_CC) //sound cc data from cortex
+         //{
+         //   frontPanel_ccHandler();
+         //}
+         //else
          {
             if(frontParser_midiMsg.status == PRESET_NAME)
             {
@@ -617,9 +530,23 @@ void frontPanel_parseData(uint8_t data)
                parameter_values[frontParser_midiMsg.data1+128]=frontParser_midiMsg.data2;
                parameters2[frontParser_midiMsg.data1+128]=frontParser_midiMsg.data2;
                menu_repaint();
-            
             }
-            
+           
+            else if(frontParser_midiMsg.status == CC_VELO_TARGET)
+            {
+               uint8_t upper = frontParser_midiMsg.data1;
+               uint8_t lower = frontParser_midiMsg.data2;
+       
+               uint8_t value = (uint8_t)( ( (upper&0x01)<<7) | lower);
+               uint8_t track = (upper&0xfe)>>1;
+              
+               //use paramToModTarget so (voice0) rx8=store1="COA", rx9=store2="FIN"
+               parameter_values[PAR_VEL_DEST_1+track] = paramToModTarget[value];
+               parameters2[PAR_VEL_DEST_1+track] = paramToModTarget[value];
+              
+               menu_repaint();
+            }
+           
             else if(frontParser_midiMsg.status == BANK_CHANGE_CC)
             {
                if (frontParser_midiMsg.data1&&(frontPanel_longOp<PATTERN_CHANGE_OP) )
@@ -652,7 +579,7 @@ void frontPanel_parseData(uint8_t data)
             
             
             // morph operation
-            else if( (frontParser_midiMsg.status == MORPH_CC)||(frontParser_midiMsg.status == VOICE_MORPH) )
+            else if( (frontParser_midiMsg.status == MORPH_CC)||(frontParser_midiMsg.status == VOICE_MORPH) ) // --MRKR if == MORPH_CC (i.e. globl) lOp=MO_OP, mAr=0xF7, lDa=etc
             {  
                // morph is a low-priority opertaion (because we might be getting a LOT
                // from the Mod Wheel) - if we get a bank change or program change, 
@@ -660,8 +587,8 @@ void frontPanel_parseData(uint8_t data)
                
                if(frontPanel_longOp!=NULL_OP)
                {
-                  frontPanel_morphArray = frontParser_midiMsg.data1;
-                  frontPanel_longData=(uint8_t)(frontParser_midiMsg.data2<<1);
+                  frontPanel_morphArray = frontParser_midiMsg.data1; // voiceArray morph bitmask flags
+                  frontPanel_longData=(uint8_t)(frontParser_midiMsg.data2); //<<1); scaling applied elsewhere
                   frontPanel_morphAvail=1;
                }
                else
@@ -669,10 +596,8 @@ void frontPanel_parseData(uint8_t data)
                   // this is a time-consuming operation, cache it and deal
                   // with only one per loop of main()
                   frontPanel_longOp=MORPH_OP;
-                  
-                  frontPanel_morphArray = frontParser_midiMsg.data1;
-                  // bit shift from MIDI CC values
-                  frontPanel_longData=(uint8_t)(frontParser_midiMsg.data2<<1);
+                  frontPanel_morphArray = frontParser_midiMsg.data1; // voiceArray morph bitmask flags
+                  frontPanel_longData=(uint8_t)(frontParser_midiMsg.data2); //<<1); scaling applied elsewhere
                }
             }
             
@@ -833,16 +758,14 @@ void midiMsg_checkLongOps()
       {
          if (parameter_values[PAR_LOAD_PERF_ON_BANK]){
             preset_loadPerf(frontPanel_longData,0x7f); // preset, isAll, release kitlock, voiceArray
+            menu_repaint();
             if(frontPanel_morphAvail)
             {
                frontPanel_longOp=MORPH_OP;
                frontPanel_morphAvail=0;
             }
             else
-               frontPanel_longOp=NULL_OP; 
-		 
-	    buttonHandler_handleModeButtons(SELECT_MODE_PERF);
-	    menu_repaint();
+               frontPanel_longOp=NULL_OP;            
          }
          else {
             preset_loadDrumset(frontPanel_longData,0x7f,0);
@@ -900,11 +823,13 @@ void midiMsg_checkLongOps()
       }
       
       
-      else if (frontPanel_longOp==MORPH_OP)
+      else if (frontPanel_longOp==MORPH_OP) // --MRKR
       {
+         // --MRKR should 0-255 scaling apply here? the frontPanel_longData is 0-127
          parameter_values[PAR_MORPH]=frontPanel_longData;
          preset_morph(frontPanel_morphArray,frontPanel_longData);
          morphValue=frontPanel_longData;
+         
          menu_repaint();
          if(frontPanel_morphAvail)
          {

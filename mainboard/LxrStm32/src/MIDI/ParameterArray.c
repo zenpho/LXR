@@ -227,6 +227,7 @@ void parameterArray_init()
 	parameterArray[PAR_RESO_6].ptr 			= &hatVoice.filter.q;
 	parameterArray[PAR_RESO_6].type 		= TYPE_FLT;
 
+  // "velo" is misleading, these are AEG controls
 	parameterArray[PAR_VELOA1].ptr 			= &voiceArray[0].oscVolEg.attack;
 	parameterArray[PAR_VELOA1].type 		= TYPE_FLT;
 
@@ -260,6 +261,7 @@ void parameterArray_init()
 	parameterArray[PAR_VELOA6].ptr 			= &hatVoice.oscVolEg.attack;
 	parameterArray[PAR_VELOA6].type 		= TYPE_FLT;
 
+  // D6=closedhh and D6_OPEN=openhh
 	parameterArray[PAR_VELOD6_CLOSED].ptr 	= &hatVoice.decayClosed;
 	parameterArray[PAR_VELOD6_CLOSED].type 	= TYPE_FLT;
 

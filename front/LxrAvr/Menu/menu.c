@@ -154,7 +154,7 @@ const Name valueNames[NUM_NAMES] PROGMEM =
 		{SHORT_STEP,CAT_STEP,LONG_NUMBER},					//TEXT_ACTIVE_STEP
 
 		{SHORT_LENGTH,CAT_PATTERN,LONG_LENGTH},				//TEXT_PAT_LENGTH,
-      {SHORT_SCALE,CAT_PATTERN,LONG_SCALE},				//TEXT_PAT_SCALE,
+      {SHORT_SCALE,CAT_PATTERN,LONG_SCALE},				//TEXT_PAT_TRACK_SCALE,
 		{SHORT_STEP,CAT_EUKLID,LONG_STEPS},					//TEXT_NUM_STEPS,
 		{SHORT_ROTATION, CAT_EUKLID, LONG_ROTATION}, 		//TEXT_ROTATION
       {SHORT_SUBSTEP_ROTATION, CAT_EUKLID, LONG_SUBSTEP_ROTATION}, 		//TEXT_ROTATION
@@ -2633,7 +2633,7 @@ static void menu_encoderChangeParameter(int8_t inc)
 	}
    break;
 
-	case DTYPE_0B255:
+	case DTYPE_0B255: // --MRKR
 		//if(*paramValue > 255)
 		//	*paramValue = 255;
 		break;
@@ -2719,7 +2719,13 @@ static void menu_encoderChangeShiftParameter(int8_t inc)
 	uint16_t paramNr		= pgm_read_word(&menuPages[menu_activePage][activePage].bot1 + activeParameter);
    uint8_t *paramValue;
    uint8_t isMorphParam = (paramNr<END_OF_SOUND_PARAMETERS&&buttonHandler_getShift());
-   
+  
+   // --ZPO exclude audio out routing from morph
+   // see also preset_morph() exclusion
+   if ( paramNr >= PAR_AUDIO_OUT1 && paramNr <= PAR_AUDIO_OUT6 )
+   {
+      isMorphParam = 0;
+   }
    if( (paramNr >= PAR_VEL_DEST_1) && (paramNr <= PAR_VEL_DEST_6) )
    {
       isMorphParam = 0;
@@ -2937,14 +2943,14 @@ static void menu_encoderChangeShiftParameter(int8_t inc)
       if (!isMorphParam)
 		frontPanel_sendData(MIDI_CC,(uint8_t)paramNr,*paramValue);
       else
-         preset_morph(0x7f,morphValue);
+         preset_morph(0x7f,morphValue); // --MRKR
    }
 	else if(paramNr > 127 && (paramNr < END_OF_SOUND_PARAMETERS)) // => Sound Parameter above 127
    {
       if (!isMorphParam)
 		frontPanel_sendData(CC_2,(uint8_t)(paramNr-128),*paramValue);
       else
-         preset_morph(0x7f,morphValue);
+         preset_morph(0x7f,morphValue); // --MRKR
    }
 	else // non sound parameters (ie current step data, etc)
 		menu_parseGlobalParam(paramNr,parameter_values[paramNr]);
@@ -3240,7 +3246,7 @@ void menu_switchPage(uint8_t pageNr)
 		break;
 
 	case LOAD_PAGE:
-   case SAVE_PAGE:
+  case SAVE_PAGE:
 	{
 		//re-init the save page variables
 		menu_resetSaveParameters();
@@ -3250,6 +3256,8 @@ void menu_switchPage(uint8_t pageNr)
       DISABLE_CONV_WARNING
 		preset_loadName(menu_currentPresetNr[menu_saveOptions.what], menu_saveOptions.what,0);
       END_DISABLE_CONV_WARNING
+    
+    if(pageNr==SAVE_PAGE) preset_dump(); // --ZPO tx all voice parameters to STM
 	}
 		break;
 
@@ -3429,8 +3437,8 @@ void menu_parseGlobalParam(uint16_t paramNr, uint8_t value)
 		break;
 	case PAR_MORPH:
 	{
-      morphValue = value;
-		preset_morph(0x7f,value);
+    morphValue = value;
+		// --ZPO DISABLED preset_morph(0x7f,value);
 	}
 	break;
 
@@ -3449,12 +3457,13 @@ void menu_parseGlobalParam(uint16_t paramNr, uint8_t value)
 	case PAR_VOICE_DECIMATION4:
 	case PAR_VOICE_DECIMATION5:
 	case PAR_VOICE_DECIMATION6:
-	case PAR_VOICE_DECIMATION_ALL:
 		//select the track nr
 		frontPanel_sendData(SEQ_CC,SEQ_SET_ACTIVE_TRACK,((uint8_t)(paramNr-PAR_VOICE_DECIMATION1)));
-		//send the new output channel
 		frontPanel_sendData(VOICE_CC,VOICE_DECIMATION,value);
 		break;
+  
+  case PAR_VOICE_DECIMATION_ALL: // --MRKR
+    break;
 
 	case PAR_ROLL:
 	{

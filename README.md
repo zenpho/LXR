@@ -1,4 +1,27 @@
-Additions to .34 Firmware:
+Zenpho v0.z15 features:
+====================================
+1. New 'perf' menu layout
+	- 1st press for samplerate and shuffle controls
+	- 2nd press for note roll controls
+	- 3rd press for voice part 1-3 level controls
+	- 4th press for voice part 4-6 level controls
+
+2. New 'step' menu layout
+	- 1st press for per-track scale (with per-step velocity, pitch, probability)
+	  use voice buttons to change per-track scale
+	- 2nd press for per-step automation controls
+
+3. Improved MIDI cc handling of voice parameters
+	- see "lxr-midi-assign.txt" for full info
+	- if cc rx on, response to MIDI cc is similar to Brendan Clarke's firmware
+	- if cc tx on, realtime front panel adjustments are tx (to DIN and USB) 
+	- if cc tx on, automation adjustments are transmitted (to DIN and USB)
+	- if cc tx on, loading a new kit transmits all params
+	- if cc tx on, a snapshot of all params is transmitted on the 'save' page
+	  simply press menu button twice to quickly store state in an ext sequencer
+	  you may still optionally write kit data to SD card using usual method
+
+Brendan Clarke v0.34 features:
 ====================================
 1. Copy individual tracks between patterns.
 	- select (view) the source pattern

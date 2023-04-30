@@ -28,7 +28,7 @@
 //-----------------------------------------------
 //defines
 //-----------------------------------------------
-#define FIRMWARE_VERSION "0.37-bc-"
+#define FIRMWARE_VERSION "0.z15"
 #define CORTEX_RESET_PIN	PB0
 //-----------------------------------------------
 //code
@@ -75,7 +75,6 @@ int main(void)
 	lcd_string_F(PSTR("Sonic Potions"));
 	//goto 2nd line
 	lcd_setcursor(0,2);
-	lcd_string_F(PSTR("LXR V"));
 	lcd_string(FIRMWARE_VERSION);
 #endif
 

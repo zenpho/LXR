@@ -50,4 +50,7 @@ void preset_readDrumVoice2(uint8_t track, uint8_t isMorph);
 void preset_morph(uint8_t voiceArray, uint8_t morph);
 uint8_t preset_getMorphValue(uint16_t index, uint8_t morph);
 
+void preset_dumpTrack(uint8_t track);
+void preset_dump();
+
 #endif /* PRESETMANAGER_H_ */

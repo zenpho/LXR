@@ -1,4 +1,12 @@
-Firmware v0.37 
+Firmware v.z15
+---------------------------
+- sourcecode cleanup, comment clarity, removed unused commented code, etc
+- correct MIDI cc tx and rx of realtime param tweaks (see lxr-midi-assign.txt)
+- added voice snapshot feature (transmit all voice parameters on save page)
+- show track scaling SCA control on STEP screen
+- replace PERF controls for morphing and macros with shuffle and per voice volumes
+
+Firmware v0.37
 ---------------------------
 - fixes the scrambled OLED after a AVR soft reset
 

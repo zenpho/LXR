@@ -42,13 +42,16 @@
 #include "MidiMessages.h"
 #include "MidiVoiceControl.h"
 
-void midiParser_parseUartData(unsigned char data);
-void midiParser_ccHandler(MidiMsg msg, uint8_t updateOriginalValue);
 void midiParser_parseMidiMessage(MidiMsg msg);
-void midiParser_MIDIccHandler(MidiMsg msg, uint8_t updateOriginalValue);
+void midiParser_parseUartData(unsigned char data);
+
+void midiParser_MIDIccHandler(MidiMsg msg);
+void midiParser_MIDImodTargetHandler(MidiMsg msg);
+int16_t midiParser_MIDItoLXRparamNr(uint8_t MIDIparamNr, uint8_t LXRvoiceNr);
+void midiParser_LXRccHandler(MidiMsg msg, uint8_t updateOriginalValue);
+
 float midiParser_calcDetune(uint8_t value);
-// check mtc status, might stop the sequencer
-void midiParser_checkMtc();
+void midiParser_checkMtc(); // check mtc status, might stop the sequencer
 
 #if 0
 void midiDebugSend(uint8_t b1, uint8_t b2);

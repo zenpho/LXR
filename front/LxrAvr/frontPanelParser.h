@@ -24,7 +24,6 @@ extern uint8_t frontParser_rxDisable;
 
 
 #define NOTE_ON 			0x90	// 2 data bytes
-#define MIDI_CC				0xb0	// 2 data bytes
 
 
 #define END_PATTERN_NOTE_ON 0x
@@ -51,14 +50,18 @@ byte3, data2 byte: xbbbbbbb : b=macro mod target value lower 7 bits or top level
 
 #define MORPH_CC        0xac
 #define BANK_CHANGE_CC  0xad
-#define PARAM_CC        0xae
-#define PARAM_CC2       0xaf
-#define LED_CC				0xb1
+
+#define PARAM_CC        0xae //tx from STM to AVR for params below 127
+#define PARAM_CC2       0xaf //tx from STM to AVR for params >=128
+
+#define MIDI_CC   0xb0  //from AVR to STM for parameters below 127, 2 data bytes
+#define CC_2      0xb1  //from AVR to STM for parameters above 127
+
 #define SEQ_CC				0xb2
 #define CODEC_CC			0xb3
 #define VOICE_CC			0xb4
 #define SET_BPM				0xb5
-#define CC_2				0xb6		//for parameters above 127
+#define LED_CC        0xb6
 #define CC_LFO_TARGET		0xb7		
 #define CC_VELO_TARGET		0xb8	
 #define STEP_CC				0xb9	//toggle sub step pattern step on/off
