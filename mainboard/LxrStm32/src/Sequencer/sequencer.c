@@ -1679,9 +1679,6 @@ void seq_recordAutomation(uint8_t voice, uint8_t dest, uint8_t value)
       uint8_t quantizedStep = seq_quantize(seq_stepIndex[voice], voice);
    
    	//only record to active steps
-      /*if( seq_intIsMainStepActive(voice,quantizedStep/8,seq_perTrackActivePattern[voice]) &&
-      		seq_intIsStepActive(voice,quantizedStep,seq_perTrackActivePattern[voice]))
-      {*/
       if(seq_activeAutomTrack == 0) {
          seq_patternSet.seq_subStepPattern[seq_perTrackActivePattern[voice]][voice][quantizedStep].param1Nr = dest;
          seq_patternSet.seq_subStepPattern[seq_perTrackActivePattern[voice]][voice][quantizedStep].param1Val = value;

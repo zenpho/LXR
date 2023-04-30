@@ -854,7 +854,6 @@ void midiParser_ccHandler(MidiMsg msg, uint8_t updateOriginalValue)
       {
       
          case CC2_TRANS1_WAVE:
-            //voiceArray[0].transGen.waveform = msg.data2;
             transient_setWaveform(&voiceArray[0].transGen, msg.data2);
             break;
       
@@ -867,7 +866,6 @@ void midiParser_ccHandler(MidiMsg msg, uint8_t updateOriginalValue)
             break;
       
          case CC2_TRANS2_WAVE:
-            //voiceArray[1].transGen.waveform = msg.data2;
             transient_setWaveform(&voiceArray[1].transGen, msg.data2);
             break;
       
@@ -880,7 +878,6 @@ void midiParser_ccHandler(MidiMsg msg, uint8_t updateOriginalValue)
             break;
       
          case CC2_TRANS3_WAVE:
-            //voiceArray[2].transGen.waveform = msg.data2;
             transient_setWaveform(&voiceArray[2].transGen, msg.data2);
             break;
       
@@ -893,7 +890,6 @@ void midiParser_ccHandler(MidiMsg msg, uint8_t updateOriginalValue)
             break;
       
          case CC2_TRANS4_WAVE:
-            //snareVoice.transGen.waveform = msg.data2;
             transient_setWaveform(&snareVoice.transGen, msg.data2);
             break;
       
@@ -905,7 +901,6 @@ void midiParser_ccHandler(MidiMsg msg, uint8_t updateOriginalValue)
             break;
       
          case CC2_TRANS5_WAVE:
-            //cymbalVoice.transGen.waveform = msg.data2;
             transient_setWaveform(&cymbalVoice.transGen, msg.data2);
             break;
       
@@ -917,7 +912,6 @@ void midiParser_ccHandler(MidiMsg msg, uint8_t updateOriginalValue)
             break;
       
          case CC2_TRANS6_WAVE:
-            //hatVoice.transGen.waveform = msg.data2;
             transient_setWaveform(&hatVoice.transGen, msg.data2);
             break;
       
@@ -932,21 +926,17 @@ void midiParser_ccHandler(MidiMsg msg, uint8_t updateOriginalValue)
          case CC2_FILTER_TYPE_2:
          case CC2_FILTER_TYPE_3:
             voiceArray[msg.data1-CC2_FILTER_TYPE_1].filterType = msg.data2+1;
-            //SVF_reset(&voiceArray[msg.data1-CC2_FILTER_TYPE_1].filter);
             break;
          case CC2_FILTER_TYPE_4:
             snareVoice.filterType = msg.data2 + 1; // +1 because 0 is filter off which results in silence
-            //SVF_reset(&snareVoice.filter);
             break;
          case CC2_FILTER_TYPE_5:
          //cymbal filter
             cymbalVoice.filterType = msg.data2+1;
-            //SVF_reset(&cymbalVoice.filter);
             break;
          case CC2_FILTER_TYPE_6:
          //Hihat filter
             hatVoice.filterType = msg.data2+1;
-            //SVF_reset(&hatVoice.filter);
             break;
       
          case CC2_FILTER_DRIVE_1:
@@ -1073,8 +1063,6 @@ void midiParser_ccHandler(MidiMsg msg, uint8_t updateOriginalValue)
          case CC2_TARGET_LFO5:
          case CC2_TARGET_LFO6:
             break;
-      
-      
       
          case CC2_OFFSET_LFO1:
          case CC2_OFFSET_LFO2:
@@ -1437,9 +1425,6 @@ void midiParser_parseMidiMessage(MidiMsg msg)
                   }
                } // if channel matches
             } // for each voice
-               
-            
-            
          } // check midi filter
          
       } 

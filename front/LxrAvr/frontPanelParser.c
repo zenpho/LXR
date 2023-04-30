@@ -100,16 +100,7 @@ void frontPanel_updatePatternLeds()
    uint8_t value = (uint8_t) ((trackNr << 4) | (patternNr & 0x7));
    frontPanel_sendData(LED_CC, LED_QUERY_SEQ_TRACK, value);
 }
-//------------------------------------------------------------
-void frontPanel_updateActiveStepLeds()
-{
-   /*
-   uint8_t trackNr = menu_getActiveVoice(); //max 6 => 0x6 = 0b110
-   uint8_t patternNr = menu_getViewedPattern(); //max 7 => 0x07 = 0b111
-   uint8_t value = (uint8_t) ((trackNr << 4) | (patternNr & 0x7));
-   frontPanel_sendData(LED_CC, LED_QUERY_SEQ_TRACK, value);
-   */
-}
+
 //------------------------------------------------------------
 void frontPanel_updateSubstepLeds()
 {
@@ -302,14 +293,9 @@ void frontPanel_parseData(uint8_t data)
                //we are expecting step packages send from the sequencer
                //1st 7 lower nibble 7 bit messages
                //then an upper nibble 7 bit message containing the missing 7 upper bits
-               //char text[5];
                   if(frontParser_rxCnt<7)
                   {
                      frontParser_sysexBuffer[frontParser_rxCnt++] = data;
-                  //	lcd_setcursor(5,2);
-                  //	itoa(frontParser_rxCnt,text,10);
-                  //	lcd_string(text);
-                  
                   }
                   else
                   {
@@ -333,9 +319,6 @@ void frontPanel_parseData(uint8_t data)
                      frontParser_newSeqDataAvailable = 1;
                   //reset receive counter for next chunk
                      frontParser_rxCnt = 0;
-                  
-                  //lcd_setcursor(5,2);
-                  //lcd_string("complete");
                   }					
                
                }
@@ -543,16 +526,6 @@ void frontPanel_parseData(uint8_t data)
                      menu_repaintAll();
                      break;
                	
-               	/*
-               	case SEQ_GET_ACTIVE_PAT:
-               	//only in mute mode relevant
-               	//led_clearSequencerLeds9_16();
-               	led_clearSelectLeds();
-               	// set led to show active pattern
-               	led_setValue(1,LED_PART_SELECT1+frontParser_midiMsg.data2);
-               	break;
-               	*/
-               	
                   case SEQ_CHANGE_PAT:
                      if(frontParser_midiMsg.data2 > 15) 
                         return;
@@ -596,13 +569,10 @@ void frontPanel_parseData(uint8_t data)
                      if( (buttonHandler_getMode() == SELECT_MODE_PERF) || (buttonHandler_getMode() == SELECT_MODE_PAT_GEN) )
                      {
                      	//only show pattern changes when in performance mode
-                     		
-                     	//led_clearSequencerLeds9_16();
                         led_clearSelectLeds();
                         led_clearAllBlinkLeds();
                      	// re init the LEDs shwoing active/viewed pattern
                         led_initPerformanceLeds();
-                     	//led_setValue(1,LED_PART_SELECT1+frontParser_midiMsg.data2);
                      }
                      
                      break;
@@ -640,7 +610,6 @@ void frontPanel_parseData(uint8_t data)
                parameter_values[frontParser_midiMsg.data1]=frontParser_midiMsg.data2;
                parameters2[frontParser_midiMsg.data1]=frontParser_midiMsg.data2;
                menu_repaint();
-            
             }
             
             else if(frontParser_midiMsg.status == PARAM_CC2)

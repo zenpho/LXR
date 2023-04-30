@@ -31,8 +31,6 @@ void led_setMode2Leds(uint8_t value);
 void led_setValue(uint8_t val, uint8_t ledNr);
 void led_setValueTemp(uint8_t val, uint8_t ledNr);
 
-//void led_getValue(uint8_t ledNr);
-
 void led_clearAll();
 
 /** toggle a led*/

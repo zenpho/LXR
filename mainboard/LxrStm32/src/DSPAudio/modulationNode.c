@@ -167,7 +167,7 @@ void modNode_setDestination(ModulationNode* vm, uint16_t dest)
 			vm->originalValue.itg = *((uint8_t*)p->ptr);
 			break;
 		case TYPE_SPECIAL_F: // --AS TODO whats up with this???
-			vm->originalValue.flt = 1;//*((float*)parameterArray[vm->destination].ptr);
+			vm->originalValue.flt = 1;
 			break;
 
 		case TYPE_SPECIAL_FILTER_F:
@@ -320,39 +320,3 @@ void modNode_reassignMacroMod()
 	}
 }
 //-----------------------------------------------------------------------
-/*void modNode_updateMacro(ModulationNode* macroNode, float value)
-{      
-   Parameter const *paramAssign = &parameterArray[macroNode->destination];
-   
-   macroNode->lastVal = value;
-   
-	switch(paramAssign->type) // p=paramAssign value; n=node amount; v=received value
-	{
-	case TYPE_UINT8:
-      //(*((uint8_t*)paramAssign->ptr)) = macroNode->originalValue.itg;
-		(*((uint8_t*)paramAssign->ptr)) = (*((uint32_t*)paramAssign->ptr)) - ( (*((uint32_t*)paramAssign->ptr)) * (1-value) * macroNode->amount);// + (*((uint8_t*)paramAssign->ptr));
-		break;
-
-	case TYPE_UINT32:
-      //(*((uint32_t*)paramAssign->ptr)) = macroNode->originalValue.itg;
-		(*((uint32_t*)paramAssign->ptr)) = (*((uint32_t*)paramAssign->ptr)) - ( (*((uint32_t*)paramAssign->ptr)) * (1-value) * macroNode->amount);// + (*((uint32_t*)paramAssign->ptr));
-		break;
-
-	case TYPE_FLT:
-      //(*((float*)paramAssign->ptr)) = macroNode->originalValue.flt;
-		(*((float*)paramAssign->ptr)) = (*((float*)paramAssign->ptr)) - ( (*((float*)paramAssign->ptr)) * (1-value) * macroNode->amount);//(*((float*)paramAssign->ptr)) * macroNode->amount * value;// + (*((float*)paramAssign->ptr));
-		break;
-
-	case TYPE_SPECIAL_F:
-      //(*((float*)paramAssign->ptr)) = macroNode->originalValue.flt; 
-		(*((float*)paramAssign->ptr)) = (*((float*)paramAssign->ptr)) - ( (*((float*)paramAssign->ptr)) * (1-value) * macroNode->amount);// + (*((float*)paramAssign->ptr));
-		break;
-
-	case TYPE_SPECIAL_P:
-	case TYPE_SPECIAL_FILTER_F:
-	default:
-		break;
-   }
-
-}
-*/

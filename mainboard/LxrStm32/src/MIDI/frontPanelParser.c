@@ -202,12 +202,10 @@ void frontParser_uncacheVoice(uint8_t voice)
          default:
             break;
       }
-      //midi_midiLfoCacheAvailable[voice]=0;
    }
    if(midi_midiVeloCacheAvailable[voice])
    {
       modNode_setDestination(&velocityModulators[voice], midi_midiVeloCache[voice]);
-      //midi_midiVeloCacheAvailable[voice]=0;
    }
    
    for(i=0;i<VOICE_PARAM_LENGTH;i++)
@@ -215,7 +213,6 @@ void frontParser_uncacheVoice(uint8_t voice)
       if(midi_midiCacheAvailable[presetMask[i]])
       {
          midiParser_ccHandler(midi_midiCache[presetMask[i]],1);
-         //midi_midiCacheAvailable[presetMask[i]]=0;
       }
    }
    
@@ -531,10 +528,6 @@ static void frontParser_handleSysexData(unsigned char data)
          //calculate the step pattern and track indices
             uint8_t currentTrack = (frontParser_sysexBuffer[0]>>3)&0x07;
             uint8_t currentPattern = (frontParser_sysexBuffer[0]&0x07);
-            /*
-            const uint8_t currentPattern	= frontParser_sysexSeqStepNr / 7;
-            const uint8_t currentTrack  	= frontParser_sysexSeqStepNr - currentPattern*7;
-            */
          
          //first load into inactive track
             PatternSet* patternSet = &seq_patternSet;
@@ -555,11 +548,6 @@ static void frontParser_handleSysexData(unsigned char data)
             frontParser_rxCnt = 0;
          
          // signal new pattern after receiving all the data
-         /*
-            if( seq_isRunning() && (frontParser_sysexSeqStepNr == NUM_TRACKS*NUM_PATTERN)) {
-               seq_newPatternAvailable = 1;
-            }
-            */
             uart_sendFrontpanelSysExByte(SYSEX_RECEIVE_PAT_SCALE_DATA);
          }
          
@@ -590,18 +578,7 @@ static void frontParser_handleSysexData(unsigned char data)
             const uint8_t currentStep		= frontParser_sysexSeqStepNr - absPat*128;
          
             PatternSet* patternSet = &seq_patternSet;
-         /*
-            if((seq_newPatternVoiceArray&(0x01<<currentTrack))==0)
-            { // track is not in the array, use current step data instead
-               frontParser_sysexBuffer[0] = patternSet->seq_subStepPattern[currentPattern][currentTrack][currentStep].volume;
-               frontParser_sysexBuffer[1] = patternSet->seq_subStepPattern[currentPattern][currentTrack][currentStep].prob;
-               frontParser_sysexBuffer[2] = patternSet->seq_subStepPattern[currentPattern][currentTrack][currentStep].note;
-               frontParser_sysexBuffer[3] = patternSet->seq_subStepPattern[currentPattern][currentTrack][currentStep].param1Nr;
-               frontParser_sysexBuffer[4] = patternSet->seq_subStepPattern[currentPattern][currentTrack][currentStep].param1Val;
-               frontParser_sysexBuffer[5] = patternSet->seq_subStepPattern[currentPattern][currentTrack][currentStep].param2Nr;
-               frontParser_sysexBuffer[6] = patternSet->seq_subStepPattern[currentPattern][currentTrack][currentStep].param2Val;
-            }
-         */
+
          //do not overwrite playing pattern
             if( (currentPattern == seq_activePattern)   && seq_isRunning())
             {

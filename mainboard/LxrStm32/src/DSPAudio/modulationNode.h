@@ -56,7 +56,6 @@ extern ModulationNode velocityModulators[6];
 
 extern ModulationNode macroModulators[4];
 
-//void modNode_updateMacro(ModulationNode* macroNode, float amount);
 void modNode_resetMacros();
 void modNode_reassignMacroMod();
 void modNode_init(ModulationNode* vm);
@@ -66,7 +65,6 @@ void modNode_reassignVeloMod();
 void modNode_vMorph(ModulationNode* vm, float val);
 
 /** if multiple nodes address the same target we need to update the other modNodes if one of them changes the destionation*/
-//void modNode_originalValueModulated(uint16_t idx, ModulationNode* modSource);
 void modNode_originalValueChanged(uint16_t idx);
 void modNode_setDestination(ModulationNode* vm, uint16_t dest);
 void modNode_updateValue(ModulationNode* vm, float val);

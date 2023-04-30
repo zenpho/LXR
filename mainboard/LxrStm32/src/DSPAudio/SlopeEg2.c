@@ -173,13 +173,6 @@ float slopeEg2_calc(SlopeEg2* eg)
 	return 0;
 }
 //--------------------------------------------------
-/*
-x = input in [-1..1]
-y = output
-k = 2*amount/(1-amount);
-
-f(x) = (1+k)*x/(1+k*abs(x))
-*/
 #define TIME_AMOUNT_DECAY 0.999f
 #define TIME_AMOUNT_ATTACK 0.99f
 #define TIME_K_ATTACK (2*TIME_AMOUNT_ATTACK/(1.f-TIME_AMOUNT_ATTACK))

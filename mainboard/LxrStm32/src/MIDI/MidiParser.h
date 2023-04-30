@@ -93,13 +93,6 @@ void midi_clearCache();
 extern uint8_t midi_MidiChannels[8]; // last element is global channel
 extern uint8_t midi_NoteOverride[7];
 extern uint8_t midi_KitChange[6];
-//extern uint8_t midi_mode; --AS not used anymore
-
-//enum MIDI_modeEnum
-//{
-//	MIDI_MODE_TRIGGER,
-//	MIDI_MODE_NOTE,
-//} MidiModes;
 
 // high nibble is TX low nibble is RX. see above (midiParser_setFilter) for bitmap
 extern uint8_t midiParser_txRxFilter;

@@ -10,7 +10,6 @@
 
 #include "../Preset/PresetManager.h"
 #include "../frontPanelParser.h"
-//#include <util/delay.h>
 #include <util/delay.h>
 
 #include "menuPages.h"
@@ -170,7 +169,6 @@ const Name valueNames[NUM_NAMES] PROGMEM =
 		{SHORT_REPEAT,CAT_PATTERN,LONG_REPEAT_CNT},				//TEXT_PATTERN_REPEAT
 		{SHORT_NXT,CAT_PATTERN,LONG_NEXT_PAT},				//TEXT_PATTERN_NEXT
 
-		//	{SHORT_PHASE,CAT_OSC,LONG_PHASE},				//TEXT_OSC_PHASE
 		{SHORT_MODE,CAT_OSC,LONG_MODE},				//TEXT_MODE mix or mod for fm osc
 		{SHORT_VOL,CAT_OSC,LONG_VOL},				//TEXT_OSC_VOLUME fm oscillator volume in mix mode
 		{SHORT_DRIVE, CAT_FILTER,LONG_DRIVE},			//TEXT_FILTER_DRIVE
@@ -758,14 +756,10 @@ void menu_debug(char* displayText, size_t length, uint8_t value1, uint8_t value2
 void menu_enterVoiceMode()
 {
    //set menu to voice page mode
-   //uint8_t pageNr=menu_getActiveVoice();
-	//uint8_t paramNr=menu_lastVoiceParameter;
-   //menu_switchSubPage(menu_lastVoiceSubPage);
    led_clearAllBlinkLeds();
    menuIndex = menu_lastVoiceIndex;
    menu_switchPage(menu_getActiveVoice());
 	led_setActiveSelectButton(menu_getSubPage());
-	//menu_resetActiveParameter();
    if(shiftState)
       menu_shiftVoice(1);
 }
@@ -777,7 +771,6 @@ void menu_enterActiveStepMode()
    led_clearVoiceLeds();
   
    menu_switchPage(ACTIVESTEP_PAGE);
-   frontPanel_updateActiveStepLeds();
 	menu_repaintAll();
    led_setBlinkLed(LED_MODE3,1);
 }
@@ -789,7 +782,6 @@ void menu_enterPerfMode()
 	led_initPerformanceLeds();
    led_clearAllBlinkLeds();
    led_clearModeLeds();
-   //menu_repaint();
 
 	//set menu to perf page
    menuIndex=menu_lastPerfIndex;   
@@ -888,17 +880,13 @@ void menu_shiftStep(uint8_t shift)
    }
    else
    {
-   
-      //menu_switchSubPage(0);
 	   menu_switchPage(SEQ_PAGE);
-
 	   frontPanel_updatePatternLeds();
       
       // set mainstep blinking
 	   led_setBlinkLed(menu_selectedStepLed, 1);
       // set selected substep blinking
       led_setBlinkLed((uint8_t)(LED_PART_SELECT1+(parameter_values[PAR_ACTIVE_STEP]%8)), 1);
-   
    }
    
 }
@@ -996,14 +984,10 @@ void lockPotentiometerFetch()
 //-----------------------------------------------------------------
 void menu_repaintAll()
 {
-
-	//if(copyClear_Mode == MODE_NONE)
-	{
 		memset(editDisplayBuffer,' ',2*17);	
 		memset(currentDisplayBuffer,127,2*16);
 
 		menu_repaint();
-	}		
 }
 
 //-----------------------------------------------------------------
@@ -1100,11 +1084,9 @@ static void menu_repaintLoadPage()
          else {
          //arrow before parameter
             editDisplayBuffer[1][0]= ARROW_SIGN;
-         //visibleCursor = VIS_CURS(1,1,1);
          }
       }
    // write the full preset name
-      //strcpy_P(&preset_currentName,preset_loadName(menu_currentPresetNr[menu_saveOptions.what],menu_saveOptions.what));
       DISABLE_CONV_WARNING
       memcpy(&editDisplayBuffer[1][5],(const void*)preset_loadName(menu_currentPresetNr[menu_saveOptions.what],menu_saveOptions.what,0),8);
       END_DISABLE_CONV_WARNING
@@ -1126,7 +1108,6 @@ static void menu_repaintLoadPage()
          (menu_saveOptions.what >= SAVE_TYPE_GLO && menu_saveOptions.state > SAVE_STATE_EDIT_TYPE)) {
          //arrow before parameter
          editDisplayBuffer[1][13]= ARROW_SIGN;
-         //visibleCursor = VIS_CURS(1,14,1);
       }
    } 
    
@@ -1191,11 +1172,9 @@ static void menu_repaintSavePage()
          else {
          //arrow before parameter
             editDisplayBuffer[1][0]= ARROW_SIGN;
-         //visibleCursor = VIS_CURS(1,1,1);
          }
       }
    // write the full preset name
-      //strcpy_P(&preset_currentName,preset_loadName(menu_currentPresetNr[menu_saveOptions.what],menu_saveOptions.what));
       memcpy(&editDisplayBuffer[1][5],(const void*)preset_currentSaveMenuName,8);
    }
 // bottom row - for save page, we show editing box or underline cursor as applicable
@@ -1223,7 +1202,6 @@ static void menu_repaintSavePage()
       {
       //arrow before parameter
          editDisplayBuffer[1][13]= ARROW_SIGN;
-      //visibleCursor = VIS_CURS(1,14,1);
       }
    } 
    else { // bottom row 
@@ -1234,7 +1212,6 @@ static void menu_repaintSavePage()
          (menu_saveOptions.what >= SAVE_TYPE_GLO && menu_saveOptions.state > SAVE_STATE_EDIT_TYPE)) {
          //arrow before parameter
             editDisplayBuffer[1][13]= ARROW_SIGN;
-         //visibleCursor = VIS_CURS(1,14,1);
          }
       } 
       else { //clear ok text
@@ -1766,7 +1743,6 @@ void menu_handleSaveScreenKnobValue(uint8_t potNr, uint8_t value)
                   case SAVE_STATE_EDIT_NAME7:
                   case SAVE_STATE_EDIT_NAME8:
                editModeActive=1;
-               //x=(uint8_t)((value/(256/128))+128);
                
                x=(uint8_t)(value/(256/128));
                if(x<32) // put upper case letters at the front of the list
@@ -1799,7 +1775,6 @@ void menu_handleSaveScreenKnobValue(uint8_t potNr, uint8_t value)
                   case SAVE_STATE_EDIT_NAME7:
                   case SAVE_STATE_EDIT_NAME8:
                editModeActive=1;
-               //x=(uint8_t)(value/(256/128));
                
                x=(uint8_t)(value/(256/128));
                if (x<127)//(x<26) // put lower case letters at the front of the list
@@ -2015,7 +1990,6 @@ void menu_handleLoadMenu(int8_t inc, uint8_t btnClicked)
                break;
             
             case SAVE_TYPE_PERFORMANCE:
-               //preset_loadAll(menu_currentPresetNr[SAVE_TYPE_ALL],0,0,menu_voiceArray);//last 0 is don't release kit lock
                preset_loadPerf(menu_currentPresetNr[SAVE_TYPE_PERFORMANCE],menu_voiceArray);//last 0 is don't release kit lock
                menu_resetSaveParameters();
             buttonHandler_handleModeButtons(SELECT_MODE_PERF);
@@ -2023,7 +1997,6 @@ void menu_handleLoadMenu(int8_t inc, uint8_t btnClicked)
             
             case SAVE_TYPE_ALL:
                preset_loadAll(menu_currentPresetNr[SAVE_TYPE_ALL],menu_voiceArray);
-               //preset_loadAll(menu_currentPresetNr[SAVE_TYPE_ALL],1,0,menu_voiceArray);//last 0 is don't release kit lock
                menu_resetSaveParameters();
                break;
             
@@ -2057,9 +2030,6 @@ void menu_handleLoadMenu(int8_t inc, uint8_t btnClicked)
                }
                //re-initialize SD-Card
                preset_init();
-               //redraw screen
-               // menu_repaintAll(); --AS screen will be repainted later, relax!
-               
                frontPanel_sendData(SAMPLE_CC,SAMPLE_COUNT,0x00);
                break;
             
@@ -2255,8 +2225,6 @@ void menu_handleSaveMenu(int8_t inc, uint8_t btnClicked)
                if(menu_saveOptions.what!=0) {
                   switch (menu_saveOptions.what){
                      case SAVE_TYPE_MORPH:
-                        
-                        /*menu_saveOptions.what=SAVE_TYPE_MORPH;*/
                         // skip instruments- can't save, go straight to kit
                         menu_saveOptions.what=SAVE_TYPE_KIT;
                         break;
@@ -2271,7 +2239,6 @@ void menu_handleSaveMenu(int8_t inc, uint8_t btnClicked)
                   switch (menu_saveOptions.what){
                      case SAVE_TYPE_KIT:
                         // -bc- save for later
-                        /*menu_saveOptions.what=SAVE_TYPE_MORPH;*/
                         // skip instruments- can't save, go straight to pat
                         menu_saveOptions.what=SAVE_TYPE_MORPH;
                         break;
@@ -2368,8 +2335,6 @@ static uint8_t getMaxEntriesForMenu(uint8_t menuId)
 		return retriggerNames[0][0];
 	case MENU_SEQ_QUANT:
 		return quantisationNames[0][0];
-	/*case MENU_MIDI:
-		return 2;//midiModes[0][0]; - is overridden for adding roll menu*/
 	case MENU_NEXT_PATTERN:
 		return nextPatternNames[0][0];
 	case MENU_WAVEFORM:
@@ -2430,9 +2395,6 @@ static void getMenuItemNameForValue(const uint8_t menuId, const uint8_t curParmV
 	case MENU_SEQ_QUANT:
 		p=quantisationNames[curParmVal+1];
 		break;
-	/*case MENU_MIDI:
-		p=midiModes[curParmVal+1];
-		break;*/
    case MENU_MIDI:
 		p=midiModes[curParmVal+1];
       break;
@@ -2590,8 +2552,7 @@ static void menu_encoderChangeParameter(int8_t inc)
 		upper = (uint8_t)( (uint8_t)((value&0x80)>>7) | ((voiceNr&0x3f)<<1) );
 		lower = value&0x7f;
       if (!isMorphParam)
-		frontPanel_sendData(CC_VELO_TARGET,upper,lower);
-		//return;
+		frontPanel_sendData(CC_VELO_TARGET,upper,lower); // --ZPO modnode
 	}
 		break;
 
@@ -2621,7 +2582,6 @@ static void menu_encoderChangeParameter(int8_t inc)
 		lower = value&0x7f;
       if (!isMorphParam)
 		frontPanel_sendData(CC_LFO_TARGET,upper,lower);
-		//return;
 	}
 		break;
 	case DTYPE_TARGET_SELECTION_LFO://parameter_dtypes[paramNr] & 0x0F
@@ -2740,7 +2700,6 @@ static void menu_encoderChangeParameter(int8_t inc)
    }
 	else // non sound parameters (ie current step data, etc)
 		menu_parseGlobalParam(paramNr,parameter_values[paramNr]);
-	//frontPanel_sendData(0xb0,paramNr,*paramValue);
 }
 
 
@@ -2853,7 +2812,6 @@ static void menu_encoderChangeShiftParameter(int8_t inc)
 		   frontPanel_sendData(CC_VELO_TARGET,upper,lower);
       else
          preset_morph(0x7f,morphValue);
-		//return;
 	}
 		break;
 
@@ -2885,7 +2843,6 @@ static void menu_encoderChangeShiftParameter(int8_t inc)
 		frontPanel_sendData(CC_LFO_TARGET,upper,lower);
       else
          preset_morph(0x7f,morphValue);
-		//return;
 	}
 		break;
 	case DTYPE_TARGET_SELECTION_LFO://parameter_dtypes[paramNr] & 0x0F
@@ -2910,7 +2867,7 @@ static void menu_encoderChangeShiftParameter(int8_t inc)
 		upper = (uint8_t)((uint8_t)((value&0x80)>>7) | (((paramNr - PAR_TARGET_LFO1)&0x3f)<<1));
 		lower = value&0x7f;
       if (!isMorphParam)
-		frontPanel_sendData(CC_LFO_TARGET,upper,lower);
+		frontPanel_sendData(CC_LFO_TARGET,upper,lower); // --ZPO modnode
       else
          preset_morph(0x7f,morphValue);
 		//--AS fall thru to update display
@@ -3288,9 +3245,6 @@ void menu_switchPage(uint8_t pageNr)
 		menu_resetSaveParameters();
 		menu_activePage = pageNr;
 
-		//leave edit mode if active
-		//editModeActive = 0;
-
 		// load the name of the current preset from disk
       DISABLE_CONV_WARNING
 		preset_loadName(menu_currentPresetNr[menu_saveOptions.what], menu_saveOptions.what,0);
@@ -3355,12 +3309,6 @@ void menu_parseGlobalParam(uint16_t paramNr, uint8_t value)
 {
 	switch(paramNr)
 	{
-
-	// --AS midi mode is not used anymore
-	//case PAR_MIDI_MODE:
-	//	frontPanel_sendData(SEQ_CC,SEQ_MIDI_MODE,parameter_values[PAR_MIDI_MODE]);
-	//	break;
-
 	case PAR_MIDI_CHAN_1:
       if(value==0)
          frontPanel_sendData(SEQ_CC,SEQ_MIDI_CHAN_OFF,0x00);
@@ -3480,7 +3428,6 @@ void menu_parseGlobalParam(uint16_t paramNr, uint8_t value)
 		break;
 	case PAR_MORPH:
 	{
-		//value += (value==127)*1;
       morphValue = value;
 		preset_morph(0x7f,value);
 	}
@@ -3490,20 +3437,10 @@ void menu_parseGlobalParam(uint16_t paramNr, uint8_t value)
 		if(value) {
 			parameterFetch |= PARAMETER_LOCK_ACTIVE;
 		} else {
-			//parameterFetch &= ~PARAMETER_LOCK_ACTIVE;
 			parameterFetch = 0;
 		}			
 		break;
-		/*
-		case PAR_PHASE_VOICE1:
-		case PAR_PHASE_VOICE2:
-		case PAR_PHASE_VOICE3:
-		case PAR_PHASE_VOICE4:
-		case PAR_PHASE_VOICE5:
-		case PAR_PHASE_VOICE6:
-			frontPanel_sendData(CC_2,paramNr-PAR_BEGINNING_OF_GLOBALS,value);
-		break;
-		 */
+
 
 	case PAR_VOICE_DECIMATION1:
 	case PAR_VOICE_DECIMATION2:
@@ -3771,12 +3708,6 @@ static void menu_processSpecialCaseValues(uint16_t paramNr/*, const uint8_t *val
       menu_vMorph(parameter_values[PAR_MAC2_DST2],parameter_values[PAR_MAC2],parameter_values[PAR_MAC2_DST2_AMT]);
       frontPanel_sendMacro(2,parameter_values[PAR_MAC2]);
    }
-	else if(paramNr == PAR_BPM)
-	{
-		//*value *= 2;
-		//*value+=1;
-	}
-
 
 	//To see the generated pattern we have to update the step view
 	else if( (paramNr == PAR_EUKLID_LENGTH) || (paramNr == PAR_EUKLID_STEPS) || (paramNr == PAR_EUKLID_ROTATION) )

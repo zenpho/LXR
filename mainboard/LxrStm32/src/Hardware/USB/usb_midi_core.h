@@ -54,11 +54,7 @@ typedef struct UsbMidiStruct
 
 #define USB_MIDI_INPUT_BUFFER_SIZE 	256
 #define USB_MIDI_INPUT_BUFFER_MASK	0xFF	/**< mask to wrap the read/wrt pointers*/
-/*
-extern uint8_t  usb_MidiOutBuff [TOTAL_MIDI_BUF_SIZE * 2];
-extern uint8_t* usb_MidiOutWrPtr;
-extern uint8_t* usb_MidiOutRdPtr;
-*/
+
 extern uint8_t  usb_MidiInBuff [TOTAL_MIDI_BUF_SIZE * NUM_SUB_BUFFERS];
 extern uint8_t* usb_MidiInWrPtr;
 extern uint8_t* usb_MidiInRdPtr;

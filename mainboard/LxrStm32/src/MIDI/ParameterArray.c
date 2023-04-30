@@ -527,22 +527,6 @@ void parameterArray_init()
 	parameterArray[PAR_WAVE_LFO6].ptr 		= &hatVoice.lfo.waveform;
 	parameterArray[PAR_WAVE_LFO6].type = TYPE_UINT8;
 
-	/*
-	PAR_VOICE_LFO1,
-	PAR_VOICE_LFO2,
-	PAR_VOICE_LFO3,
-	PAR_VOICE_LFO4,
-	PAR_VOICE_LFO5,
-	PAR_VOICE_LFO6,
-
-	PAR_TARGET_LFO1,
-	PAR_TARGET_LFO2,
-	PAR_TARGET_LFO3,
-	PAR_TARGET_LFO4,
-	PAR_TARGET_LFO5,
-	PAR_TARGET_LFO6,
-	*/
-
 	parameterArray[PAR_RETRIGGER_LFO1].ptr 	= &voiceArray[0].lfo.retrigger;
 	parameterArray[PAR_RETRIGGER_LFO1].type = TYPE_UINT8;
 	parameterArray[PAR_RETRIGGER_LFO2].ptr 	= &voiceArray[1].lfo.retrigger;

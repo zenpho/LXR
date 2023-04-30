@@ -70,14 +70,6 @@ enum PageNames
 	MENU_MIDI_PAGE, // this is the global settings page
 	LOAD_PAGE,
 	SAVE_PAGE,
-	/*
-	LFO1_PAGE, //TODO load und savepage verschwenken speicher... nicht gefüllt. ans ende und aus dem array nehmen?
-	LFO2_PAGE,
-	LFO3_PAGE,
-	LFO4_PAGE,
-	LFO5_PAGE,
-	LFO6_PAGE,
-	*/
 	
 	PERFORMANCE_PAGE,
 	SEQ_PAGE,
@@ -87,17 +79,7 @@ enum PageNames
 	SOM_PAGE,
    ACTIVESTEP_PAGE,
    SHIFTVOICE_PAGE,
-	
-	//The Voice settings -> Midi Channel, Audio Out...
-	/*
-	VOICE1_SETTINGS_PAGE,
-	VOICE2_SETTINGS_PAGE,
-	VOICE3_SETTINGS_PAGE,
-	VOICE4_SETTINGS_PAGE,
-	VOICE5_SETTINGS_PAGE,
-	VOICE6_SETTINGS_PAGE,
-	*/
-	
+
 	NUM_PAGES
 };
 //-----------------------------------------------------------------

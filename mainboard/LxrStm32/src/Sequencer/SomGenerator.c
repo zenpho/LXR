@@ -62,8 +62,8 @@ void som_init()
 void som_interpolate(uint8_t stepNr, uint8_t* values, uint8_t node1, uint8_t node2, uint8_t node3, uint8_t node4)
 {
 
-	float x = fabsf(somGenerator.x );//* rnd);
-	float y = fabsf(somGenerator.y );//* rnd);
+	float x = fabsf(somGenerator.x );
+	float y = fabsf(somGenerator.y );
 
 	if(x<-1)x=-1;
 	else if(x>1)x=1;

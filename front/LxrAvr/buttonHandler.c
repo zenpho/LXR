@@ -230,19 +230,6 @@ static void buttonHandler_setTimeraction(uint8_t buttonNr) {
 
 }
 //--------------------------------------------------------
-/**returns 1 is the mode 2 select button is pressed*/
-/*
- uint8_t buttonHandler_isModeButtonPressed()
- {
- const uint8_t arrayPos	= BUT_MODE/8;
- const uint8_t bitPos	= BUT_MODE&7;
- if(din_inputData[arrayPos] & (1<<bitPos))
- {
- return 0;
- }
- return 1;
- }
- */
 //--------------------------------------------------------
 //periodically called handler for timed actions
 //-> hold a step button for a long time to select/rec automation
@@ -547,16 +534,7 @@ static void buttonHandler_handleSelectButton(uint8_t buttonNr) {
             }
             //----- Euklid Mode -----
             else {
-            /* //moved to voice button
-             //tell the sequencer the new active track
-             //TODO muss nicht f�r button 8 gesendet werden
-             frontPanel_sendData(SEQ_CC,SEQ_SET_ACTIVE_TRACK,buttonNr);
-             //request the parameters for the new track
-             frontPanel_sendData(SEQ_CC,SEQ_REQUEST_EUKLID_PARAMS,buttonNr);
-             //the currently active track button is lit
-             led_setActivePage(buttonNr);
-             */
-            
+            //moved to voice button
             }
             break;
       
@@ -787,21 +765,6 @@ static void buttonHandler_seqButtonReleased(uint8_t seqButtonPressed)
 
    if (buttonHandler_getShift()) // shift click is fully handled in "pressed"
       return;
-
-	// --AS I don't think that the timer would be armed in this case
-	//{
-		//do nothing if timer action occured
-		//if (buttonHandler_TimerActionOccured())
-			//return;
-
-		//if ((buttonHandler_getMode() == SELECT_MODE_VOICE)) {
-			//sequencer mode -> buttons select active step
-			//buttonHandler_selectActiveStep(ledNr, seqButtonPressed);
-		//} else if ((buttonHandler_getMode() == SELECT_MODE_STEP)) {
-			//buttonHandler_setRemoveStep(ledNr,seqButtonPressed);
-		//}
-
-	//} else {
 
    switch (buttonHandler_stateMemory.selectButtonMode) {
       case SELECT_MODE_PAT_GEN:
@@ -1243,11 +1206,6 @@ void buttonHandler_buttonPressed(uint8_t buttonNr) {
                if (copyClear_Mode == MODE_CLEAR) {
                //execute
                   copyClear_executeClear();
-               /*
-                copyClear_clearCurrentTrack();
-                copyClear_armClearMenu(0);
-                copyClear_Mode = MODE_NONE;
-                */
                } 
                else {
                   copyClear_Mode = MODE_CLEAR;

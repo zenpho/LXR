@@ -11,12 +11,6 @@
 
 #include "menu.h"
 
-//typedef struct Cc2NameStruct
-//{
-//	uint8_t voiceNr; // 1-6 => 0x6 = 0b110
-//	uint8_t nameIdx;//
-//} Cc2Name;
-
 // initialize the above array
 void paramToModTargetInit();
 

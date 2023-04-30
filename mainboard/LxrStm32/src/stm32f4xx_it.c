@@ -8,8 +8,6 @@
 #include "usb_midi_core.h"
 #include "config.h"
 
-//asm(".extern hard_fault_handler_c");
-
 
 extern USB_OTG_CORE_HANDLE           USB_OTG_dev;
 extern uint32_t USBD_OTG_ISR_Handler (USB_OTG_CORE_HANDLE *pdev);

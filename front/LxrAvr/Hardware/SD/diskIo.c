@@ -144,20 +144,6 @@ DRESULT disk_ioctl (	BYTE drive,      /* Drive number */
 		case CTRL_SYNC :	/* Nothing to do */
 			return RES_OK;
 
-/*
-		case ATA_GET_REV :	// Get firmware revision (8 chars) 
-			
-			break;
-		
-
-		case ATA_GET_MODEL :	// Get model name (40 chars) 
-
-			break;
-
-		case ATA_GET_SN :	// Get serial number (20 chars) 
-
-			break;
-	*/
 		default:
 			return RES_PARERR;
 	}

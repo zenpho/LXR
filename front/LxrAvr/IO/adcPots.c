@@ -25,7 +25,7 @@ void adc_init(void) {
   ADMUX =  (1<<REFS0);
   
   // single conversion
-  ADCSRA = (1<<ADPS2) |(1<<ADPS1) /*| (1<<ADPS0)*/;     // adc prescaler div 64 => 8mhz clock = 125 kHz (must be between 50 and 200kHz)
+  ADCSRA = (1<<ADPS2) |(1<<ADPS1);      // adc prescaler div 64 => 8mhz clock = 125 kHz (must be between 50 and 200kHz)
   ADCSRA |= (1<<ADEN);                  // ADC enable
  
   // dummy readout
